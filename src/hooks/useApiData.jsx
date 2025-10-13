@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export const useApiData = (endpoint, params = {}) => {
@@ -6,49 +6,49 @@ export const useApiData = (endpoint, params = {}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [pagination, setPagination] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filters, setFilters] = useState({});
     const [trigger, setTrigger] = useState(0);
 
     const refetch = () => setTrigger(t => t + 1);
 
-    const fetchData = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await axios.get(endpoint, {
-                params: {
-                    page: currentPage,
-                    per_page: 15,
-                    search: searchQuery,
-                    ...filters,
-                    ...params
+    // Chuyển object params thành chuỗi để theo dõi sự thay đổi một cách đáng tin cậy
+    const stringifiedParams = JSON.stringify(params);
+
+    useEffect(() => {
+        // Nếu không có endpoint, không làm gì cả
+        if (!endpoint) {
+             setData([]);
+             setIsLoading(false);
+             return;
+        }
+
+        const fetchData = async () => {
+            setIsLoading(true);
+            setError(null);
+            console.log(`🚀 [API Request] Gửi đi:`, { endpoint, params });
+            try {
+                // Sửa lỗi: Luôn sử dụng object `params` được truyền vào
+                const response = await axios.get(endpoint, { params });
+                
+                console.log(`✅ [API Response] Nhận về từ ${endpoint}:`, response.data);
+                setData(response.data.data || []);
+                
+                // Xử lý cả trường hợp có phân trang và không có
+                if (response.data.meta && response.data.links) {
+                    setPagination(response.data.meta);
+                } else {
+                    setPagination(null);
                 }
-            });
-            setData(response.data.data);
-            setPagination(response.data.meta);
-        } catch (err) {
-            setError(`Không thể tải dữ liệu. Lỗi: ${err.response?.data?.message || err.message}`);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [endpoint, currentPage, searchQuery, JSON.stringify(params), JSON.stringify(filters), trigger]);
+            } catch (err) {
+                console.error(`❌ [API Error] Lỗi từ ${endpoint}:`, err.response || err);
+                setError(`Không thể tải dữ liệu. Lỗi: ${err.response?.data?.message || err.message}`);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchData();
-        }, 300); 
-        return () => clearTimeout(timer);
-    }, [fetchData]);
-    
-    useEffect(() => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        } else {
-           refetch();
-        }
-    }, [searchQuery, JSON.stringify(filters)]);
+        fetchData();
+        // Effect này sẽ chạy lại mỗi khi endpoint, params, hoặc trigger thay đổi
+    }, [endpoint, stringifiedParams, trigger]);
 
-    return { data, isLoading, error, pagination, searchQuery, setSearchQuery, setCurrentPage, setFilters, fetchData: refetch };
+    return { data, isLoading, error, pagination, fetchData: refetch };
 };
