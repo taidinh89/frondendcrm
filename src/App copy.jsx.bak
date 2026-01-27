@@ -1,0 +1,338 @@
+// src/App.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { LoginPage, Header, Sidebar } from './components/layout.jsx';
+import { appConfig, ENABLE_PERMISSION_CHECK } from './config/appConfig.js';
+import { Toaster } from 'react-hot-toast';
+// --- 1. IMPORT CÁC TRANG NGHIỆP VỤ ---
+import { DashboardContent } from './pages/DashboardContent.jsx'; 
+import { CustomersContent } from './pages/CustomersContent.jsx';
+import { SalesOrdersContent } from './pages/SalesOrdersContent.jsx';
+import { PurchaseOrdersContent } from './pages/PurchaseOrdersContent.jsx';
+import { InventoriesContent } from './pages/InventoriesContent.jsx';
+import { InvoicesContent } from './pages/InvoicesContent.jsx';
+import { SalesAnalysisContent } from './pages/SalesAnalysisContent.jsx';
+import { ProductGroupAnalysisContent } from './pages/ProductGroupAnalysisContent.jsx';
+import { PartnerAnalysisContent } from './pages/PartnerAnalysisContent.jsx';
+
+import { DebtRiskPage } from './pages/DebtRiskPage.jsx';
+import { PayableRiskPage } from './pages/PayableRiskPage.jsx';
+import { Customer360Content } from './pages/Customer360Content.jsx';
+import { QuotationForm } from './pages/QuotationForm.jsx';
+import { ProductQvcContent } from './pages/ProductQvcContent.jsx';
+import { DictionaryManagementPage } from './pages/DictionaryManagementPage.jsx';
+import { GlobalSearchModal } from './components/GlobalSearchModal.jsx';
+import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
+import { SepayCashier } from './pages/Sepay/SepayCashier.jsx';
+import DepartmentTreeManager from "./pages/DepartmentTreeManager.jsx";
+import AuthorizationBackboneManager from "./pages/AuthorizationBackboneManager.jsx";
+import UserRoleManager from './pages/Security/UserRoleManager';
+
+// --- 2. IMPORT MODULE BẢO MẬT (SECURITY) ---
+import SecurityDashboard from './pages/Security/Dashboard';
+import PermissionMatrix from './pages/Security/PermissionMatrix';
+import RoleManager from './pages/Security/RoleManager';
+import OrgChart from './pages/Security/OrgChart';
+import Definitions from './pages/Security/Definitions';
+import SecurityCommanderCenter from './pages/Security/SecurityCommanderCenter';
+
+import SystemIntelligenceDashboard from './pages/SystemIntelligenceDashboard.jsx';
+import UnifiedInventoryDashboardV2 from './pages/UnifiedInventoryDashboardV2.jsx';  
+import UnitConversionManager from './pages/UnitConversionManager.jsx';
+import ImportLogViewer from './pages/ImportLogViewer.jsx';
+import { SystemMonitorPage } from './pages/SystemMonitorPage.jsx';
+import ImportManagement from './pages/ImportManagement.jsx';
+import { QrHistoryPage } from "./pages/QrHistoryPage.jsx";
+import { InvoiceDashboardPage } from './pages/InvoiceDashboardPage.jsx';
+import { QuotationList } from './pages/QuotationList';
+import { QuotationFormNew } from './pages/QuotationFormNew';
+// import { QuotationListV2 } from './pages/QuotationListV2';
+// import { QuotationFormV2 } from './pages/QuotationFormV2';
+import MobileScreenManager from './pages/Admin/MobileScreenManager';
+import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
+import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
+import MonitorServiceManager from './pages/MonitorServiceManager.jsx';
+// --- 3. CẤU HÌNH MENU (NAV ITEMS) ---
+const navItems = [
+    { 
+        id: 'dashboard', 
+        path: '/dashboard', 
+        label: 'Tổng quan Hệ thống', 
+        group: 'Chung', 
+        permission: null, 
+        icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18',
+        component: <DashboardContent /> 
+    },
+    { id: 'customers', path: '/customers', label: 'Quản lý Khách Hàng', group: 'Kinh doanh', permission: 'customer.view', icon: 'M18 18.72a9.094 9.094 0 00-9 0m9 0a8.966 8.966 0 00-4.5-7.962m-4.5 7.962a8.966 8.966 0 01-4.5-7.962m0 0A5.25 5.25 0 0113.5 10.5m0 0v5.25m0 0v5.25m0 0A5.25 5.25 0 0113.5 10.5M6 6.75A5.25 5.25 0 0111.25 1.5m0 0A5.25 5.25 0 0116.5 6.75m-5.25 0v5.25m-5.25 0A5.25 5.25 0 0111.25 1.5', component: <CustomersContent /> },
+    { id: 'customer-360', path: '/customer-360', label: 'Chân dung Khách hàng', group: 'Kinh doanh', permission: 'customer.view', icon: 'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z', component: <Customer360Content /> },
+    { id: 'sales-orders', path: '/sales-orders', label: 'Đơn Bán Hàng', group: 'Kinh doanh', permission: 'sales.view', icon: 'M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.517l.288.756a3 3 0 01-.19 3.822L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366a3 3 0 01-1.096-3.822l.288-.756m11.356-1.517l-1.39 2.366a3 3 0 01-4.757 0L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366m11.356-1.517l.288.756a3 3 0 01-.19 3.822L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366', component: <SalesOrdersContent /> },
+    { id: 'purchase-orders', path: '/purchase-orders', label: 'Đơn Mua Hàng', group: 'Kinh doanh', permission: 'purchase.view', icon: 'M16.023 9.348h4.992v-.001a.75.75 0 01.588.826l-1.7 8.5A.75.75 0 0118.25 19H5.75a.75.75 0 01-.73-.725l-1.7-8.5A.75.75 0 013.988 9.35v-.001H9v2.25a.75.75 0 001.5 0V9.35h3.023v2.25a.75.75 0 001.5 0V9.35zM12 2.25c-2.485 0-4.5 2.015-4.5 4.5V9.35h9V6.75c0-2.485-2.015-4.5-4.5-4.5z', component: <PurchaseOrdersContent /> },
+    // { id: 'quotation-form', path: '/quotation-form', label: 'Tạo Báo giá Mới (Cũ)', group: 'Kinh doanh', permission: 'quotation.create', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationForm /> },
+    // { id: 'quotation-form-v2', path: '/quotations-v2/create', label: 'Tạo Báo giá Mới (Mới)', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationFormV2 /> },
+    // { id: 'quotation-list-v2', path: '/quotation-list-v2', label: 'Danh sách Báo giá (Mới)', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationListV2 /> },
+    { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationList /> },
+    
+    // --- [SỬA] ĐỔI PATH THÀNH /quotations/create ĐỂ KHỚP VỚI NÚT BẤM (VÀ THÊM ROUTE EDIT) ---
+    { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationFormNew /> },
+    
+    { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Kho vận', permission: 'inventory.view', icon: 'M3 12a9 9 0 0118 0v7.5a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 19.5V12zm1.5 6.75a.75.75 0 001.5 0v-5.25h13.5V18a.75.75 0 001.5 0V12H4.5v6.75zm1.5-1.5a.75.75 0 000-1.5h1.5a.75.75 0 000 1.5H6zM15 12.75a.75.75 0 000-1.5h3.75a.75.75 0 000 1.5H15z', component: <InventoriesContent /> },
+    { 
+        id: 'invoice-dashboard', 
+        path: '/invoice-dashboard', 
+        label: 'Dashboard Hóa đơn', 
+        group: 'Báo cáo', 
+        permission: 'invoice.view', 
+        icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z', 
+        component: <InvoiceDashboardPage /> 
+    },
+    { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Kho vận', permission: 'invoice.view', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m4.5-12h-8.25A2.25 2.25 0 009 6.75v10.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25V9.75A2.25 2.25 0 0018.75 7.5H15', component: <InvoicesContent /> },
+    { id: 'product-sync-management', path: '/product-sync', label: 'Đồng bộ Website QVC', group: 'Kho vận', permission: 'system.sync', icon: 'M18 10.5h.008v.008H18V10.5zm-3.375 7.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zM3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375M9 12h6.375M9 17.25h6.375', component: <ProductQvcContent /> },
+    { id: 'sales-analysis', path: '/sales-analysis', label: 'Phân tích Kinh doanh', group: 'Báo cáo', permission: 'report.sales', icon: 'M11.75 21a.75.75 0 01-.75-.75V3.75A.75.75 0 0111.75 3h.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75h-.5zm3.75-2.25a.75.75 0 01-.75-.75V7.5a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-.5zm3.75-4.5a.75.75 0 01-.75-.75V11.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM7.25 18.75a.75.75 0 01-.75-.75V15a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM3 16.5a.75.75 0 01-.75-.75V17.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v-1.5a.75.75 0 01-.75.75H3z', component: <SalesAnalysisContent /> },
+    { id: 'product-group-analysis', path: '/product-group-analysis', label: 'Phân tích Nhóm SP', group: 'Báo cáo', permission: 'report.product', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7m-13 0a3 3 0 106 0 3 3 0 00-6 0z', component: <ProductGroupAnalysisContent /> },
+    { id: 'partner-analysis', path: '/partner-analysis', label: 'Phân tích Đối tác', group: 'Báo cáo', permission: 'report.partner', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <PartnerAnalysisContent /> },
+    { id: 'debt-risk', path: '/debt-risk', label: 'Quản trị Rủi ro Công nợ', group: 'Báo cáo', permission: 'report.debt', icon: 'M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.002zM12 15.75h.007v.008H12v-.008z', component: <DebtRiskPage /> },
+    // { id: 'payable-risk', path: '/payable-risk', label: 'Phải Trả (NCC)', group: 'Báo cáo', permission: 'report.partner', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <PayableRiskPage /> },
+    { 
+        id: 'qr-history', 
+        path: '/qr-history', 
+        label: 'Lịch sử QR Code', 
+        group: 'Thanh toán', 
+        permission: 'sepay.viewall', 
+        icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', 
+        component: <QrHistoryPage /> 
+    },
+    { id: 'sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SepaySyncManager /> },
+    { id: 'sepay-admin', path: '/sepay-admin', label: 'Quản trị Dòng tiền', group: 'Thanh toán', permission: 'sepay.viewall', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <SepayDashboard /> },
+    { id: 'sepay-cashier', path: '/sepay-cashier', label: 'Thu ngân (QR Code)', group: 'Thanh toán', permission: 'sepay.create', icon: 'M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z', component: <SepayCashier /> },
+    {id: 'security-commander', 
+        path: '/security/commander', 
+        label: 'Trung tâm Chỉ huy (Sếp)', 
+        group: 'Hệ thống', 
+        permission: 'system.security', 
+        icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', 
+        component: <SecurityCommanderCenter />},
+    { 
+        id: 'user-role-manager', 
+        path: '/security/users', 
+        label: 'Quản lý Người dùng', 
+        group: 'Hệ thống', 
+        permission: 'system.security', 
+        icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', 
+        component: <UserRoleManager /> 
+    },
+    { id: 'security-dashboard', path: '/security/dashboard', label: 'Bảng điều khiển An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SecurityDashboard /> },
+    { id: 'permission-matrix', path: '/security/matrix', label: 'Ma trận Phân quyền', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <PermissionMatrix /> },
+    { id: 'role-manager', path: '/security/roles', label: 'Quản lý Vai trò', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <RoleManager /> },
+    { id: 'org-chart', path: '/security/org-chart', label: 'Sơ đồ Tổ chức (OrgChart)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <OrgChart /> },
+    { id: 'authorization-backbone', path: '/security/backbone', label: 'Quản trị Đa lớp (Backbone)', group: 'Hệ thống', permission: 'system.security', icon: 'M12 4.5v15m7.5-7.5h-15', component: <AuthorizationBackboneManager /> },
+    { id: 'definitions', path: '/security/definitions', label: 'Định nghĩa An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <Definitions /> },
+    { id: 'department-tree', path: '/department-tree', label: 'Quản lý Phòng ban', group: 'Hệ thống', permission: 'system.security', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', component: <DepartmentTreeManager /> },
+    { id: 'dictionary-management', path: '/dictionary', label: 'Quản lý Từ điển', group: 'Hệ thống', permission: 'system.dictionary', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-.75a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 017.5 4.125v.75a3.375 3.375 0 00-3.375 3.375H3.75a1.125 1.125 0 00-1.125 1.125v2.625c0 .621.504 1.125 1.125 1.125h1.5A3.375 3.375 0 007.5 16.5v.75a1.125 1.125 0 001.125 1.125h1.5a3.375 3.375 0 003.375-3.375v-.75a1.125 1.125 0 011.125-1.125h1.5c.621 0 1.125-.504 1.125-1.125zM10.5 12a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0z', component: <DictionaryManagementPage /> },
+   
+    // { 
+    //     id: 'unified-inventory-v2', 
+    //     path: '/inventory-v2', 
+    //     label: 'Điều hành Kho & Giá vốn V2', 
+    //     group: 'Kho vận', 
+    //     permission: 'inventory.view', 
+    //     icon: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z', 
+    //     component: <UnifiedInventoryDashboardV2 /> 
+    // },
+    { 
+        id: 'system-monitor-v2', 
+        path: '/system/monitor-v2', 
+        label: 'Giám sát & Vận hành V2.2', 
+        group: 'Hệ thống', 
+        permission: 'system.security', 
+        icon: 'M9 12.75L11.25 15 15 9.75m-3-10.5c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12 15.75h.007v.008H12v-.008z', 
+        component: <SystemMonitorPage /> 
+    },
+    { 
+        id: 'observer-dashboard', 
+        path: '/system/intelligence', 
+        label: 'Trung tâm Giám sát API(Live)', 
+        group: 'Hệ thống', 
+        permission: 'system.security', // Chỉ Admin hoặc IT mới thấy
+        icon: 'M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zm-1 5h2v6h-2V9zm0-4h2v2h-2V5z', // Icon Alert/Info
+        component: <SystemIntelligenceDashboard /> 
+    },
+    { 
+        id: 'monitor-config', 
+        path: '/system/monitor-config', 
+        label: 'Cấu hình Giám sát API', 
+        group: 'Hệ thống', 
+        permission: 'system.security', // Chỉ Admin
+        icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z', 
+        component: <MonitorServiceManager /> 
+    },
+    { 
+        id: 'unit-conversions', 
+        path: '/system/unit-conversions', 
+        label: 'Quy đổi Đơn vị tính', 
+        group: 'Hệ thống', 
+        permission: 'system.security', 
+        icon: 'M12 3v18m9-9H3m15.75 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z', 
+        component: <UnitConversionManager /> 
+    },
+    // { 
+    //     id: 'import-logs-v2', 
+    //     path: '/system/import-logs', 
+    //     label: 'Nhật ký Nạp liệu', 
+    //     group: 'Hệ thống', 
+    //     permission: 'system.security', 
+    //     icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-.75a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 017.5 4.125v.75a3.375 3.375 0 00-3.375 3.375H3.75a1.125 1.125 0 00-1.125 1.125v2.625c0 .621.504 1.125 1.125 1.125h1.5A3.375 3.375 0 007.5 16.5v.75a1.125 1.125 0 001.125 1.125h1.5a3.375 3.375 0 003.375-3.375v-.75a1.125 1.125 0 011.125-1.125h1.5c.621 0 1.125-.504 1.125-1.125z', 
+    //     component: <ImportLogViewer /> 
+    // },
+    { id: 'import-center', path: '/import-center', label: 'Trung tâm Nạp liệu', group: 'Hệ thống', permission: 'system.import', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <ImportManagement /> },
+    { 
+        id: 'mobile-screen-manager', 
+        path: '/system/mobile-screens', 
+        label: 'Quản lý App Mobile', 
+        group: 'Hệ thống', 
+        permission: 'system.security', // Dùng quyền cao nhất
+        icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', 
+        component: <MobileScreenManager /> 
+    },
+    {id:'mobileapp-builder', path:'/system/mobileapp-builder', label:'Xây dựng App Mobile', group:'Hệ thống', permission:'system.security', icon:'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component:<MobileAppBuilder />},
+
+];  
+
+const BASE_APP_TITLE = 'QuocVietCRM';
+
+const App = () => {
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [pageTitle, setPageTitle] = useState(BASE_APP_TITLE);
+    
+    // Hooks của Router
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Xác định view hiện tại dựa trên URL
+    // Ví dụ: đang ở /main/customers => activeRouteItem sẽ là cái có path='/customers'
+    // Router tự động bỏ phần /main ở đầu đi nhờ cái basename
+    const activeRouteItem = navItems.find(item => item.path === location.pathname) || navItems[0];
+    const currentViewId = activeRouteItem.id;
+
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarPinned, setIsSidebarPinned] = useState(true);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    const setAppTitle = useCallback((titleSuffix = '') => {
+        setPageTitle(titleSuffix ? `${titleSuffix} | ${BASE_APP_TITLE}` : BASE_APP_TITLE);
+    }, []);
+
+    useEffect(() => { document.title = pageTitle; }, [pageTitle]); 
+    useEffect(() => {
+        setAppTitle(activeRouteItem?.label);
+    }, [activeRouteItem, setAppTitle]);
+
+    // CHECK AUTH
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const response = await axios.get('/api/user');
+                setUser(response.data.user || response.data);
+            } catch (error) { setUser(null); } finally { setIsLoading(false); }
+        };
+        checkAuth();
+    }, []);
+
+    const onLogout = () => {
+        setUser(null);
+        navigate('/login'); 
+    };
+
+    const handleNavigate = (viewId) => {
+        const item = navItems.find(i => i.id === viewId);
+        if (item && item.path) {
+            navigate(item.path);
+        }
+    };
+
+    const MainLayout = ({ user, onLogout }) => {
+        const checkAccess = (requiredPerm, requiredPolicy = null) => {
+            if (!ENABLE_PERMISSION_CHECK) return true; 
+            if (!user) return false;
+            if (user.is_admin) return true; 
+            if (requiredPolicy && user.access_policies?.[requiredPolicy] === true) return false; 
+            if (!requiredPerm) return true; 
+            const myPerms = user.permissions || [];
+            return myPerms.includes('*') || myPerms.includes(requiredPerm);
+        };
+
+        return (
+            <div className={`flex h-screen overflow-hidden ${appConfig.theme.background.primary}`}>
+                <Sidebar
+                    navItems={navItems}
+                    currentViewId={currentViewId} 
+                    setCurrentViewId={handleNavigate}
+                    isSidebarOpen={isSidebarOpen}
+                    setIsSidebarOpen={setIsSidebarOpen}
+                    isSidebarPinned={isSidebarPinned}
+                    checkAccess={checkAccess}
+                />
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header
+                        user={user}
+                        onLogout={onLogout}
+                        currentView={activeRouteItem} 
+                        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                        isSidebarPinned={isSidebarPinned}
+                        onTogglePin={() => setIsSidebarPinned(!isSidebarPinned)}
+                        onSearchClick={() => setIsSearchOpen(true)}
+                    />
+                    <main className="flex-1 overflow-y-auto bg-gray-50 relative">
+                        <Routes>
+                            
+                            {/* QUAN TRỌNG: Mặc định redirect vào Dashboard */}
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                            
+                            {/* Map các trang */}
+                            {navItems.map(item => (
+                                <Route 
+                                    key={item.id} 
+                                    path={item.path} 
+                                    element={
+                                        checkAccess(item.permission) ? (
+                                            React.cloneElement(item.component, { 
+                                                setAppTitle, 
+                                                currentUser: user,
+                                                checkAccess 
+                                            })
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                                <h2 className="text-2xl font-bold">TỪ CHỐI TRUY CẬP</h2>
+                                                <button onClick={() => navigate('/dashboard')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded">Về trang chủ</button>
+                                            </div>
+                                        )
+                                    } 
+                                />
+                            ))}
+
+                            {/* --- [QUAN TRỌNG] THÊM ROUTE SỬA BÁO GIÁ VÀO ĐÂY --- */}
+                            <Route path="/quotations/edit/:id" element={<QuotationFormNew />} /> 
+                            {/* --------------------------------------------------- */}
+
+                            <Route path="/login" element={<Navigate to="/" />} />
+                            <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-400 font-bold text-2xl">404 - Trang không tồn tại</div>} />
+                        </Routes>
+                    </main>
+                </div>
+                <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} onNavigate={(id) => {handleNavigate(id); setIsSearchOpen(false);}} />
+            </div>
+        );
+    };
+
+    if (isLoading) return <div className="flex justify-center items-center h-screen"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+
+    return (
+        <Routes>
+            <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
+            <Route path="/*" element={user ? <MainLayout user={user} onLogout={onLogout} /> : <Navigate to="/login" />} />
+        </Routes>
+    );
+};
+
+export default App;

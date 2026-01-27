@@ -1,1 +1,126 @@
 @import "tailwindcss";
+
+/* Class này dùng để ẩn dropdown, nút bấm, ...
+  khi cửa sổ in của trình duyệt bật lên
+*/
+.print-hide {
+  display: block; /* Hiển thị bình thường */
+}
+/* Custom Scrollbar cho Sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+/* =============================================================
+  == THAY THẾ TOÀN BỘ KHỐI @media print BẰNG KHỐI NÀY ==
+  =============================================================
+*/
+@media print {
+  /* 1. ẨN CÁC PHẦN KHÔNG PHẢI MODAL (LOGIC MỚI) */
+
+  /* Ẩn Sidebar (dựa theo cấu trúc HTML của bạn) */
+  body #root > .flex > div:first-child {
+    display: none !important;
+  }
+
+  /* Ẩn Header */
+  body #root header {
+    display: none !important;
+  }
+
+  /* Ẩn tất cả các con của <main> KHÔNG PHẢI là modal */
+  /* (Điều này sẽ ẩn thanh filter và bảng dữ liệu chính) */
+  body #root main > :not(.print-preview-container) {
+    display: none !important;
+  }
+
+  /* 2. RESET MODAL ĐỂ IN (LOGIC MỚI) */
+
+  /* Đảm bảo các thẻ cha của modal được hiển thị */
+  body,
+  #root,
+  #root > .flex,
+  #root > .flex > .flex-1,
+  #root > .flex > .flex-1 > main {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Định dạng lại modal và nội dung bên trong nó để in */
+  .print-preview-container,
+  .print-preview-container * {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+    z-index: auto !important;
+    /* Reset màu và nền */
+    color: #000 !important;
+    background: #fff !important;
+  }
+  
+  /* 3. ÁP DỤNG CÁC QUY TẮC IN CŨ CỦA BẠN (GIỮ NGUYÊN) */
+
+  /* Ẩn thanh công cụ của modal (bạn đã làm đúng) */
+  .print-preview-container .print-hide {
+    display: none !important;
+  }
+
+  /* Fix table/grid/flex trong nội dung in */
+  .printable-sales-order table {
+    display: table !important;
+    width: 100% !important;
+  }
+  .printable-sales-order thead {
+    display: table-header-group !important;
+  }
+  .printable-sales-order tbody {
+    display: table-row-group !important;
+  }
+  .printable-sales-order tr {
+    display: table-row !important;
+  }
+  .printable-sales-order th,
+  .printable-sales-order td {
+    display: table-cell !important;
+  }
+  .printable-sales-order .grid,
+  .printable-sales-order .flex {
+    display: block !important;
+  }
+  /* Fix cho layout 2 cột (thông tin KH) */
+  .printable-sales-order .grid-cols-2 {
+    display: block !important;
+  }
+  .printable-sales-order .grid-cols-2 > div {
+    display: inline-block !important;
+    width: 49% !important; /* Dùng 49% để tránh lỗi tràn dòng */
+    vertical-align: top !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Cài đặt trang in */
+  @page {
+    margin: 0.5in;
+  }
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
