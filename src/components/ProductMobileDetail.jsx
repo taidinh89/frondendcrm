@@ -7,6 +7,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { metaApi } from '../api/admin/metaApi';
 import BrandSelectionModal from './BrandSelectionModal.jsx';
 import CategorySelectionModal from './CategorySelectionModal.jsx';
+import MediaManagerModal from './MediaManagerModal.jsx';
 
 
 // --- HIỆU ỨNG PHONG CÁCH TƯƠNG LAI ---
@@ -217,6 +218,138 @@ const ToggleField = ({ label, checked, onChange, color = "indigo" }) => {
     );
 };
 
+// --- HELPER RÚT GỌN TÊN SẢN PHẨM ---
+const getShortProName = (name) => {
+    if (!name) return "Product";
+    return name.split(' ').slice(0, 5).join(' ').replace(/[^a-zA-Z0-9- ]/g, '');
+};
+
+const RichTextEditor = ({ value, onChange, placeholder, proName, className }) => {
+    const quillRef = useRef(null);
+
+    const handleImageUpload = () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            const tid = toast.loading("Đang tải ảnh lên nội dung...");
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('temp_context', getShortProName(proName));
+                formData.append('source', 'rich_text_editor');
+
+                const res = await productApi.smartUpload(formData);
+                const url = res.data.url || res.data.image_url || res.data.displayUrl;
+
+                const quill = quillRef.current.getEditor();
+                const range = quill.getSelection();
+                quill.insertEmbed(range ? range.index : 0, 'image', url);
+                toast.success("Đã chèn ảnh!", { id: tid });
+            } catch (e) {
+                toast.error("Lỗi upload: " + (e.response?.data?.message || e.message), { id: tid });
+            }
+        };
+    };
+
+    const handleYoutubeEmbed = () => {
+        const url = prompt("Dán link YouTube (VD: https://www.youtube.com/watch?v=...):");
+        if (!url) return;
+
+        let videoId = '';
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+
+        if (match && match[2].length === 11) {
+            videoId = match[2];
+            const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            const quill = quillRef.current.getEditor();
+            const range = quill.getSelection();
+            quill.insertEmbed(range ? range.index : 0, 'video', embedUrl);
+        } else {
+            toast.error("Link YouTube không hợp lệ!");
+        }
+    };
+
+    // Xử lý PASTE ảnh trực tiếp vào Editor
+    useEffect(() => {
+        if (!quillRef.current) return;
+        const quill = quillRef.current.getEditor();
+
+        const handlePaste = async (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            let hasImage = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    hasImage = true;
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        e.preventDefault();
+                        e.stopPropagation(); // Ngăn chặn sự kiện nổi lên document global
+                        const tid = toast.loading("Đang xử lý ảnh dán...");
+                        try {
+                            const formData = new FormData();
+                            formData.append('image', file);
+                            formData.append('temp_context', getShortProName(proName));
+                            formData.append('source', 'rich_text_paste');
+
+                            const res = await productApi.smartUpload(formData);
+                            const url = res.data.url || res.data.image_url || res.data.displayUrl;
+
+                            const range = quill.getSelection();
+                            quill.insertEmbed(range ? range.index : 0, 'image', url);
+                            toast.success("Đã dán và tải ảnh thành công!", { id: tid });
+                        } catch (err) {
+                            toast.error("Lỗi dán ảnh: " + err.message, { id: tid });
+                        }
+                    }
+                }
+            }
+            // Nếu là dán link/text bình thường trong editor cũng nên stop để tránh global bắt
+            if (!hasImage && e.target.isContentEditable) {
+                // e.stopPropagation(); // Cân nhắc có nên stop text không, thường là có để focus đúng chỗ
+            }
+        };
+
+        quill.root.addEventListener('paste', handlePaste);
+        return () => quill.root.removeEventListener('paste', handlePaste);
+    }, [proName]);
+
+    const modules = useMemo(() => ({
+        toolbar: {
+            container: [
+                [{ 'header': [1, 2, 3, 4, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'image', 'video'],
+                ['clean']
+            ],
+            handlers: {
+                image: handleImageUpload,
+                video: handleYoutubeEmbed
+            }
+        }
+    }), [proName]);
+
+    return (
+        <ReactQuill
+            ref={quillRef}
+            theme="snow"
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            modules={modules}
+            className={className}
+        />
+    );
+};
+
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
@@ -246,6 +379,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     const [showUrlInput, setShowUrlInput] = useState(false);
     const [tempUploadedIds, setTempUploadedIds] = useState([]);
     const [standardContentSubTab, setStandardContentSubTab] = useState('summary');
+    const [fullEditor, setFullEditor] = useState({ open: false, type: 'description' });
+    const [isMediaManagerOpen, setIsMediaManagerOpen] = useState(false); // Placeholder cho Media Manager
 
     // Ensure Brand is Displayed Logic: If brandId exists but not in dictionary, fetch it
     useEffect(() => {
@@ -315,7 +450,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (!isOpen || (activeTab !== 'media' && activeTab !== 'common' && activeTab !== 'standard')) return;
 
         const handlePaste = async (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
             // A. Xử lý File (Screenshot, Copy Image)
             if (e.clipboardData.files.length > 0) {
@@ -432,10 +567,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             const formDataUpload = new FormData();
             formDataUpload.append('image', fileToUpload);
 
-            // Tạo context có tính random để tránh trùng lặp
-            const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-            const baseContext = formData.proName || 'Product Image';
-            formDataUpload.append('temp_context', `${baseContext} - ${randomSuffix}`);
+            // Gửi context tên SP để backend đặt tên file SEO
+            formDataUpload.append('temp_context', getShortProName(formData.proName));
             formDataUpload.append('source', 'mobile_form_unified');
 
             const res = await productApi.smartUpload(formDataUpload);
@@ -591,6 +724,27 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             toast.error("Lỗi: " + (e.response?.data?.message || e.message));
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async () => {
+        if (currentMode === 'create') {
+            setFormData(p => ({ ...p, isOn: !p.isOn }));
+            return;
+        }
+
+        const tid = toast.loading("Đang cập nhật trạng thái...");
+        try {
+            const res = await productApi.toggleStatus(currentId || product.id);
+            if (res.data.success) {
+                setFormData(prev => ({ ...prev, isOn: res.data.isOn }));
+                toast.success(res.data.message, { id: tid });
+                if (onRefresh) onRefresh();
+            } else {
+                toast.error(res.data.message || "Lỗi cập nhật", { id: tid });
+            }
+        } catch (e) {
+            toast.error("Lỗi: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
@@ -976,7 +1130,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[1.75rem]">
                                         <span className="text-xs font-black text-gray-600">HIỂN THỊ WEB</span>
                                         <button
-                                            onClick={() => setFormData(p => ({ ...p, isOn: !p.isOn }))}
+                                            onClick={handleToggleStatus}
                                             className={`relative w-14 h-7 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-green-500 shadow-lg shadow-green-100' : 'bg-gray-200'}`}
                                         >
                                             <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm ${formData.isOn ? 'translate-x-7' : 'translate-x-0'}`} />
@@ -1063,16 +1217,36 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 overflow-hidden shadow-sm">
                                     <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mô tả sản phẩm (Description)</label>
-                                        <span className="text-[8px] font-bold text-indigo-400 uppercase">Hỗ trợ định dạng Rich Text</span>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setFullEditor({ open: true, type: 'description' })} className="p-1.5 text-indigo-500 hover:bg-white rounded-lg transition-colors">
+                                                <Icon name="maximize" className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[8px] font-bold text-indigo-400 uppercase">Hỗ trợ Paste & Youtube</span>
+                                        </div>
                                     </div>
-                                    <ReactQuill theme="snow" value={formData.description} onChange={v => setFormData(p => ({ ...p, description: v }))} className="bg-white quill-mobile" />
+                                    <RichTextEditor
+                                        value={formData.description}
+                                        onChange={v => setFormData(p => ({ ...p, description: v }))}
+                                        proName={formData.proName}
+                                        className="bg-white quill-mobile"
+                                    />
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 overflow-hidden shadow-sm">
                                     <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thông số kỹ thuật chi tiết (SPEC)</label>
-                                        <span className="text-[8px] font-bold text-gray-400 uppercase">Bảng biểu, danh sách Kỹ thuật</span>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setFullEditor({ open: true, type: 'spec' })} className="p-1.5 text-gray-400 hover:bg-white rounded-lg transition-colors">
+                                                <Icon name="maximize" className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[8px] font-bold text-gray-400 uppercase">Bảng biểu, Youtube</span>
+                                        </div>
                                     </div>
-                                    <ReactQuill theme="snow" value={formData.spec} onChange={v => setFormData(p => ({ ...p, spec: v }))} className="bg-white quill-mobile" />
+                                    <RichTextEditor
+                                        value={formData.spec}
+                                        onChange={v => setFormData(p => ({ ...p, spec: v }))}
+                                        proName={formData.proName}
+                                        className="bg-white quill-mobile"
+                                    />
                                 </div>
                             </div>
                             <style>{`
@@ -1460,6 +1634,23 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
                                         <Icon name="file-text" className="text-slate-400 w-5 h-5" />
                                         <h2 className="font-bold text-slate-700 uppercase tracking-wider text-xs">Nội dung sản phẩm</h2>
+                                        <div className="ml-auto flex items-center gap-2">
+                                            <button
+                                                onClick={() => setIsMediaManagerOpen(true)}
+                                                className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100"
+                                            >
+                                                <Icon name="image" className="w-3.5 h-3.5 inline mr-1" /> Media Manager
+                                            </button>
+                                            {standardContentSubTab !== 'summary' && (
+                                                <button
+                                                    onClick={() => setFullEditor({ open: true, type: standardContentSubTab })}
+                                                    className="p-1.5 text-slate-400 hover:bg-white rounded-lg transition-colors border border-slate-200"
+                                                    title="Mở rộng trình soạn thảo"
+                                                >
+                                                    <Icon name="maximize" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="p-6 space-y-5">
                                         <div className="flex gap-4 border-b border-slate-100 overflow-x-auto no-scrollbar">
@@ -1489,10 +1680,10 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     placeholder="Nhập tóm tắt đặc điểm nổi bật của sản phẩm..."
                                                 ></textarea>
                                             ) : (
-                                                <ReactQuill
-                                                    theme="snow"
+                                                <RichTextEditor
                                                     value={standardContentSubTab === 'description' ? formData.description : formData.spec}
                                                     onChange={v => setFormData(p => ({ ...p, [standardContentSubTab]: v }))}
+                                                    proName={formData.proName}
                                                     className="bg-white standard-quill-editor"
                                                 />
                                             )}
@@ -1670,7 +1861,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     <div className="flex items-center justify-between bg-slate-50 p-5 rounded-2xl border border-slate-100 group hover:border-blue-100 hover:bg-blue-50/10 transition-all">
                                         <span className="text-xs font-black text-slate-600 uppercase tracking-widest">Hiển thị Web</span>
                                         <button
-                                            onClick={() => setFormData(p => ({ ...p, isOn: !p.isOn }))}
+                                            onClick={handleToggleStatus}
                                             className={`relative w-12 h-6 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-emerald-500 shadow-lg shadow-emerald-100' : 'bg-slate-200'}`}
                                         >
                                             <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isOn ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -1841,6 +2032,77 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     })}
                     selectedId={formData.catId}
                     multiple={true}
+                />
+
+                {/* MODAL TRÌNH SOẠN THẢO RỘNG */}
+                <Modal
+                    isOpen={fullEditor.open}
+                    onClose={() => setFullEditor(p => ({ ...p, open: false }))}
+                    isFullScreen={true}
+                    title={
+                        <div className="flex items-center gap-3">
+                            <Icon name="file-text" className="w-5 h-5 text-indigo-500" />
+                            <span className="uppercase tracking-widest font-black text-sm">
+                                CHỈNH SỬA {fullEditor.type === 'description' ? 'MÔ TẢ CHI TIẾT' : 'THÔNG SỐ KỸ THUẬT'}
+                            </span>
+                        </div>
+                    }
+                >
+                    <div className="h-full flex flex-col p-4 md:p-10 bg-gray-50">
+                        <div className="bg-white rounded-3xl shadow-2xl border flex-1 overflow-hidden flex flex-col">
+                            <RichTextEditor
+                                value={formData[fullEditor.type]}
+                                onChange={v => setFormData(p => ({ ...p, [fullEditor.type]: v }))}
+                                proName={formData.proName}
+                                className="flex-1 full-screen-quill"
+                            />
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setFullEditor(p => ({ ...p, open: false }))}
+                                className="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all active:scale-95"
+                            >
+                                XONG & QUAY LẠI
+                            </button>
+                        </div>
+                        <style>{`
+                            .full-screen-quill { display: flex; flex-direction: column; height: 100%; border: none !important; }
+                            .full-screen-quill .ql-toolbar { border:none !important; border-bottom:1px solid #f1f5f9 !important; background:#f8fafc; padding:15px !important; }
+                            .full-screen-quill .ql-container { border:none !important; flex: 1; overflow-y: auto; font-size: 16px; }
+                            .full-screen-quill .ql-editor { padding: 40px; line-height: 1.8; min-height: 100%; }
+                        `}</style>
+                    </div>
+                </Modal>
+
+                {/* MODAL MEDIA MANAGER CHÍNH THỨC */}
+                <MediaManagerModal
+                    isOpen={isMediaManagerOpen}
+                    onClose={() => setIsMediaManagerOpen(false)}
+                    multiple={true}
+                    onSelect={(items) => {
+                        const newFiles = Array.isArray(items) ? items : [items];
+
+                        // 1. Thêm ID vào danh sách chờ gán (để backend sync khi bấm SAVE)
+                        setTempUploadedIds(prev => [...prev, ...newFiles.map(f => f.id)]);
+
+                        // 2. Cập nhật UI list ảnh ngay lập tức
+                        setFullImages(prev => {
+                            // Tránh trùng lặp nếu user chọn đi chọn lại 1 ảnh
+                            const existingIds = prev.map(img => img.id);
+                            const filteredNew = newFiles
+                                .filter(f => !existingIds.includes(f.id))
+                                .map(f => ({
+                                    id: f.id,
+                                    url: f.url || f.displayUrl || f.preview_url,
+                                    displayUrl: f.url || f.displayUrl || f.preview_url,
+                                    is_temp: true, // Mark to show save is needed
+                                    name: f.original_name
+                                }));
+                            return [...prev, ...filteredNew];
+                        });
+
+                        toast.success(`Đã lấy ${newFiles.length} file từ kho!`);
+                    }}
                 />
             </div>
         </Modal >

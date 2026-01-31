@@ -36,7 +36,14 @@ export const productApi = {
     // 7. Xóa sản phẩm bộ (Web + CRM)
     delete: (id) => axios.delete(`${BASE_URL}/${id}`),
 
+    // 8. Bật/tắt trạng thái hiển thị web
+    toggleStatus: (id) => axios.post(`${BASE_URL}/${id}/toggle-status`),
+
     smartUpload: (formData) => axios.post('/api/v1/media/smart-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+
+    // 9. Lấy danh mục & Thương hiệu
+    getCategories: (params) => axios.get(`${BASE_URL}/categories`, { params }),
+    getBrands: () => axios.get(`${BASE_URL}/brands`),
 };
