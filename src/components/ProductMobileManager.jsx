@@ -90,6 +90,7 @@ const ProductMobileManager = () => {
         flags: [], // hot, new, best, sale, student, installment
         price_min: '',
         price_max: '',
+        modified_by: '',
         sort_by: 'id',
         sort_direction: 'desc'
     });
@@ -133,6 +134,7 @@ const ProductMobileManager = () => {
                 flags: filters.flags.length > 0 ? filters.flags.join(',') : undefined,
                 price_min: filters.price_min || undefined,
                 price_max: filters.price_max || undefined,
+                modified_by: filters.modified_by || undefined,
                 sort_by: filters.sort_by,
                 sort_direction: filters.sort_direction,
                 page: currentPage,
@@ -183,7 +185,7 @@ const ProductMobileManager = () => {
             fetchProducts(true);
         }, 400);
         return () => clearTimeout(timer);
-    }, [search, filters.is_on, filters.stock_status, filters.category_id, filters.brand_id, filters.has_image, filters.has_promotion, filters.flags, filters.sort_by, filters.sort_direction]);
+    }, [search, filters.is_on, filters.stock_status, filters.category_id, filters.brand_id, filters.has_image, filters.has_promotion, filters.flags, filters.sort_by, filters.sort_direction, filters.modified_by]);
 
     const handleQuickUpdate = async (product, field, value) => {
         try {
@@ -301,6 +303,9 @@ const ProductMobileManager = () => {
                     {filters.brand_id && (
                         <Chip label={`Hãng: ${meta.brands.find(b => b.code === filters.brand_id)?.name || '...'}`} onClear={() => setFilters(p => ({ ...p, brand_id: '' }))} />
                     )}
+                    {filters.modified_by && (
+                        <Chip label={`Editor: ${stats?.editors?.find(e => String(e.id) === String(filters.modified_by))?.name || '...'}`} onClear={() => setFilters(p => ({ ...p, modified_by: '' }))} />
+                    )}
                     {filters.flags.map(f => (
                         <Chip key={f} label={`Tag: ${f.toUpperCase()}`} onClear={() => toggleFlag(f)} />
                     ))}
@@ -410,14 +415,13 @@ const ProductMobileManager = () => {
 
                                 {/* Row 4: Timestamps & Footer */}
                                 <div className="pt-2 mt-1 border-t border-dashed border-gray-100 flex items-center justify-between">
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-4">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] text-gray-400 font-medium">Cập nhật:</span>
-                                            <span className="text-[10px] text-gray-600 font-semibold">{p.updated_at ? new Date(p.updated_at).toLocaleDateString('vi-VN') : '--'}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] text-indigo-400 font-medium">Đồng bộ:</span>
-                                            <span className="text-[10px] text-indigo-600 font-semibold">{p.last_synced_from_live ? new Date(p.last_synced_from_live).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Sửa bởi</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[10px] text-indigo-700 font-black">{p.last_modified?.by || 'System'}</span>
+                                                <span className="text-[9px] text-gray-400 font-medium">{p.last_modified?.time || '--'}</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -427,13 +431,16 @@ const ProductMobileManager = () => {
                                             <span className="text-[10px] font-bold">{p.view_count || 0}</span>
                                         </div>
                                         <div className="w-[1px] h-3 bg-gray-200"></div>
-                                        {p.needs_sync ? (
-                                            <span className="bg-rose-50 text-rose-600 text-[9px] font-bold px-2 py-0.5 rounded animate-pulse border border-rose-100">CƠN ĐỒNG BỘ</span>
-                                        ) : (
-                                            <span className="bg-blue-50 text-blue-600 text-[9px] font-bold px-2 py-0.5 rounded border border-blue-100 flex items-center gap-1">
-                                                <Icon name="check" className="w-2.5 h-2.5" /> SYNC
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">Sync</span>
+                                            {p.needs_sync ? (
+                                                <span className="text-rose-600 text-[9px] font-black animate-pulse">CẦN ĐỒNG BỘ</span>
+                                            ) : (
+                                                <span className="text-blue-600 text-[9px] font-black flex items-center gap-0.5">
+                                                    <Icon name="check" className="w-2 h-2" /> OK
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -478,8 +485,8 @@ const ProductMobileManager = () => {
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
                                         { label: 'Mới nhất', k: 'id', d: 'desc' },
+                                        { label: 'Vừa sửa xong', k: 'updated_at', d: 'desc' },
                                         { label: 'Giá thấp-cao', k: 'price', d: 'asc' },
-                                        { label: 'Giá cao-thấp', k: 'price', d: 'desc' },
                                         { label: 'Kho nhiều nhất', k: 'quantity', d: 'desc' },
                                     ].map(s => (
                                         <button
@@ -540,6 +547,17 @@ const ProductMobileManager = () => {
                                     >
                                         <option value="">Tất cả hãng</option>
                                         {meta.brands.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Người sửa cuối</label>
+                                    <select
+                                        className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold outline-none focus:bg-white focus:border-indigo-500 transition-all font-black text-indigo-600"
+                                        value={filters.modified_by}
+                                        onChange={e => setFilters(p => ({ ...p, modified_by: e.target.value }))}
+                                    >
+                                        <option value="">Tất cả quản trị viên</option>
+                                        {stats?.editors?.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -688,6 +706,7 @@ const isFilterActive = (f) => {
         f.price_min !== '' ||
         f.price_max !== '' ||
         f.sort_by !== 'id' ||
+        f.modified_by !== '' ||
         f.is_on !== 'ALL' ||
         f.stock_status !== 'ALL'
     );

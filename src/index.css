@@ -124,3 +124,36 @@
     padding: 0 !important;
   }
 }
+
+/* --- MEDIA STUDIO UTILS --- */
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar-dark::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.custom-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+.custom-scrollbar-dark:hover::-webkit-scrollbar-thumb {
+  background: #475569;
+}

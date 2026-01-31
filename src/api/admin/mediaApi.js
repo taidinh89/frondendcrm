@@ -42,5 +42,10 @@ export const mediaApi = {
     // 8. Kích hoạt đồng bộ từ nguồn QVC
     syncFromSource: () => {
         return axios.post(`${BASE_URL}/sync-source`);
+    },
+
+    // 9. Media Studio (Áp hiệu ứng, khung, watermark)
+    applyEffect: (data) => {
+        return axios.post(`${BASE_URL}/apply-effect`, data);
     }
 };

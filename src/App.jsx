@@ -55,6 +55,8 @@ import { QuotationFormNew } from './pages/QuotationFormNew';
 import MobileScreenManager from './pages/Admin/MobileScreenManager';
 import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
 import MediaLibrary from './pages/Admin/MediaLibrary.jsx';
+import MediaStudioPage from './pages/Admin/MediaStudioPage.jsx';
+
 import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
 import MonitorServiceManager from './pages/MonitorServiceManager.jsx';
 import { ProductStandardization } from './pages/ProductStandardization.jsx';
@@ -95,6 +97,27 @@ const navItems = [
     { id: 'category-nextgen', path: '/categories-nextgen', label: 'Danh mục (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', component: <CategoryManager /> },
     { id: 'brand-nextgen', path: '/brands-nextgen', label: 'Thương hiệu (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M9 12l2 2 4-4M7.835 4.697a.75.75 0 001.034-.23 6.75 6.75 0 0111.262 0 .75.75 0 001.034.23 8.25 8.25 0 00-13.33 0zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z', component: <BrandManager /> },
     { id: 'product-mapping-global', path: '/product-mapping/:id', label: 'Cấu hình Mapping', group: 'Web', permission: 'system.sync', icon: 'M12 4.5v15m7.5-7.5h-15', component: <ProductMappingManager /> },
+
+    // --- NHÓM MEDIA (DƯỚI WEB) ---
+    {
+        id: 'media-library',
+        path: '/system/media',
+        label: 'Kho Media (Ảnh)',
+        group: 'Media',
+        permission: 'system.security',
+        icon: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z',
+        component: <MediaLibrary />
+    },
+    {
+        id: 'media-studio-page',
+        path: '/system/media-studio',
+        label: 'Media Studio (Chế ảnh)',
+        group: 'Media',
+        permission: 'system.security',
+        icon: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z',
+        component: <MediaStudioPage />
+    },
+
     { id: 'sales-analysis', path: '/sales-analysis', label: 'Phân tích Kinh doanh', group: 'Báo cáo', permission: 'report.sales', icon: 'M11.75 21a.75.75 0 01-.75-.75V3.75A.75.75 0 0111.75 3h.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75h-.5zm3.75-2.25a.75.75 0 01-.75-.75V7.5a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-.5zm3.75-4.5a.75.75 0 01-.75-.75V11.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM7.25 18.75a.75.75 0 01-.75-.75V15a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM3 16.5a.75.75 0 01-.75-.75V17.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v-1.5a.75.75 0 01-.75.75H3z', component: <SalesAnalysisContent /> },
     { id: 'product-group-analysis', path: '/product-group-analysis', label: 'Phân tích Nhóm SP', group: 'Báo cáo', permission: 'report.product', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7m-13 0a3 3 0 106 0 3 3 0 00-6 0z', component: <ProductGroupAnalysisContent /> },
     { id: 'partner-analysis', path: '/partner-analysis', label: 'Phân tích Đối tác', group: 'Báo cáo', permission: 'report.partner', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <PartnerAnalysisContent /> },
@@ -168,7 +191,7 @@ const navItems = [
         component: <MobileScreenManager />
     },
     { id: 'mobileapp-builder', path: '/system/mobileapp-builder', label: 'Xây dựng App Mobile', group: 'Hệ thống', permission: 'system.security', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <MobileAppBuilder /> },
-    { id: 'media-library', path: '/system/media', label: 'Kho Media (Ảnh)', group: 'Hệ thống', permission: 'system.security', icon: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z', component: <MediaLibrary /> },
+
 ];
 
 const BASE_APP_TITLE = 'QuocVietCRM';

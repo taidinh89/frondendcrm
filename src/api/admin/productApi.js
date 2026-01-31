@@ -43,6 +43,14 @@ export const productApi = {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
 
+    processWordContent: (prodId, data) => axios.post(`${BASE_URL}/${prodId}/media/word-process`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
+    importDocx: (prodId, formData) => axios.post(`${BASE_URL}/${prodId}/media/import-docx`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
     // 9. Lấy danh mục & Thương hiệu
     getCategories: (params) => axios.get(`${BASE_URL}/categories`, { params }),
     getBrands: () => axios.get(`${BASE_URL}/brands`),
