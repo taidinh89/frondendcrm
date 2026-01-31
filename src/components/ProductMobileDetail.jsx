@@ -20,9 +20,9 @@ const SectionHeader = ({ title, icon, color = "blue" }) => {
         red: "text-red-600 bg-red-50 border-red-100"
     };
     return (
-        <div className={`flex items-center gap-3 p-4 rounded-3xl border-2 mb-6 ${colors[color] || colors.blue}`}>
-            <Icon name={icon} className="w-5 h-5" />
-            <h3 className="text-sm font-black uppercase tracking-widest">{title}</h3>
+        <div className={`flex items-center gap-2 p-2 px-4 rounded-2xl border mb-4 ${colors[color] || colors.blue}`}>
+            <Icon name={icon} className="w-4 h-4" />
+            <h3 className="text-[11px] font-black uppercase tracking-widest">{title}</h3>
         </div>
     );
 };
@@ -53,11 +53,11 @@ const FormField = ({ label, name, value, onChange, type = "text", placeholder, o
     }, [value, options]);
 
     return (
-        <div className="space-y-2 w-full group relative" ref={ref}>
+        <div className="space-y-1.5 w-full group relative" ref={ref}>
             <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em] group-focus-within:text-indigo-600 transition-colors">{label}</label>
+                <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.1em] group-focus-within:text-indigo-600 transition-colors">{label}</label>
                 {type === 'select' && onManage && (
-                    <button type="button" onClick={onManage} className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline transition-all uppercase">Quản lý</button>
+                    <button type="button" onClick={onManage} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline transition-all uppercase">Quản lý</button>
                 )}
             </div>
 
@@ -1814,6 +1814,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
     const [brandManager, setBrandManager] = useState({ open: false, mode: 'list', selected: null });
     const [catManager, setCatManager] = useState({ open: false, mode: 'list', selected: null });
+    const [previewImage, setPreviewImage] = useState(null); // State for Image Lightbox Preview
 
     if (isLoading) return (
         <Modal isOpen={isOpen} onClose={onClose} isFullScreen={true} title="Đang tải...">
@@ -1830,11 +1831,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             onClose={onClose}
             isFullScreen={true}
             title={
-                <div className="flex items-center justify-between w-full pr-8">
-                    <div className="flex-1 max-w-4xl">
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
+                <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex-1 max-w-4xl py-1">
+                        <div className="flex items-center gap-2 text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5">
                             <span>Sản phẩm</span>
-                            <Icon name="chevronRight" className="w-2.5 h-2.5" />
+                            <Icon name="chevronRight" className="w-2 h-2" />
                             <span className="text-indigo-600">#{product?.id || 'NEW'}</span>
                             {formData.storeSKU && (
                                 <>
@@ -1847,68 +1848,63 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             type="text"
                             value={formData.proName}
                             onChange={(e) => setFormData(p => ({ ...p, proName: e.target.value }))}
-                            className="text-lg md:text-xl font-black text-gray-900 bg-transparent border-none focus:ring-0 p-0 w-full placeholder-gray-300"
+                            className="text-base md:text-lg font-black text-gray-900 bg-transparent border-none focus:ring-0 p-0 w-full placeholder-gray-300"
                             placeholder="Nhập tên sản phẩm..."
                         />
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         {formData.request_path && (
-                            <a
-                                href={`https://qvc.vn${formData.request_path}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="h-12 px-6 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center gap-2 shadow-sm border border-blue-100 transition-all active:scale-90"
-                            >
-                                <Icon name="external-link" className="w-5 h-5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">XEM TRÊN QVC</span>
+                            <a href={`https://qvc.vn${formData.request_path}`} target="_blank" className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all">
+                                <Icon name="external-link" className="w-3 h-3" /> XEM TRÊN QVC
                             </a>
                         )}
                         {mode === 'edit' && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteProduct(); }}
-                                disabled={isSaving}
-                                className="h-12 px-6 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center gap-2 shadow-sm border border-rose-100 transition-all active:scale-90"
-                                title="Xóa sản phẩm"
-                            >
-                                <Icon name="trash" className="w-5 h-5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">XÓA SẢN PHẨM</span>
+                            <button onClick={handleDeleteProduct} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all">
+                                <Icon name="trash" className="w-3 h-3" /> XÓA SẢN PHẨM
                             </button>
                         )}
                     </div>
                 </div>
             }
+            footer={
+                <div className="flex items-center gap-2 w-full">
+                    <Button variant="ghost" onClick={onClose} className="flex-1 h-10 text-[10px] font-black uppercase tracking-widest">Đóng</Button>
+                    <Button variant="secondary" onClick={() => handleSave(false)} disabled={isSaving} className="flex-1 h-10 text-[10px] font-black border-indigo-600 text-indigo-600 uppercase tracking-widest bg-white">Lưu ngay</Button>
+                    <Button variant="primary" onClick={() => handleSave(true)} disabled={isSaving} className="flex-[2] h-10 text-[10px] font-black bg-indigo-600 uppercase tracking-widest">
+                        <Icon name="check" className="w-3.5 h-3.5 mr-2" /> Lưu & Đóng
+                    </Button>
+                </div>
+            }
         >
-            <div className="h-full flex flex-col bg-[#fcfdfe]">
-                {/* Fixed Tabs Navigation */}
-                <div className="flex overflow-x-auto no-scrollbar bg-white/90 backdrop-blur-md border-b sticky top-0 z-[60] px-4 pt-2">
-                    {tabs.map(t => (
+            <div className="h-full flex flex-col -m-2">
+                {/* Fixed Top Tab Bar */}
+                <div className="sticky top-0 z-[50] bg-white border-b px-2 shadow-sm overflow-x-auto no-scrollbar flex items-center justify-around md:justify-start gap-1 py-1">
+                    {tabs.map(tab => (
                         <button
-                            key={t.id}
-                            onClick={() => {
-                                console.log("[TAB_DEBUG] Switching to:", t.id);
-                                setActiveTab(t.id);
-                            }}
-                            className={`flex-shrink-0 px-6 py-4 text-xs font-black transition-all border-b-4 uppercase tracking-widest ${activeTab === t.id ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50 rounded-t-2xl' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-50'}`}
                         >
-                            {t.label}
+                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="sm:hidden">{tab.label.split(' ').pop()}</span>
                         </button>
                     ))}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-40 max-w-7xl mx-auto w-full">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
                     {activeTab === 'common' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fadeIn">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
 
                             {/* LEFT: MAIN FORM */}
-                            <div className="lg:col-span-8 space-y-8 pb-[400px]">
+                            <div className="lg:col-span-8 space-y-6">
 
                                 {/* Card 1: Identities */}
-                                <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm p-8 space-y-8">
-                                    <div className="flex items-center gap-3 border-b border-gray-50 pb-5">
-                                        <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                            <Icon name="tag" className="w-5 h-5" />
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-6">
+                                    <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
+                                        <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <Icon name="tag" className="w-4 h-4" />
                                         </div>
-                                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Định danh & Phân loại</h3>
+                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Định danh & Phân loại</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-6">
@@ -1958,31 +1954,39 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 </div>
 
                                 {/* Card 2: Sales Info */}
-                                <div className="bg-white rounded-[2.5rem] border-2 border-green-100/50 shadow-sm p-8 relative overflow-hidden space-y-8">
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
-                                    <div className="flex items-center gap-3 border-b border-gray-50 pb-5">
-                                        <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
-                                            <Icon name="tag" className="w-5 h-5" />
+                                <div className="bg-white rounded-2xl border border-green-100/50 shadow-sm p-5 relative overflow-hidden space-y-6">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500"></div>
+                                    <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
+                                        <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                                            <Icon name="tag" className="w-4 h-4" />
                                         </div>
-                                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Thông tin bán hàng</h3>
+                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Thông tin bán hàng</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-8">
                                         <div>
-                                            <div className="flex items-center justify-between mb-2 px-2">
-                                                <label className="text-xs font-black text-gray-900 uppercase tracking-widest">Giá bán Website (Niêm yết)</label>
-                                                <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase">Đang hiển thị</span>
-                                            </div>
-                                            <div className="relative group">
-                                                <input
-                                                    type="number"
-                                                    value={formData.price}
-                                                    onChange={e => setFormData(p => ({ ...p, price: e.target.value }))}
-                                                    className="w-full bg-white border-4 border-gray-100 rounded-[1.75rem] py-5 px-6 text-3xl font-black text-gray-900 focus:border-green-500 focus:ring-8 focus:ring-green-50 transition-all outline-none pr-20"
-                                                />
-                                                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 font-black text-xl">VNĐ</span>
-                                            </div>
-                                            <div className="mt-4 flex flex-wrap gap-6 px-4">
+                                            <div>
+                                                <div className="bg-green-50/50 rounded-2xl p-4 border border-green-100 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-xs font-black text-green-800 uppercase tracking-widest">Giá bán Website</label>
+                                                        <div className="text-right">
+                                                            <span className="text-2xl font-black text-green-600 block leading-none">
+                                                                {new Intl.NumberFormat('vi-VN').format(formData.price || 0)}
+                                                                <span className="text-xs text-green-400 ml-1">₫</span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={formData.price}
+                                                        onChange={e => setFormData(p => ({ ...p, price: e.target.value }))}
+                                                        className="w-full bg-white border border-green-200 rounded-xl py-3 px-4 text-lg font-bold font-mono text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all outline-none placeholder:text-gray-300"
+                                                        placeholder="Nhập giá bán..."
+                                                    />
+                                                    <div className="flex justify-end">
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Nếu bằng 0 sẽ hiện "Liên hệ"</span>
+                                                    </div>
+                                                </div>
                                                 {[
                                                     { v: 0, l: 'Không hiển thị VAT' },
                                                     { v: 1, l: 'Đã có VAT' },
@@ -2003,31 +2007,52 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
-                                            <FormField
-                                                label="Giá thị trường (Gạch ngang)"
-                                                type="number"
-                                                value={formData.market_price}
-                                                onChange={v => setFormData(p => ({ ...p, market_price: v }))}
-                                            />
-                                            <FormField
-                                                label="Giá nhập hàng (Vốn)"
-                                                type="number"
-                                                value={formData.purchase_price_web}
-                                                onChange={v => setFormData(p => ({ ...p, purchase_price_web: v }))}
-                                            />
+                                            {/* Giá thị trường */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between items-end px-1">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Giá thị trường (Gạch ngang)</label>
+                                                    <span className="text-xs font-black text-gray-400 font-mono">
+                                                        {new Intl.NumberFormat('vi-VN').format(formData.market_price || 0)} ₫
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    value={formData.market_price}
+                                                    onChange={e => setFormData(p => ({ ...p, market_price: e.target.value }))}
+                                                    className="w-full p-3 bg-white border-2 border-gray-100 rounded-xl text-sm font-bold font-mono text-gray-900 focus:border-indigo-500 transition-all outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+
+                                            {/* Giá nhập */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between items-end px-1">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Giá nhập hàng (Vốn)</label>
+                                                    <span className="text-xs font-black text-gray-400 font-mono">
+                                                        {new Intl.NumberFormat('vi-VN').format(formData.purchase_price_web || 0)} ₫
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    value={formData.purchase_price_web}
+                                                    onChange={e => setFormData(p => ({ ...p, purchase_price_web: e.target.value }))}
+                                                    className="w-full p-3 bg-white border-2 border-gray-100 rounded-xl text-sm font-bold font-mono text-gray-900 focus:border-indigo-500 transition-all outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest px-2">Inventory (Tồn kho Web)</label>
-                                                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-3xl border-2 border-transparent focus-within:border-indigo-100 focus-within:bg-white transition-all">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest px-1">Inventory (Tồn kho Web)</label>
+                                                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border focus-within:border-indigo-100 focus-within:bg-white transition-all">
                                                     <input
                                                         type="number"
                                                         value={formData.quantity}
                                                         onChange={e => setFormData(p => ({ ...p, quantity: e.target.value }))}
-                                                        className="w-24 bg-transparent text-xl font-black text-indigo-600 outline-none"
+                                                        className="w-20 bg-transparent text-lg font-black text-indigo-600 outline-none"
                                                     />
-                                                    <span className="text-xs font-bold text-gray-400 uppercase">Sản phẩm có sẵn</span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Sản phẩm có sẵn</span>
                                                 </div>
                                             </div>
                                             <FormField
@@ -2042,18 +2067,18 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             </div>
 
                             {/* RIGHT: SIDEBAR */}
-                            <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-4">
+                            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-[50px]">
 
                                 {/* Status Card */}
-                                <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 shadow-sm p-6 space-y-5">
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Trạng thái vận hành</h3>
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[1.75rem]">
-                                        <span className="text-xs font-black text-gray-600">HIỂN THỊ WEB</span>
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                                    <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-3">Trạng thái vận hành</h3>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                        <span className="text-[10px] font-black text-gray-600">HIỂN THỊ WEB</span>
                                         <button
                                             onClick={handleToggleStatus}
-                                            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-green-500 shadow-lg shadow-green-100' : 'bg-gray-200'}`}
+                                            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-green-500' : 'bg-gray-200'}`}
                                         >
-                                            <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm ${formData.isOn ? 'translate-x-7' : 'translate-x-0'}`} />
+                                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm ${formData.isOn ? 'translate-x-6' : 'translate-x-0'}`} />
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
@@ -2458,7 +2483,111 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                 </div>
 
-                                {/* 2. THƯ VIỆN HÌNH ẢNH (ĐÃ NÂNG CẤP UPLOAD) */}
+                                {/* 2. NỘI DUNG CHI TIẾT */}
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-sm scroll-target-content">
+                                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                                        <Icon name="file-text" className="text-slate-400 w-4 h-4" />
+                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Nội dung sản phẩm</h2>
+                                        <div className="ml-auto flex items-center gap-2">
+                                            {/* --- EDITOR TOOLS (COPY FROM GALLERY STYLE) --- */}
+                                            {standardContentSubTab !== 'summary' && (
+                                                <div className="flex items-center gap-2">
+                                                    {/* 1. Chọn từ kho */}
+                                                    <button
+                                                        onClick={() => {
+                                                            setMediaManagerMode('editor');
+                                                            setIsMediaManagerOpen(true);
+                                                        }}
+                                                        className="h-8 px-3 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1.5"
+                                                        title="Chèn từ kho ảnh"
+                                                    >
+                                                        <Icon name="image" className="w-3.5 h-3.5" />
+                                                        <span className="text-[9px] font-black uppercase tracking-widest">Kho ảnh</span>
+                                                    </button>
+
+                                                    {/* 2. Upload nhanh */}
+                                                    <label className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer flex items-center gap-1.5" title="Tải ảnh mới lên và chèn ngay">
+                                                        <Icon name="cloud-upload" className="w-3.5 h-3.5" />
+                                                        <span className="text-[9px] font-black uppercase tracking-widest">Tải lên</span>
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                if (e.target.files[0]) smartUploadHandler(e.target.files[0], 'editor');
+                                                                e.target.value = null;
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            )}
+
+                                            {standardContentSubTab !== 'summary' && (
+                                                <button
+                                                    onClick={() => setFullEditor({ open: true, type: standardContentSubTab })}
+                                                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center gap-1 ml-2"
+                                                >
+                                                    <Icon name="maximize" className="w-3 h-3" /> Mở rộng
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div className="flex gap-4 border-b border-slate-100 overflow-x-auto no-scrollbar">
+                                            {[
+                                                { id: 'summary', label: 'Mô tả ngắn', icon: 'file-text' },
+                                                { id: 'description', label: 'Chi tiết sản phẩm', icon: 'align-left' },
+                                                { id: 'spec', label: 'Thông số kỹ thuật', icon: 'list' }
+                                            ].map(tab => (
+                                                <button
+                                                    key={tab.id}
+                                                    onClick={() => setStandardContentSubTab(tab.id)}
+                                                    className={`pb-2 px-2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all border-b-2 ${standardContentSubTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                                                >
+                                                    <Icon name={tab.icon} className="w-3 h-3" />
+                                                    {tab.label}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div
+                                            className="rounded-lg border border-slate-100 overflow-hidden bg-white shadow-inner"
+                                        >
+                                            {standardContentSubTab === 'summary' ? (
+                                                <textarea
+                                                    value={formData.proSummary}
+                                                    onChange={e => setFormData(p => ({ ...p, proSummary: e.target.value }))}
+                                                    onPasteCapture={(e) => {
+                                                        logTrace('PASTE', 'Summary Textarea Paste');
+                                                        handlePasteForField(e, 'proSummary');
+                                                    }}
+                                                    rows="10"
+                                                    className="w-full px-5 py-4 outline-none text-sm font-medium leading-relaxed bg-slate-50/10 focus:bg-white transition-colors min-h-[300px]"
+                                                    placeholder="Nhập tóm tắt đặc điểm nổi bật của sản phẩm..."
+                                                ></textarea>
+                                            ) : (
+                                                <RichTextEditor
+                                                    value={standardContentSubTab === 'description' ? formData.description : formData.spec}
+                                                    onChange={v => setFormData(p => ({ ...p, [standardContentSubTab]: v }))}
+                                                    proName={formData.proName}
+                                                    onTaskCountChange={setGlobalTaskCount}
+                                                    onLibraryRequest={(callback) => {
+                                                        setMediaManagerMode('editor');
+                                                        setMediaLibraryCallback(() => callback);
+                                                        setIsMediaManagerOpen(true);
+                                                    }}
+                                                    className="bg-white standard-quill-editor"
+                                                />
+                                            )}
+                                        </div>
+                                        <style>{`
+                                            .standard-quill-editor .ql-toolbar { border:none; border-bottom:1px solid #f1f5f9; background:#f8fafc; padding:8px 12px !important; }
+                                            .standard-quill-editor .ql-container { border:none; min-height: 300px; font-size: 15px; }
+                                            .standard-quill-editor .ql-editor { padding: 20px; line-height: 1.8; color: #334155; }
+                                        `}</style>
+                                    </div>
+                                </div>
+
+                                {/* 3. THƯ VIỆN HÌNH ẢNH (ĐÃ NÂNG CẤP UPLOAD) */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative group/card">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                         <div className="flex items-center gap-3">
@@ -2590,6 +2719,14 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                         )}
                                                         <button
                                                             type="button"
+                                                            className="mx-4 w-[80%] py-2 bg-white text-indigo-600 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-600 hover:text-white transition-all shadow-xl font-black text-[9px] uppercase tracking-widest active:scale-95"
+                                                            onClick={() => setPreviewImage(img.displayUrl)}
+                                                        >
+                                                            <Icon name="eye" className="w-4 h-4" />
+                                                            <span>Xem ảnh lớn</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
                                                             className="mx-4 w-[80%] py-2 bg-white/10 text-white border border-white/30 rounded-xl flex items-center justify-center gap-2 hover:bg-red-600 hover:border-red-600 transition-all font-black text-[9px] uppercase tracking-widest active:scale-95"
                                                             onClick={() => handleDeleteImage(img)}
                                                         >
@@ -2610,7 +2747,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                 </div>
 
-                                {/* 2.5 SPECIAL OFFER (Khuyến mãi) */}
+                                {/* 4. SPECIAL OFFER (Khuyến mãi) */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
@@ -2642,111 +2779,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                 </div>
 
-                                {/* 3. NỘI DUNG CHI TIẾT */}
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-sm scroll-target-content">
-                                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-                                        <Icon name="file-text" className="text-slate-400 w-5 h-5" />
-                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-xs">Nội dung sản phẩm</h2>
-                                        <div className="ml-auto flex items-center gap-2">
-                                            {/* --- EDITOR TOOLS (COPY FROM GALLERY STYLE) --- */}
-                                            {standardContentSubTab !== 'summary' && (
-                                                <div className="flex items-center gap-2">
-                                                    {/* 1. Chọn từ kho */}
-                                                    <button
-                                                        onClick={() => {
-                                                            setMediaManagerMode('editor');
-                                                            setIsMediaManagerOpen(true);
-                                                        }}
-                                                        className="h-8 px-3 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1.5"
-                                                        title="Chèn từ kho ảnh"
-                                                    >
-                                                        <Icon name="image" className="w-3.5 h-3.5" />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest">Kho ảnh</span>
-                                                    </button>
-
-                                                    {/* 2. Upload nhanh */}
-                                                    <label className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer flex items-center gap-1.5" title="Tải ảnh mới lên và chèn ngay">
-                                                        <Icon name="cloud-upload" className="w-3.5 h-3.5" />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest">Tải lên</span>
-                                                        <input
-                                                            type="file"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                if (e.target.files[0]) smartUploadHandler(e.target.files[0], 'editor');
-                                                                e.target.value = null;
-                                                            }}
-                                                        />
-                                                    </label>
-                                                </div>
-                                            )}
-
-                                            {standardContentSubTab !== 'summary' && (
-                                                <button
-                                                    onClick={() => setFullEditor({ open: true, type: standardContentSubTab })}
-                                                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center gap-1 ml-2"
-                                                >
-                                                    <Icon name="maximize" className="w-3 h-3" /> Mở rộng
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="p-6 space-y-5">
-                                        <div className="flex gap-4 border-b border-slate-100 overflow-x-auto no-scrollbar">
-                                            {[
-                                                { id: 'summary', label: 'Mô tả ngắn', icon: 'file-text' },
-                                                { id: 'description', label: 'Chi tiết sản phẩm', icon: 'align-left' },
-                                                { id: 'spec', label: 'Thông số kỹ thuật', icon: 'list' }
-                                            ].map(tab => (
-                                                <button
-                                                    key={tab.id}
-                                                    onClick={() => setStandardContentSubTab(tab.id)}
-                                                    className={`pb-4 px-2 text-[11px] font-black uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all border-b-4 ${standardContentSubTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                                                >
-                                                    <Icon name={tab.icon} className="w-3.5 h-3.5" />
-                                                    {tab.label}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        <div
-                                            className="rounded-lg border border-slate-100 overflow-hidden bg-white shadow-inner"
-                                        >
-                                            {standardContentSubTab === 'summary' ? (
-                                                <textarea
-                                                    value={formData.proSummary}
-                                                    onChange={e => setFormData(p => ({ ...p, proSummary: e.target.value }))}
-                                                    onPasteCapture={(e) => {
-                                                        logTrace('PASTE', 'Summary Textarea Paste');
-                                                        handlePasteForField(e, 'proSummary');
-                                                    }}
-                                                    rows="12"
-                                                    className="w-full px-6 py-5 outline-none text-sm font-medium leading-relaxed bg-slate-50/30 focus:bg-white transition-colors min-h-[350px]"
-                                                    placeholder="Nhập tóm tắt đặc điểm nổi bật của sản phẩm..."
-                                                ></textarea>
-                                            ) : (
-                                                <RichTextEditor
-                                                    value={standardContentSubTab === 'description' ? formData.description : formData.spec}
-                                                    onChange={v => setFormData(p => ({ ...p, [standardContentSubTab]: v }))}
-                                                    proName={formData.proName}
-                                                    onTaskCountChange={setGlobalTaskCount}
-                                                    onLibraryRequest={(callback) => {
-                                                        setMediaManagerMode('editor');
-                                                        setMediaLibraryCallback(() => callback);
-                                                        setIsMediaManagerOpen(true);
-                                                    }}
-                                                    className="bg-white standard-quill-editor"
-                                                />
-                                            )}
-                                        </div>
-                                        <style>{`
-                                            .standard-quill-editor .ql-toolbar { border:none; border-bottom:1px solid #f1f5f9; background:#f8fafc; padding:12px !important; }
-                                            .standard-quill-editor .ql-container { border:none; min-height: 400px; font-size: 15px; }
-                                            .standard-quill-editor .ql-editor { padding: 30px; line-height: 1.8; color: #334155; }
-                                        `}</style>
-                                    </div>
-                                </div>
-
-                                {/* 4. SEO SETTINGS */}
+                                {/* 5. SEO SETTINGS */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 cursor-pointer group" onClick={() => setSeoOpen(!seoOpen)}>
                                         <Icon name="search" className="text-slate-400 w-5 h-5" />
@@ -3206,6 +3239,24 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 <span className="text-sm font-black tracking-tighter">{globalTaskCount} tác vụ hình ảnh...</span>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* [IMAGE_LIGHTBOX] Xem ảnh lớn */}
+                {previewImage && (
+                    <div className="fixed inset-0 z-[3000] bg-black/95 flex items-center justify-center p-4 md:p-10 animate-fadeIn" onClick={() => setPreviewImage(null)}>
+                        <button
+                            className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
+                            onClick={() => setPreviewImage(null)}
+                        >
+                            <Icon name="x" className="w-6 h-6" />
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scaleIn"
+                            onClick={(e) => e.stopPropagation()} // Click ảnh không đóng modal
+                        />
                     </div>
                 )}
             </div>
