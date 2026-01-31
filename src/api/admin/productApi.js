@@ -31,5 +31,12 @@ export const productApi = {
     create: (data) => axios.post(`${BASE_URL}`, data),
 
     // 6. Lấy danh sách (Library)
-    getLibrary: (params) => axios.get(`${BASE_URL}`, { params })
+    getLibrary: (params) => axios.get(`${BASE_URL}`, { params }),
+
+    // 7. Xóa sản phẩm bộ (Web + CRM)
+    delete: (id) => axios.delete(`${BASE_URL}/${id}`),
+
+    smartUpload: (formData) => axios.post('/api/v1/media/smart-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 };

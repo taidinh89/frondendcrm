@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { TabButton, EditableField, ToggleSwitch } from './ProductQvcComponents';
+import { TabButton, EditableField, ToggleSwitch, SearchableSelect } from './ProductQvcComponents';
 import { Modal, Button, Icon } from './ui';
 import { toast } from 'react-hot-toast';
 import { productApi } from '../api/admin/productApi';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 // Ảnh placeholder tĩnh (Base64 SVG) - Tuyệt đối không gọi tới bên thứ 3
 const STATIC_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
+const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh, dictionary }) => {
     const [activeTab, setActiveTab] = useState('general');
     const [formData, setFormData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -21,7 +23,8 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                 is_student_support: 0, is_installment_0: 0,
                 market_price: "0.00", purchase_price: "0.00", warranty: '',
                 proSummary: '', specialOffer: '',
-                ordering: 100
+                ordering: 100,
+                ...product
             });
         } else if (product) {
             // Mặc định nạp dữ liệu từ props list trước
@@ -33,13 +36,19 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                     const fullData = res.data;
                     setFormData({
                         ...fullData,
-                        // Fix các trường hay bị lẫn lộn giữa web/local
+                        // Mapping chuẩn từ JSON thực tế Backend trả về
+                        brandId: fullData.brandId,
+                        // Hỗ trợ Đa danh mục: Lấy toàn bộ chuỗi ,ID1,ID2, từ product_cat_web
+                        catId: fullData.product_cat_web || (fullData.categories_list ? `,${fullData.categories_list.join(',')},` : ''),
+
                         price: fullData.price_web || fullData.price,
                         quantity: fullData.quantity_web || fullData.quantity,
                         warranty: fullData.warranty_web || fullData.warranty,
                         ordering: fullData.ordering_web || fullData.ordering_edit || fullData.ordering || 100,
-                        // Đảm bảo specialOffer luôn được lấy đúng
-                        specialOffer: fullData.specialOffer || fullData.details?.specialOffer || ''
+                        specialOffer: fullData.specialOffer || fullData.details?.specialOffer || '',
+                        // Add description and spec for Rich Text Editing
+                        description: fullData.description || fullData.details?.description || '',
+                        spec: fullData.spec || fullData.details?.spec || ''
                     });
                 } catch (error) {
                     console.error("Lỗi fetch chi tiết:", error);
@@ -53,9 +62,15 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
     const handleSave = async () => {
         setIsSaving(true);
         // Chuẩn bị payload khớp 100% Backend mapping
+        // Xử lý chuỗi catId cho Đa danh mục: [,12,34,]
+        const catIds = Array.isArray(formData.catId) ? formData.catId : (formData.catId ? String(formData.catId).split(',').filter(Boolean) : []);
+        const catIdString = catIds.length > 0 ? `,${catIds.join(',')},` : '';
+
         const payload = {
             ...formData,
             // Đảm bảo gửi đúng các trường Backend mong đợi
+            catId: catIdString, // Gửi chuỗi IDs ngăn cách bởi dấu phẩy
+            product_cat_web: catIdString, // Đảm bảo ghi đè trường này nếu Backend dùng nó
             price: formData.price,
             quantity: formData.quantity,
             ordering: formData.ordering,
@@ -66,6 +81,8 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
             is_sale_off: formData.is_sale_off ? 1 : 0,
             is_student_support: formData.is_student_support ? 1 : 0,
             is_installment_0: formData.is_installment_0 ? 1 : 0,
+            description: formData.description,
+            spec: formData.spec
         };
 
         try {
@@ -103,11 +120,26 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                                 Nhãn hàng & Định danh
                             </h4>
                             <div className="space-y-5 relative z-10">
-                                <EditableField label="Tên sản phẩm hiển thị *" name="proName" localValue={formData.proName} originalWebValue={formData.proName} onChange={(e) => handleChange('proName', e.target.value)} />
+                                <EditableField label="Tên sản phẩm hiển thị *" name="proName" localValue={formData.proName} originalWebValue={formData.proName} onChange={(v) => handleChange('proName', v)} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <EditableField label="Mã SKU (Quản lý) *" name="storeSKU" localValue={formData.storeSKU} originalWebValue={formData.storeSKU} onChange={(e) => handleChange('storeSKU', e.target.value)} />
-                                    <EditableField label="ID Thương hiệu (Brand)" name="brandId" localValue={formData.brandId || formData.details?.brandId} onChange={(e) => handleChange('brandId', e.target.value)} />
+                                    <EditableField label="Mã SKU (Quản lý) *" name="storeSKU" localValue={formData.storeSKU} originalWebValue={formData.storeSKU} onChange={(v) => handleChange('storeSKU', v)} />
+                                    <SearchableSelect
+                                        label="Nhãn hàng (Brand)"
+                                        options={dictionary?.brands}
+                                        value={formData.brandId}
+                                        onChange={(v) => handleChange('brandId', v)}
+                                        type="brand"
+                                    />
                                 </div>
+                                <SearchableSelect
+                                    label="Danh mục (Multi-Category)"
+                                    options={dictionary?.categories}
+                                    value={formData.catId}
+                                    onChange={(v) => handleChange('catId', v)}
+                                    type="category"
+                                    multiple={true}
+                                    placeholder="Chọn một hoặc nhiều danh mục..."
+                                />
                             </div>
                         </section>
 
@@ -120,12 +152,12 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                                 Thương mại & Kho vận
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                                <EditableField label="Giá Bán niêm yết" name="price" type="number" localValue={formData.price} onChange={(e) => handleChange('price', e.target.value)} />
-                                <EditableField label="Số lượng tồn kho" name="quantity" type="number" localValue={formData.quantity} onChange={(e) => handleChange('quantity', e.target.value)} />
-                                <EditableField label="Giá Vốn (Purchase)" name="purchase_price" type="number" localValue={formData.purchase_price} onChange={(e) => handleChange('purchase_price', e.target.value)} />
-                                <EditableField label="Thứ tự hiển thị (STT)" name="ordering" type="number" localValue={formData.ordering} onChange={(e) => handleChange('ordering', e.target.value)} />
+                                <EditableField label="Giá Bán niêm yết" name="price" type="number" localValue={formData.price} onChange={(v) => handleChange('price', v)} />
+                                <EditableField label="Số lượng tồn kho" name="quantity" type="number" localValue={formData.quantity} onChange={(v) => handleChange('quantity', v)} />
+                                <EditableField label="Giá Vốn (Purchase)" name="purchase_price" type="number" localValue={formData.purchase_price} onChange={(v) => handleChange('purchase_price', v)} />
+                                <EditableField label="Thứ tự hiển thị (STT)" name="ordering" type="number" localValue={formData.ordering} onChange={(v) => handleChange('ordering', v)} />
                                 <div className="md:col-span-2">
-                                    <EditableField label="Chế độ Bảo hành" name="warranty" localValue={formData.warranty} onChange={(e) => handleChange('warranty', e.target.value)} />
+                                    <EditableField label="Chế độ Bảo hành" name="warranty" localValue={formData.warranty} onChange={(v) => handleChange('warranty', v)} />
                                 </div>
                             </div>
                         </section>
@@ -175,6 +207,66 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                                 onChange={(e) => handleChange('proSummary', e.target.value)}
                             />
                         </section>
+                    </div>
+                );
+
+            case 'content':
+                return (
+                    <div className="p-6 space-y-8 animate-fadeIn">
+                        <section className="bg-white rounded-[2.5rem] border-4 border-blue-50 p-6 shadow-sm">
+                            <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Icon name="file-text" className="w-4 h-4" />
+                                BÀI VIẾT MÔ TẢ CHI TIẾT (DESCRIPTION)
+                            </h4>
+                            <div className="bg-gray-50 rounded-3xl overflow-hidden border-2 border-gray-100 focus-within:border-blue-500 transition-all">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formData.description || ''}
+                                    onChange={(v) => handleChange('description', v)}
+                                    modules={{
+                                        toolbar: [
+                                            [{ 'header': [1, 2, 3, false] }],
+                                            ['bold', 'italic', 'underline', 'strike'],
+                                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                            ['link', 'image'],
+                                            ['clean']
+                                        ],
+                                    }}
+                                    placeholder="Viết mô tả sản phẩm tại đây..."
+                                    className="bg-white"
+                                />
+                            </div>
+                        </section>
+
+                        <section className="bg-white rounded-[2.5rem] border-4 border-purple-50 p-6 shadow-sm">
+                            <h4 className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Icon name="list" className="w-4 h-4" />
+                                THÔNG SỐ KỸ THUẬT (SPECIFICATIONS)
+                            </h4>
+                            <div className="bg-gray-50 rounded-3xl overflow-hidden border-2 border-gray-100 focus-within:border-purple-500 transition-all">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formData.spec || ''}
+                                    onChange={(v) => handleChange('spec', v)}
+                                    modules={{
+                                        toolbar: [
+                                            ['bold', 'italic', 'underline'],
+                                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                            ['clean']
+                                        ],
+                                    }}
+                                    placeholder="Nhập thông số kỹ thuật chi tiết..."
+                                    className="bg-white"
+                                />
+                            </div>
+                        </section>
+
+                        <style>{`
+                            .ql-container { border-bottom-left-radius: 1.5rem; border-bottom-right-radius: 1.5rem; border: none !important; font-family: inherit; font-size: 0.875rem; min-h-[300px]; }
+                            .ql-toolbar { border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; border: none !important; border-bottom: 1px solid #f3f4f6 !important; background: #f9fafb; padding: 12px !important; }
+                            .ql-editor { min-height: 300px; padding: 20px !important; line-height: 1.6; }
+                            .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; font-weight: 600; }
+                        `}</style>
                     </div>
                 );
 
@@ -256,9 +348,12 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                     <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-3 rounded-2xl text-white shadow-lg shadow-blue-200">
                         <Icon name={mode === 'create' ? "plus" : "edit"} className="w-6 h-6" />
                     </div>
-                    <div className="min-w-0">
-                        <div className="text-[9px] text-gray-400 font-black uppercase tracking-[0.3em] mb-1">QVC Admin Product Engine</div>
-                        <h2 className="text-xl font-black text-gray-900 truncate pr-8">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="text-[9px] text-gray-400 font-black uppercase tracking-[0.3em]">QVC Admin Product Engine</div>
+                            {formData.id && <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded font-black text-gray-500">ID: #{formData.id}</span>}
+                        </div>
+                        <h2 className="text-xl font-black text-gray-900 truncate pr-8 leading-tight">
                             {mode === 'create' ? "KHỞI TẠO SẢN PHẨM" : formData.proName}
                         </h2>
                     </div>
@@ -269,6 +364,7 @@ const ProductDetailMobile = ({ isOpen, onClose, product, mode, onRefresh }) => {
                 <div className="flex border-b overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-md sticky top-0 z-50 px-4 pt-4">
                     <TabButton title="📦 Cơ bản" activeTab={activeTab} name="general" setActiveTab={setActiveTab} />
                     <TabButton title="🚀 Marketing" activeTab={activeTab} name="marketing" setActiveTab={setActiveTab} />
+                    <TabButton title="📝 Nội dung" activeTab={activeTab} name="content" setActiveTab={setActiveTab} />
                     <TabButton title="🎞️ Gallery" activeTab={activeTab} name="media" setActiveTab={setActiveTab} />
                     <TabButton title="💡 Thống kê" activeTab={activeTab} name="stats" setActiveTab={setActiveTab} />
                 </div>

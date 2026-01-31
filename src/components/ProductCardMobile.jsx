@@ -4,16 +4,60 @@ import { Icon, Button } from './ui';
 // Ảnh placeholder tĩnh (Base64 SVG) - Nội bộ 100%
 const STATIC_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-const ProductCardMobile = ({ product, onEdit, onSync }) => {
+const ProductCardMobile = ({ product, onEdit, onSync, dictionary }) => {
+    // Tìm thông tin từ dictionary
+    const brand = dictionary?.brands?.find(b => String(b.code) === String(product.brandId));
+    // Xử lý đa danh mục: Lấy danh sách ID
+    const catIds = product.categories_list || (product.product_cat_web ? product.product_cat_web.split(',').filter(Boolean) : [product.catId]).filter(Boolean);
+    const firstCat = dictionary?.categories?.find(c => String(c.code) === String(catIds[0]));
+    const extraCatsCount = catIds.length > 1 ? catIds.length - 1 : 0;
+
     const formatPrice = (p) => {
         if (!p || p === "0.00") return <span className="text-gray-400">Liên hệ</span>;
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p);
     };
 
     const getProductImage = () => {
-        if (product.image) return product.image;
-        if (product.full_images?.[0]?.url) return product.full_images[0].url;
-        if (product.proThum) return `https://qvc.vn/p/250_${encodeURIComponent(product.proThum)}`;
+        const resolve = (path, isProThum = false) => {
+            if (!path || path === '0') return null;
+            if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return path;
+
+            let clean = path;
+            if (isProThum) {
+                clean = `/p/250_${path}`;
+            } else {
+                clean = path.startsWith('/') ? path : `/${path}`;
+            }
+
+            // Normalization: Remove double slashes and fix backslashes
+            const finalPath = clean.replace(/\\/g, '/').replace(/\/+/g, '/');
+            return `${window.location.origin}${finalPath}`;
+        };
+
+        // 1. New Media Structure (Priority 1)
+        const mainMedia = product.media?.find(m => m.is_main) || product.media?.[0];
+        const mediaSrc = mainMedia?.master_file?.paths?.original || mainMedia?.url;
+        if (mediaSrc) return resolve(mediaSrc);
+
+        // 2. CRM Chosen Image
+        if (product.image) return resolve(product.image);
+
+        // 3. Image Collection
+        const collectionImg = product.image_collection?.[0] || product.full_images?.[0];
+        const collectionSrc = collectionImg?.relative_path || collectionImg?.url || collectionImg?.image_name;
+        if (collectionSrc) {
+            // Case: just a filename
+            if (!collectionSrc.includes('/') && !collectionSrc.startsWith('http')) {
+                return resolve(`media/product/${collectionSrc}`);
+            }
+            return resolve(collectionSrc);
+        }
+
+        // 4. Legacy proThum
+        if (product.proThum && product.proThum !== '0') {
+            return resolve(product.proThum, true);
+        }
+
         return STATIC_PLACEHOLDER;
     };
 
@@ -68,7 +112,20 @@ const ProductCardMobile = ({ product, onEdit, onSync }) => {
                         </a>
                         <div className="flex flex-wrap gap-2 mt-1">
                             <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 font-mono">#{product.id}</span>
-                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">SKU: {product.storeSKU || 'Cơ sở'}</span>
+                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">SKU: {product.storeSKU || 'Sẵn có'}</span>
+                            {brand && (
+                                <span className="text-[9px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded-full font-black border border-orange-100 flex items-center gap-1 uppercase tracking-tighter">
+                                    <Icon name="award" className="w-2.5 h-2.5" />
+                                    {brand.name}
+                                </span>
+                            )}
+                            {firstCat && (
+                                <span className="text-[9px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded-full font-black border border-blue-100 flex items-center gap-1 uppercase tracking-tighter" title={catIds.length > 1 ? "Đa danh mục" : firstCat.name}>
+                                    <Icon name="folder" className="w-2.5 h-2.5" />
+                                    {firstCat.name}
+                                    {extraCatsCount > 0 && <span className="ml-1 opacity-60">+{extraCatsCount}</span>}
+                                </span>
+                            )}
                         </div>
                     </div>
 

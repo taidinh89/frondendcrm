@@ -58,9 +58,9 @@ export const InvoiceModal = ({
             isOpen={isOpen}
             onClose={onClose}
             title={selectedInvoice ? `Chi tiết HĐ: ${selectedInvoice.data?.shdon || selectedInvoice.invoice_number}` : 'Đang tải...'}
-            
+
             maxWidthClass={modalViewMode === 'html' ? "max-w-6xl" : "max-w-4xl"}
-            
+
             footer={
                 modalViewMode === 'details' ? (
                     <div className="flex justify-end space-x-2 p-4 border-t bg-gray-50 rounded-b-lg">
@@ -70,13 +70,13 @@ export const InvoiceModal = ({
                         </UI.Button>
                     </div>
                 ) : (
-                     <div className="flex justify-end space-x-2 p-4 border-t bg-gray-50 rounded-b-lg">
+                    <div className="flex justify-end space-x-2 p-4 border-t bg-gray-50 rounded-b-lg">
                         <UI.Button variant="secondary" onClick={handlePrintInvoice} type="button">
-                            <UI.Icon path="M6 2.25v1.5a1.5 1.5 0 00-1.5 1.5H3.75c-.414 0-.75.336-.75.75v3c0 .414.336.75.75.75H5.25a1.5 1.5 0 001.5 1.5v3a1.5 1.5 0 001.5 1.5h1.5a1.5 1.5 0 001.5-1.5v-3.75m1.5 0V7.5a1.5 1.5 0 00-1.5-1.5H9.75M16.5 7.5a1.5 1.5 0 00-1.5-1.5h-1.5a1.5 1.5 0 00-1.5 1.5v3.75m0 0H7.5" className="w-4 h-4 mr-1.5"/>
+                            <UI.Icon path="M6 2.25v1.5a1.5 1.5 0 00-1.5 1.5H3.75c-.414 0-.75.336-.75.75v3c0 .414.336.75.75.75H5.25a1.5 1.5 0 001.5 1.5v3a1.5 1.5 0 001.5 1.5h1.5a1.5 1.5 0 001.5-1.5v-3.75m1.5 0V7.5a1.5 1.5 0 00-1.5-1.5H9.75M16.5 7.5a1.5 1.5 0 00-1.5-1.5h-1.5a1.5 1.5 0 00-1.5 1.5v3.75m0 0H7.5" className="w-4 h-4 mr-1.5" />
                             In Hóa đơn
                         </UI.Button>
                         <UI.Button variant="secondary" onClick={onClose} type="button">Đóng</UI.Button>
-                     </div>
+                    </div>
                 )
             }
         >
@@ -163,19 +163,19 @@ export const InvoiceModal = ({
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Người bán</label>
-                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nbten || 'N/A'}</p>
+                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nbten || selectedInvoice.seller_name || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">MST Người bán</label>
-                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nbmst || 'N/A'}</p>
+                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nbmst || selectedInvoice.seller_tax_code || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Người mua</label>
-                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nmten || selectedInvoice.buyer_name_display || 'N/A'}</p>
+                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nmten || selectedInvoice.buyer_name || selectedInvoice.buyer_name_display || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">MST Người mua</label>
-                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.buyer_tax_code || selectedInvoice.data?.nmmst || 'N/A'}</p>
+                                    <p className="mt-1 text-sm text-gray-700">{selectedInvoice.data?.nmmst || selectedInvoice.buyer_tax_code || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Tổng tiền</label>

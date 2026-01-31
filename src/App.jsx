@@ -21,15 +21,16 @@ import { DebtRiskPage } from './pages/DebtRiskPage.jsx';
 import { PayableRiskPage } from './pages/PayableRiskPage.jsx';
 import { Customer360Content } from './pages/Customer360Content.jsx';
 import { QuotationForm } from './pages/QuotationForm.jsx';
-import { ProductQvcContent } from './pages/ProductQvcContent.jsx';
 import { DictionaryManagementPage } from './pages/DictionaryManagementPage.jsx';
-import ProductListNextGen from './components/ProductListNextGen.jsx';
+import ProductMobileManager from './components/ProductMobileManager.jsx';
 import { GlobalSearchModal } from './components/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
 import { SepayCashier } from './pages/Sepay/SepayCashier.jsx';
 import DepartmentTreeManager from "./pages/DepartmentTreeManager.jsx";
 import AuthorizationBackboneManager from "./pages/AuthorizationBackboneManager.jsx";
 import UserRoleManager from './pages/Security/UserRoleManager';
+import CategoryManager from './components/CategoryManager';
+import BrandManager from './components/BrandManager';
 
 // --- 2. IMPORT MODULE BẢO MẬT (SECURITY) ---
 import SecurityDashboard from './pages/Security/Dashboard';
@@ -56,6 +57,9 @@ import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
 import MediaLibrary from './pages/Admin/MediaLibrary.jsx';
 import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
 import MonitorServiceManager from './pages/MonitorServiceManager.jsx';
+import { ProductStandardization } from './pages/ProductStandardization.jsx';
+import { ProductMappingManager } from './pages/ProductMappingManager.jsx';
+import { EcountProductManager } from './pages/EcountProductManager.jsx';
 
 // --- 3. CẤU HÌNH MENU (NAV ITEMS) ---
 const navItems = [
@@ -74,7 +78,7 @@ const navItems = [
     { id: 'purchase-orders', path: '/purchase-orders', label: 'Đơn Mua Hàng', group: 'Kinh doanh', permission: 'purchase.view', icon: 'M16.023 9.348h4.992v-.001a.75.75 0 01.588.826l-1.7 8.5A.75.75 0 0118.25 19H5.75a.75.75 0 01-.73-.725l-1.7-8.5A.75.75 0 013.988 9.35v-.001H9v2.25a.75.75 0 001.5 0V9.35h3.023v2.25a.75.75 0 001.5 0V9.35zM12 2.25c-2.485 0-4.5 2.015-4.5 4.5V9.35h9V6.75c0-2.485-2.015-4.5-4.5-4.5z', component: <PurchaseOrdersContent /> },
     { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationList /> },
     { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationFormNew /> },
-    { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Kho vận', permission: 'inventory.view', icon: 'M3 12a9 9 0 0118 0v7.5a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 19.5V12zm1.5 6.75a.75.75 0 001.5 0v-5.25h13.5V18a.75.75 0 001.5 0V12H4.5v6.75zm1.5-1.5a.75.75 0 000-1.5h1.5a.75.75 0 000 1.5H6zM15 12.75a.75.75 0 000-1.5h3.75a.75.75 0 000 1.5H15z', component: <InventoriesContent /> },
+    { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Web', permission: 'inventory.view', icon: 'M3 12a9 9 0 0118 0v7.5a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 19.5V12zm1.5 6.75a.75.75 0 001.5 0v-5.25h13.5V18a.75.75 0 001.5 0V12H4.5v6.75zm1.5-1.5a.75.75 0 000-1.5h1.5a.75.75 0 000 1.5H6zM15 12.75a.75.75 0 000-1.5h3.75a.75.75 0 000 1.5H15z', component: <InventoriesContent /> },
     {
         id: 'invoice-dashboard',
         path: '/invoice-dashboard',
@@ -84,9 +88,13 @@ const navItems = [
         icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z',
         component: <InvoiceDashboardPage />
     },
-    { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Kho vận', permission: 'invoice.view', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m4.5-12h-8.25A2.25 2.25 0 009 6.75v10.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25V9.75A2.25 2.25 0 0018.75 7.5H15', component: <InvoicesContent /> },
-    { id: 'product-sync-management', path: '/product-sync', label: 'Đồng bộ Website QVC', group: 'Kho vận', permission: 'system.sync', icon: 'M18 10.5h.008v.008H18V10.5zm-3.375 7.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zM3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375M9 12h6.375M9 17.25h6.375', component: <ProductQvcContent /> },
-    { id: 'product-mobile-manager', path: '/product-mobile', label: 'Quản lý SP (Next-Gen)', group: 'Kho vận', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductListNextGen /> },
+    { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Web', permission: 'invoice.view', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m4.5-12h-8.25A2.25 2.25 0 009 6.75v10.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25V9.75A2.25 2.25 0 0018.75 7.5H15', component: <InvoicesContent /> },
+    { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Web', permission: 'system.sync', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', component: <ProductStandardization /> },
+    { id: 'product-mobile-manager', path: '/product-mobile', label: 'Quản lý SP (Next-Gen V2)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManager /> },
+    { id: 'ecount-manager', path: '/ecount-manager', label: 'Kho ECount (Master)', group: 'Web', permission: 'system.sync', icon: 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9', component: <EcountProductManager /> },
+    { id: 'category-nextgen', path: '/categories-nextgen', label: 'Danh mục (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', component: <CategoryManager /> },
+    { id: 'brand-nextgen', path: '/brands-nextgen', label: 'Thương hiệu (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M9 12l2 2 4-4M7.835 4.697a.75.75 0 001.034-.23 6.75 6.75 0 0111.262 0 .75.75 0 001.034.23 8.25 8.25 0 00-13.33 0zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z', component: <BrandManager /> },
+    { id: 'product-mapping-global', path: '/product-mapping/:id', label: 'Cấu hình Mapping', group: 'Web', permission: 'system.sync', icon: 'M12 4.5v15m7.5-7.5h-15', component: <ProductMappingManager /> },
     { id: 'sales-analysis', path: '/sales-analysis', label: 'Phân tích Kinh doanh', group: 'Báo cáo', permission: 'report.sales', icon: 'M11.75 21a.75.75 0 01-.75-.75V3.75A.75.75 0 0111.75 3h.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75h-.5zm3.75-2.25a.75.75 0 01-.75-.75V7.5a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-.5zm3.75-4.5a.75.75 0 01-.75-.75V11.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM7.25 18.75a.75.75 0 01-.75-.75V15a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75h-.5zM3 16.5a.75.75 0 01-.75-.75V17.25a.75.75 0 01.75-.75h.5a.75.75 0 01.75.75v-1.5a.75.75 0 01-.75.75H3z', component: <SalesAnalysisContent /> },
     { id: 'product-group-analysis', path: '/product-group-analysis', label: 'Phân tích Nhóm SP', group: 'Báo cáo', permission: 'report.product', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7m-13 0a3 3 0 106 0 3 3 0 00-6 0z', component: <ProductGroupAnalysisContent /> },
     { id: 'partner-analysis', path: '/partner-analysis', label: 'Phân tích Đối tác', group: 'Báo cáo', permission: 'report.partner', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <PartnerAnalysisContent /> },
@@ -303,6 +311,7 @@ const App = () => {
                             ))}
 
                             <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
+                            <Route path="/product-mapping/:id" element={<ProductMappingManager />} />
                             <Route path="/login" element={<Navigate to="/" />} />
                             <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-400 font-bold text-2xl">404 - Trang không tồn tại</div>} />
                         </Routes>

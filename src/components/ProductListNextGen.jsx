@@ -2,88 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { productApi } from '../api/admin/productApi';
 import { mediaApi } from '../api/admin/mediaApi';
 import { Icon, Button } from './ui';
+import { SearchableSelect } from './ProductQvcComponents';
 import ProductCardMobile from './ProductCardMobile';
 import ProductRowMobile from './ProductRowMobile';
 import ProductDetailMobile from './ProductDetailMobile';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
-// Component chọn có tìm kiếm
-const SearchableSelect = ({ label, options, value, onChange, placeholder = "Tìm kiếm..." }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [search, setSearch] = useState('');
-    const containerRef = useRef(null);
-
-    const filteredOptions = useMemo(() => {
-        return options.filter(opt =>
-            (opt.name || opt.code || '').toLowerCase().includes(search.toLowerCase())
-        );
-    }, [options, search]);
-
-    const selectedLabel = useMemo(() => {
-        const selected = options.find(opt => opt.code === value);
-        return selected ? (selected.name || selected.code) : '';
-    }, [options, value]);
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    return (
-        <div className="relative w-full" ref={containerRef}>
-            <label className="text-[10px] font-black p-1 text-gray-400 uppercase">{label}</label>
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-full bg-gray-50 border-2 transition-all rounded-2xl p-3 text-sm font-bold flex justify-between items-center cursor-pointer ${isOpen ? 'border-blue-500 bg-white ring-4 ring-blue-50' : (value ? 'border-blue-200 bg-blue-50/30' : 'border-transparent')}`}
-            >
-                <span className={selectedLabel ? 'text-blue-700 font-black' : 'text-gray-400'}>
-                    {selectedLabel || placeholder}
-                </span>
-                <Icon name={isOpen ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-gray-400" />
-            </div>
-
-            {isOpen && (
-                <div className="absolute z-[100] mt-2 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-fadeIn">
-                    <div className="p-3 border-b bg-gray-50">
-                        <input
-                            className="w-full px-4 py-2 text-sm bg-white border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 transition-all font-bold"
-                            placeholder="Gõ để tìm nhanh..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar py-1">
-                        <div
-                            onClick={() => { onChange(''); setIsOpen(false); }}
-                            className="px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-50 cursor-pointer border-b border-gray-50 mb-1"
-                        >
-                            --- BỎ CHỌN ---
-                        </div>
-                        {filteredOptions.length > 0 ? (
-                            filteredOptions.map(opt => (
-                                <div
-                                    key={opt.code}
-                                    onClick={() => { onChange(opt.code); setIsOpen(false); setSearch(''); }}
-                                    className={`px-4 py-2.5 text-sm cursor-pointer transition-all flex justify-between items-center ${value === opt.code ? 'bg-blue-600 text-white font-black' : 'text-gray-700 hover:bg-gray-50 font-bold'}`}
-                                >
-                                    <span>{opt.name || opt.code}</span>
-                                    {value === opt.code && <Icon name="check" className="w-4 h-4" />}
-                                </div>
-                            ))
-                        ) : (
-                            <div className="px-4 py-8 text-center text-xs text-gray-400 italic font-bold">Không tìm thấy</div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
 
 const ProductListNextGen = () => {
     const [products, setProducts] = useState([]);
@@ -118,16 +43,38 @@ const ProductListNextGen = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [mode, setMode] = useState('view');
 
-    // Load meta data
+    // 1. Nạp Meta Data (Sử dụng 2 Endpoint chuyên biệt: /v1/brands và /v1/categories)
     useEffect(() => {
         const fetchMeta = async () => {
             try {
-                const res = await axios.get('/api/v2/dictionary/list');
-                const data = res.data || [];
-                const brands = data.filter(i => i.type === 'BRAND').map(i => ({ code: i.code, name: i.current_name || i.code }));
-                const cats = data.filter(i => String(i.type).startsWith('CAT')).map(i => ({ code: i.code, name: i.current_name || i.code }));
+                // Gọi song song hai nguồn API chuyên biệt mới
+                const [brandRes, catRes] = await Promise.all([
+                    axios.get('/api/v1/brands'),     // API Brands mới nâng cấp
+                    axios.get('/api/v1/categories')   // API Categories mới nâng cấp
+                ]);
+
+                // Xử lý Thương hiệu (Hãng): Theo hàm getBrands() mới { code, name, image }
+                const brands = (brandRes.data || []).map(i => ({
+                    code: String(i.code),
+                    name: i.name,
+                    image: i.image
+                }));
+
+                // Xử lý Danh mục: Theo hàm getCategories() mới { code, current_name, image }
+                const cats = (catRes.data || []).map(i => ({
+                    code: String(i.code),
+                    name: i.current_name,
+                    image: i.image,
+                    parent_id: i.parent_id,
+                    type: i.type || 'CAT_L2'
+                }));
+
                 setDictionary({ categories: cats, brands: brands });
-            } catch (e) { console.error(e); }
+                console.log("🚀 New APIs Loaded with Images:", { brands: brands.length, categories: cats.length });
+            } catch (e) {
+                console.error("Lỗi nạp Meta Data (New APIs):", e);
+                toast.error("Lỗi: Không thể nạp dữ liệu từ các API mới");
+            }
         };
         fetchMeta();
     }, []);
@@ -312,9 +259,18 @@ const ProductListNextGen = () => {
                                     <button
                                         key={item.code}
                                         onClick={() => handleTapeClick(item.code)}
-                                        className={`flex-shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black transition-all border-2 whitespace-nowrap shadow-sm ${isSel ? 'bg-white border-blue-500 text-blue-700 ring-4 ring-blue-50' : 'bg-white border-gray-100 text-gray-400 hover:border-blue-300 hover:text-gray-600'}`}
+                                        className={`flex-shrink-0 px-5 py-2.5 rounded-[1.8rem] text-[10px] font-black transition-all border-2 whitespace-nowrap shadow-sm flex items-center gap-3 ${isSel ? 'bg-white border-blue-500 text-blue-700 ring-4 ring-blue-50 scale-105' : 'bg-white border-gray-100 text-gray-400 hover:border-blue-300 hover:text-gray-600'}`}
                                     >
-                                        {item.name}
+                                        <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border-2 ${isSel ? 'border-blue-200' : 'border-gray-50'}`}>
+                                            {item.image ? (
+                                                <img src={item.image} className="w-full h-full object-contain p-0.5" alt="" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-300">
+                                                    <Icon name={tapeType === 'category' ? 'folder' : 'award'} className="w-4 h-4" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span>{item.name}</span>
                                     </button>
                                 );
                             })}
@@ -450,6 +406,7 @@ const ProductListNextGen = () => {
                                     product={prod}
                                     onEdit={() => { setSelectedProduct(prod); setMode('edit'); setIsModalOpen(true); }}
                                     onSync={handleSyncOne}
+                                    dictionary={dictionary}
                                 />
                             ) : (
                                 <ProductRowMobile
@@ -457,6 +414,7 @@ const ProductListNextGen = () => {
                                     product={prod}
                                     onEdit={() => { setSelectedProduct(prod); setMode('edit'); setIsModalOpen(true); }}
                                     onSync={handleSyncOne}
+                                    dictionary={dictionary}
                                 />
                             )
                         ))}
@@ -472,6 +430,7 @@ const ProductListNextGen = () => {
                     product={selectedProduct}
                     mode={mode}
                     onRefresh={fetchProducts}
+                    dictionary={dictionary}
                 />
             )}
         </div>

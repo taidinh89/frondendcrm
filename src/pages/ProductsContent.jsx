@@ -2,22 +2,24 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import * as UI from '../components/ui.jsx'; 
+import * as UI from '../components/ui.jsx';
 import Select from 'react-select';
 import { ProductQvcDetailModal } from '../components/ProductQvcDetailModal.jsx';
 
 // ==========================================================
 // === CẤU HÌNH CỘT MẶC ĐỊNH & HANDLERS TÍCH HỢP ===
 // ==========================================================
-const API_ENDPOINT = '/api/v1/productqvc'; 
-const STORAGE_KEY = 'qvc_product_columns_config_v1'; 
+const API_ENDPOINT = '/api/v1/productqvc';
+const STORAGE_KEY = 'qvc_product_columns_config_v1';
+
+const STATIC_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
 
 const DEFAULT_COLUMNS = [
     // Core Identification & Sync Status
     { key: 'id', label: 'ID', width: 100, visible: true, sortable: true, align: 'left', isPrimary: true },
     { key: 'storeSKU', label: 'SKU', width: 150, visible: true, sortable: true, align: 'left', isPrimary: true },
     { key: 'proName', label: 'Tên Sản phẩm', width: 300, visible: true, sortable: true, align: 'left' },
-    
+
     // Core Web Data (Price, Stock, Order)
     { key: 'price_web', label: 'Giá Web', width: 120, visible: true, sortable: true, align: 'right', format: 'currency' },
     { key: 'quantity_web', label: 'Tồn kho Web', width: 120, visible: true, sortable: true, align: 'right' },
@@ -30,7 +32,7 @@ const DEFAULT_COLUMNS = [
     { key: 'meta_title', label: 'Meta Title', width: 300, visible: false, sortable: false, align: 'left' },
     { key: 'product_cat_web', label: 'ID Danh mục', width: 150, visible: false, sortable: false, align: 'left' },
     { key: 'url', label: 'Link SP', width: 250, visible: false, sortable: false, align: 'left' },
-    
+
     // Audit/Time
     { key: 'last_synced_from_live', label: 'Sync Lần Cuối', width: 180, visible: false, sortable: true, align: 'left', format: 'datetime' },
 ];
@@ -47,15 +49,15 @@ const formatDateTime = (value) => {
     return new Date(value).toLocaleString('vi-VN');
 };
 const formatBoolean = (value) => {
-    return value ? 
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">CẦN SYNC</span> : 
+    return value ?
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">CẦN SYNC</span> :
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>;
 };
 const getPrimaryImageUrl = (product) => {
     if (product.full_images && product.full_images[0]?.url) {
         return product.full_images[0].url;
     }
-    return null; 
+    return null;
 };
 
 // --- COMPONENT RAW DATA MODAL ---
@@ -94,10 +96,10 @@ export const ProductQvcContent = ({ setAppTitle }) => {
     const [updatingProductId, setUpdatingProductId] = useState(null);
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState(null);
-    const [viewingProduct, setViewingProduct] = useState(null); 
-    const [viewingRaw, setViewingRaw] = useState(null); 
-    const [showColumnSettings, setShowColumnSettings] = useState(false); 
-    
+    const [viewingProduct, setViewingProduct] = useState(null);
+    const [viewingRaw, setViewingRaw] = useState(null);
+    const [showColumnSettings, setShowColumnSettings] = useState(false);
+
     // --- COLUMN CONFIG STATE & REFS ---
     const [columns, setColumns] = useState(() => {
         try {
@@ -133,7 +135,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
 
     // Fetch data
     const fetchProducts = async (currentPage = 1) => {
-        setUpdatingProductId(-1); 
+        setUpdatingProductId(-1);
         try {
             const params = {
                 page: currentPage,
@@ -156,7 +158,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
             setUpdatingProductId(null);
         }
     };
-    
+
     useEffect(() => {
         fetchProducts(1);
     }, [debouncedSearchTerm, sortConfig, filter]);
@@ -166,10 +168,10 @@ export const ProductQvcContent = ({ setAppTitle }) => {
         setUpdatingProductId(productId);
         try {
             const response = await axios.put(`${API_ENDPOINT}/${productId}`, updateData);
-            
+
             // Cập nhật sản phẩm trong state list
             setProducts(prev => prev.map(p => p.id === productId ? response.data.product : p));
-            return response.data.product; 
+            return response.data.product;
         } catch (error) {
             console.error("Lỗi cập nhật sản phẩm:", error);
             alert("Lỗi cập nhật. Vui lòng thử lại.");
@@ -180,13 +182,13 @@ export const ProductQvcContent = ({ setAppTitle }) => {
 
     const handleCloseDetailModal = useCallback((updatedProduct) => {
         if (updatedProduct) {
-             setProducts(prev => prev.map(p => 
+            setProducts(prev => prev.map(p =>
                 p.id === updatedProduct.id ? updatedProduct : p
             ));
         }
-        setViewingProduct(null); 
+        setViewingProduct(null);
     }, []);
-    
+
     // --- COLUMN HANDLERS ---
     const handleSortData = (key) => {
         let direction = 'asc';
@@ -202,7 +204,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
         }
     };
     const toggleColumn = (key) => {
-        setColumns(prev => prev.map(col => 
+        setColumns(prev => prev.map(col =>
             col.key === key ? { ...col, visible: !col.visible } : col
         ));
     };
@@ -221,7 +223,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
 
         const onMouseMove = (moveEvent) => {
             const newWidth = Math.max(50, startWidth + (moveEvent.clientX - startX));
-            setColumns(prev => prev.map(col => 
+            setColumns(prev => prev.map(col =>
                 col.key === colKey ? { ...col, width: newWidth } : col
             ));
         };
@@ -255,13 +257,13 @@ export const ProductQvcContent = ({ setAppTitle }) => {
     return (
         <div className="p-6 h-full flex flex-col bg-gray-50 overflow-hidden">
             <h2 className="text-2xl font-bold text-gray-800">🛠️ Quản lý Đồng bộ Sản phẩm</h2>
-            
+
             {/* --- TOOLBAR --- */}
             <div className="flex flex-wrap items-end justify-between gap-3 mb-4 p-3 bg-white rounded shadow-sm shrink-0">
                 <div className="flex flex-1 items-end gap-2 min-w-[300px]">
-                     <UI.Input 
-                        name="search" 
-                        placeholder="Tìm kiếm (SKU, Tên SP, ID...)" 
+                    <UI.Input
+                        name="search"
+                        placeholder="Tìm kiếm (SKU, Tên SP, ID...)"
                         className="w-full md:w-80"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -269,16 +271,16 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                     />
                     <UI.Button variant="primary" onClick={() => fetchProducts(1)} disabled={updatingProductId === -1}>Tìm</UI.Button>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     <UI.Button variant="secondary" onClick={() => fetchProducts(1)}>Làm mới</UI.Button>
-                    
+
                     {/* NÚT TÙY CHỈNH CỘT & RAW */}
                     <div className="relative">
-                         <UI.Button variant="secondary" onClick={() => setShowColumnSettings(!showColumnSettings)}>
+                        <UI.Button variant="secondary" onClick={() => setShowColumnSettings(!showColumnSettings)}>
                             ⚙️ Bộ lọc & Cột
                         </UI.Button>
-                        
+
                         {showColumnSettings && (
                             <div className="absolute right-0 top-full mt-2 w-80 bg-white border rounded shadow-xl z-50 flex flex-col max-h-[70vh] shrink-0">
                                 <div className="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t">
@@ -289,7 +291,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                                     {columns.map((col, index) => (
                                         <div key={col.key} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded group">
                                             <label className="flex items-center gap-2 cursor-pointer flex-1">
-                                                <input type="checkbox" checked={col.visible} onChange={() => toggleColumn(col.key)} className="rounded text-blue-600 focus:ring-blue-500"/>
+                                                <input type="checkbox" checked={col.visible} onChange={() => toggleColumn(col.key)} className="rounded text-blue-600 focus:ring-blue-500" />
                                                 <span className={`text-sm ${!col.visible ? 'text-gray-400' : 'text-gray-700'}`}>{col.label}</span>
                                             </label>
                                             <div className="flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
@@ -323,12 +325,12 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                                     Hành động
                                 </th>
                                 {columns.filter(c => c.visible).map((col) => (
-                                    <th 
+                                    <th
                                         key={col.key}
                                         className="border-b border-r bg-gray-100 relative group select-none hover:bg-gray-200 transition-colors"
                                         style={{ width: col.width, minWidth: col.width }}
                                     >
-                                        <div 
+                                        <div
                                             className={`flex items-center p-2 text-xs font-bold uppercase text-gray-600 h-full cursor-pointer ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}
                                             onClick={() => col.sortable && handleSortData(col.key)}
                                             title="Click để sắp xếp dữ liệu"
@@ -336,7 +338,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                                             <span className="truncate">{col.label}</span>
                                             {col.sortable && <SortIcon columnKey={col.key} />}
                                         </div>
-                                        <div 
+                                        <div
                                             className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 z-40 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onMouseDown={(e) => handleResizeStart(e, col.key)}
                                             title="Kéo để chỉnh độ rộng"
@@ -352,10 +354,10 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                                 <tr key={product.id} className={`hover:bg-blue-50 group transition-colors ${product.quantity_web <= 0 ? 'bg-red-50' : (product.needs_sync ? 'bg-yellow-50' : '')}`}>
                                     {/* CỘT HÀNH ĐỘNG (STATIONARY) */}
                                     <td className="p-2 border-r bg-white group-hover:bg-blue-50 sticky left-0 z-10 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                        <UI.Button 
-                                            size="xs" 
-                                            variant="primary" 
-                                            onClick={() => setViewingProduct(product)} 
+                                        <UI.Button
+                                            size="xs"
+                                            variant="primary"
+                                            onClick={() => setViewingProduct(product)}
                                             title="Xem và sửa toàn bộ trường"
                                             disabled={updatingProductId === product.id}
                                         >
@@ -365,15 +367,15 @@ export const ProductQvcContent = ({ setAppTitle }) => {
 
                                     {columns.filter(c => c.visible).map(col => {
                                         let val = product[col.key];
-                                        
+
                                         // SPECIAL CASE: ID/SKU/Image column
                                         if (col.key === 'id' || col.key === 'storeSKU') {
                                             const isId = col.key === 'id';
                                             const primaryImage = getPrimaryImageUrl(product);
-                                            
+
                                             if (isId) {
                                                 return (
-                                                    <td 
+                                                    <td
                                                         key={`${product.id}-${col.key}`}
                                                         className="p-2 border-r text-sm text-gray-700 whitespace-nowrap overflow-hidden"
                                                         style={{ width: col.width, maxWidth: col.width, textAlign: 'left' }}
@@ -381,7 +383,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                                                         <div className="flex items-center space-x-2">
                                                             <div className="w-6 h-6 flex-shrink-0">
                                                                 {primaryImage && (
-                                                                    <img src={primaryImage} alt={product.proName} className="w-full h-full object-contain border rounded" onError={(e) => { e.target.onerror = null; e.target.src="/default_thumb.jpg"; }} />
+                                                                    <img src={primaryImage} alt={product.proName} className="w-full h-full object-contain border rounded" onError={(e) => { e.target.onerror = null; e.target.src = STATIC_PLACEHOLDER; }} />
                                                                 )}
                                                             </div>
                                                             <div className="flex flex-col">
@@ -399,15 +401,15 @@ export const ProductQvcContent = ({ setAppTitle }) => {
 
                                         // Render General Content
                                         return (
-                                            <td 
+                                            <td
                                                 key={`${product.id}-${col.key}`}
                                                 className="p-2 border-r text-sm text-gray-700 overflow-hidden"
-                                                style={{ 
-                                                    width: col.width, 
+                                                style={{
+                                                    width: col.width,
                                                     maxWidth: col.width,
-                                                    textAlign: col.align || 'left' 
+                                                    textAlign: col.align || 'left'
                                                 }}
-                                                title={typeof val === 'string' ? val : ''} 
+                                                title={typeof val === 'string' ? val : ''}
                                             >
                                                 {renderCellContent(col.key, val, col.format)}
                                             </td>
@@ -418,7 +420,7 @@ export const ProductQvcContent = ({ setAppTitle }) => {
                         </tbody>
                     </table>
                 </div>
-                
+
                 {/* Footer Info */}
                 <div className="bg-gray-50 p-2 border-t text-xs text-gray-500 flex justify-between select-none shrink-0">
                     <span>Tổng sản phẩm: <b>{pagination?.total ?? products.length}</b></span>
@@ -427,20 +429,24 @@ export const ProductQvcContent = ({ setAppTitle }) => {
             </div>
 
             {/* MODALS */}
-            {viewingProduct && (
-                <ProductQvcDetailModal
-                    product={viewingProduct}
-                    isOpen={!!viewingProduct}
-                    onClose={handleCloseDetailModal}
-                    onUpdate={handleUpdateProduct} 
-                />
-            )}
-            {viewingRaw && (
-                <RawDataModal 
-                    data={viewingRaw} 
-                    onClose={() => setViewingRaw(null)} 
-                />
-            )}
-        </div>
+            {
+                viewingProduct && (
+                    <ProductQvcDetailModal
+                        product={viewingProduct}
+                        isOpen={!!viewingProduct}
+                        onClose={handleCloseDetailModal}
+                        onUpdate={handleUpdateProduct}
+                    />
+                )
+            }
+            {
+                viewingRaw && (
+                    <RawDataModal
+                        data={viewingRaw}
+                        onClose={() => setViewingRaw(null)}
+                    />
+                )
+            }
+        </div >
     );
 };
