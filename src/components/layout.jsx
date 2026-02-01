@@ -12,6 +12,11 @@ export const LoginPage = () => {
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState('');
 
+    // [NEW] 2FA State
+    const [step, setStep] = React.useState(1); // 1: Login, 2: OTP
+    const [otp, setOtp] = React.useState('');
+    const [tempUserId, setTempUserId] = React.useState(null);
+
     // [NEW] Handle Redirect Error from Google Login
     React.useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -32,13 +37,20 @@ export const LoginPage = () => {
             // 1. Gọi API Login
             const res = await axios.post('/api/login', { email, password });
 
-            // 2. Lưu Token
-            const token = res.data.token; // API trả về token ở root
+            // [NEW] Check for 2FA requirement
+            if (res.data.require_2fa) {
+                setTempUserId(res.data.user_id);
+                setStep(2);
+                setLoading(false); // Stop loading to let user interact
+                // notification could be added here
+                return;
+            }
+
+            // 2. Lưu Token (Fallback if 2FA disabled)
+            const token = res.data.token;
             if (token) {
                 localStorage.setItem('auth_token', token);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-                // 3. Chuyển hướng về trang Profile hoặc Dashboard
                 window.location.href = '/profile';
             } else {
                 setError('Không nhận được token xác thực.');
@@ -48,7 +60,42 @@ export const LoginPage = () => {
             const msg = err.response?.data?.message || err.response?.data?.email?.[0] || 'Đăng nhập thất bại';
             setError(msg);
         } finally {
+            if (step === 1) setLoading(false); // Only stop loading if staying on step 1
+        }
+    };
+
+    const handleVerifyOTP = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            const res = await axios.post('/api/auth/2fa/verify', {
+                user_id: tempUserId,
+                code: otp
+            });
+
+            const token = res.data.token;
+            if (token) {
+                localStorage.setItem('auth_token', token);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                window.location.href = '/profile';
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Mã xác thực không đúng.');
+        } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendOTP = async () => {
+        try {
+            await axios.post('/api/auth/2fa/resend', { user_id: tempUserId });
+            // Ideally show success message, but we might not have toast here.
+            // Using error state for success msg temporarily or just console
+            console.log('Resent OTP');
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -61,49 +108,100 @@ export const LoginPage = () => {
                         <p className="text-sm font-medium text-gray-400">Đăng nhập hệ thống quản trị</p>
                     </div>
 
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        {error && <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{error}</div>}
+                    {step === 1 && (
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            {error && <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{error}</div>}
 
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Email</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
-                                placeholder="example@quocviet.com"
-                            />
-                        </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                    placeholder="example@quocviet.com"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Mật khẩu</label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Mật khẩu</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                    placeholder="••••••••"
+                                />
+                            </div>
 
-                        <div className="flex justify-between items-center text-xs mt-2">
-                            <label className="flex items-center text-gray-500 font-bold cursor-pointer select-none">
-                                <input type="checkbox" className="mr-2 rounded text-blue-600 focus:ring-blue-500" />
-                                Ghi nhớ
-                            </label>
-                            <Link to="/reset-password" className="text-blue-600 font-bold hover:underline">Quên mật khẩu?</Link>
-                        </div>
+                            <div className="flex justify-between items-center text-xs mt-2">
+                                <label className="flex items-center text-gray-500 font-bold cursor-pointer select-none">
+                                    <input type="checkbox" className="mr-2 rounded text-blue-600 focus:ring-blue-500" />
+                                    Ghi nhớ
+                                </label>
+                                <Link to="/reset-password" className="text-blue-600 font-bold hover:underline">Quên mật khẩu?</Link>
+                            </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-wider rounded-xl shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
-                        </button>
-                    </form>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-wider rounded-xl shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+                            </button>
+                        </form>
+                    )}
+
+                    {step === 2 && (
+                        <form onSubmit={handleVerifyOTP} className="space-y-4">
+                            {error && <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{error}</div>}
+
+                            <div className="text-center mb-4">
+                                <h3 className="text-lg font-bold text-gray-800">Xác thực 2 bước</h3>
+                                <p className="text-xs text-gray-500 mt-1">Vui lòng nhập mã OTP 6 số đã gửi đến email của bạn.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 text-center">Mã OTP</label>
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={6}
+                                    value={otp}
+                                    onChange={e => setOtp(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-black text-2xl text-center tracking-[0.5em] text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                    placeholder="######"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-wider rounded-xl shadow-lg shadow-green-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Đang xác thực...' : 'Xác nhận'}
+                            </button>
+
+                            <div className="flex justify-between mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => { setStep(1); setError(''); }}
+                                    className="text-xs font-bold text-gray-400 hover:text-gray-600"
+                                >
+                                    ← Quay lại
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResendOTP}
+                                    className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                                >
+                                    Gửi lại mã?
+                                </button>
+                            </div>
+                        </form>
+                    )}
 
                     <div className="mt-8">
                         <div className="relative">
@@ -153,8 +251,10 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                 </button>
 
                 {user && (
-                    <Link to="/profile" className="text-sm hidden sm:block font-medium text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2">
-                        {user.avatar && <img src={user.avatar} alt="avar" className="w-8 h-8 rounded-full object-cover border" />}
+                    <Link to="/profile" className="text-sm hidden sm:flex font-medium text-gray-700 hover:text-blue-600 transition-colors items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase border border-blue-200">
+                            {user.avatar ? <img src={user.avatar} alt="avar" className="w-full h-full rounded-full object-cover" /> : user.name?.charAt(0)}
+                        </div>
                         <span>Chào, {user.name}</span>
                     </Link>
                 )}

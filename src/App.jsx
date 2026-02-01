@@ -6,12 +6,15 @@ import { LoginPage, Header, Sidebar } from './components/layout.jsx';
 import { appConfig, ENABLE_PERMISSION_CHECK } from './config/appConfig.js';
 import { Toaster } from 'react-hot-toast';
 
+const ENABLE_LOG = true; // [DEBUG] Toggle log logout
+
 // --- 1. IMPORT CÁC TRANG NGHIỆP VỤ ---
 import { DashboardContent } from './pages/DashboardContent.jsx';
 import { CustomersContent } from './pages/CustomersContent.jsx';
 import { SalesOrdersContent } from './pages/SalesOrdersContent.jsx';
 import { PurchaseOrdersContent } from './pages/PurchaseOrdersContent.jsx';
 import { InventoriesContent } from './pages/InventoriesContent.jsx';
+import { DirectInventoryChecker } from './pages/DirectInventoryChecker.jsx';
 import { InvoicesContent } from './pages/InvoicesContent.jsx';
 import { SalesAnalysisContent } from './pages/SalesAnalysisContent.jsx';
 import { ProductGroupAnalysisContent } from './pages/ProductGroupAnalysisContent.jsx';
@@ -39,6 +42,7 @@ import RoleManager from './pages/Security/RoleManager';
 import OrgChart from './pages/Security/OrgChart';
 import Definitions from './pages/Security/Definitions';
 import SecurityCommanderCenter from './pages/Security/SecurityCommanderCenter';
+import SessionManager from './pages/Security/SessionManager'; // [NEW]
 
 import SystemIntelligenceDashboard from './pages/SystemIntelligenceDashboard.jsx';
 import UnifiedInventoryDashboardV2 from './pages/UnifiedInventoryDashboardV2.jsx';
@@ -85,6 +89,7 @@ const navItems = [
     { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationList /> },
     { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <QuotationFormNew /> },
     { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Web', permission: 'inventory.view', icon: 'M3 12a9 9 0 0118 0v7.5a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 19.5V12zm1.5 6.75a.75.75 0 001.5 0v-5.25h13.5V18a.75.75 0 001.5 0V12H4.5v6.75zm1.5-1.5a.75.75 0 000-1.5h1.5a.75.75 0 000 1.5H6zM15 12.75a.75.75 0 000-1.5h3.75a.75.75 0 000 1.5H15z', component: <InventoriesContent /> },
+    { id: 'direct-inventory', path: '/direct-inventory', label: 'Đối soát Tồn Kho (Gốc)', group: 'Web', permission: 'inventory.view', icon: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .415.162.793.425 1.07.262.277.612.43 1.075.43.463 0 .813-.153 1.075-.43.263-.277.425-.655.425-1.07 0-.231-.035-.454-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25c1.039 0 1.897.712 2.126 1.66m-5.8 0a2.251 2.251 0 002.126 1.66m5.8 0a2.251 2.251 0 012.126-1.66m0 0a2.251 2.251 0 00-2.126-1.66', component: <DirectInventoryChecker /> },
     {
         id: 'invoice-dashboard',
         path: '/invoice-dashboard',
@@ -139,6 +144,7 @@ const navItems = [
     { id: 'sepay-admin', path: '/sepay-admin', label: 'Quản trị Dòng tiền', group: 'Thanh toán', permission: 'sepay.viewall', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <SepayDashboard /> },
     { id: 'sepay-cashier', path: '/sepay-cashier', label: 'Thu ngân (QR Code)', group: 'Thanh toán', permission: 'sepay.create', icon: 'M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z', component: <SepayCashier /> },
     { id: 'security-commander', path: '/security/commander', label: 'Trung tâm Chỉ huy (Sếp)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', component: <SecurityCommanderCenter /> },
+    { id: 'session-manager', path: '/security/sessions', label: 'Quản lý Phiên đăng nhập', group: 'Hệ thống', permission: 'system.security', icon: 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z', component: <SessionManager /> }, // [NEW]
     { id: 'user-role-manager', path: '/security/users', label: 'Quản lý Người dùng', group: 'Hệ thống', permission: 'system.security', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <UserRoleManager /> },
     { id: 'security-dashboard', path: '/security/dashboard', label: 'Bảng điều khiển An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SecurityDashboard /> },
     { id: 'permission-matrix', path: '/security/matrix', label: 'Ma trận Phân quyền', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <PermissionMatrix /> },
@@ -266,19 +272,38 @@ const App = () => {
         checkAuth();
     }, []);
 
-    const onLogout = () => {
-        // Clear token khi logout chủ động
-        localStorage.removeItem('auth_token');
+    const onLogout = async () => {
+        if (ENABLE_LOG) console.debug("[Auth] Starting Logout Process...");
 
-        // [CLEANUP] Xóa sạch các bản nháp bài viết khi đăng xuất
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('rte_draft_')) {
-                localStorage.removeItem(key);
-            }
+        // 1. Gọi API hủy Token (Fire & Forget - Có await nhưng catch luôn lỗi để flow không chết)
+        try {
+            if (ENABLE_LOG) console.debug("[Auth] Calling Backend Logout API...");
+            await axios.post('/api/logout');
+            if (ENABLE_LOG) console.debug("[Auth] Backend Logout Success");
+        } catch (error) {
+            console.warn("[Auth] Logout API failed (likely network/offline), proceeding with local cleanup:", error);
+        }
+
+        // 2. [QUAN TRỌNG] Xóa sạch LocalStorage & SessionStorage (Ưu tiên Client)
+        if (ENABLE_LOG) console.debug("[Auth] Clearing LocalStorage & SessionStorage...");
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 3. Xóa Cookies (Nếu có)
+        if (ENABLE_LOG) console.debug("[Auth] Clearing Cookies...");
+        document.cookie.split(";").forEach((c) => {
+            document.cookie = c
+                .replace(/^ +/, "")
+                .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
 
+        // 4. Xóa Default Header & Reset State
+        delete axios.defaults.headers.common['Authorization'];
         setUser(null);
-        navigate('/login');
+
+        // 5. Force Reload để về trang Login (Xóa sạch Cache memory của React/Axios)
+        if (ENABLE_LOG) console.debug("[Auth] Redirecting to Login...");
+        window.location.href = '/login';
     };
 
     const handleNavigate = (viewId) => {

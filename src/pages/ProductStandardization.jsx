@@ -228,7 +228,7 @@ export const ProductStandardization = ({ setAppTitle }) => {
                                         <td className="p-6 align-top max-w-sm">
                                             <div className="flex gap-4">
                                                 <button
-                                                    onClick={() => setViewingDetailId(p.id)}
+                                                    onClick={() => setViewingDetailId(p.sku || p.id)}
                                                     className="w-20 h-20 rounded-2xl bg-white border border-slate-100 overflow-hidden flex-shrink-0 shadow-sm relative group-hover:scale-105 transition-transform duration-300"
                                                 >
                                                     {p.thumb ? (
@@ -244,7 +244,7 @@ export const ProductStandardization = ({ setAppTitle }) => {
                                                 </button>
                                                 <div className="flex flex-col justify-center gap-1">
                                                     <span
-                                                        onClick={() => setViewingDetailId(p.id)}
+                                                        onClick={() => setViewingDetailId(p.sku || p.id)}
                                                         className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 hover:text-indigo-600 transition-colors cursor-pointer"
                                                     >
                                                         {p.name || 'Sản phẩm không tên'}
@@ -264,7 +264,16 @@ export const ProductStandardization = ({ setAppTitle }) => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-slate-300">ID: {p.id}</span>
+                                                        <a
+                                                            href={`https://qvc.vn/index.php?route=product/product&product_id=${p.id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[10px] font-bold text-slate-300 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                                                            title="Xem trên QVC website"
+                                                        >
+                                                            ID: {p.id}
+                                                            <UI.Icon name="external-link" className="w-2.5 h-2.5" />
+                                                        </a>
                                                     </div>
                                                     <div className="flex gap-3 mt-1">
                                                         <div className="flex items-center gap-1">

@@ -56,6 +56,7 @@ const UserRoleManager = () => {
     const [editName, setEditName] = useState('');
     const [editEmail, setEditEmail] = useState('');
     const [editPassword, setEditPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState(''); // [NEW] Confirm Password
 
     useEffect(() => { fetchData(); }, []);
 
@@ -174,6 +175,7 @@ const UserRoleManager = () => {
         setEditName(user.name);
         setEditEmail(user.email);
         setEditPassword(''); // Reset password field
+        setConfirmPassword(''); // Reset confirm password
         setSelectedRoles(user.roles?.map(r => r.id) || []);
 
         const currentDepts = user.departments?.map(d => ({
@@ -194,6 +196,21 @@ const UserRoleManager = () => {
             };
 
             if (editPassword) {
+                if (editPassword !== confirmPassword) {
+                    toast.error("Mật khẩu xác nhận không khớp!");
+                    return;
+                }
+                if (editPassword.length < 8) {
+                    toast.error("Mật khẩu phải có ít nhất 8 ký tự!");
+                    return;
+                }
+                // Regex: Min 8 chars, at least 1 letter and 1 number
+                const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+                if (!strongPasswordRegex.test(editPassword)) {
+                    toast.warning("Mật khẩu yếu! Nên có ít nhất 1 chữ cái và 1 số.");
+                    // Vẫn cho lưu nhưng cảnh báo, hoặc return nếu muốn chặt chẽ hơn.
+                    // return; 
+                }
                 payload.password = editPassword;
             }
 
@@ -381,18 +398,31 @@ const UserRoleManager = () => {
                                                     className="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                                                 />
                                             </div>
-                                            <div className="md:col-span-2 border-t border-blue-200 pt-4 mt-2">
-                                                <label className="block text-[10px] font-bold uppercase text-red-500 mb-1 flex justify-between">
-                                                    <span>Đặt lại mật khẩu</span>
-                                                    <span className="italic font-normal normal-case opacity-70">⚠ Chỉ nhập nếu muốn đổi mật khẩu mới</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Nhập mật khẩu mới (Để trống nếu không đổi)"
-                                                    value={editPassword}
-                                                    onChange={e => setEditPassword(e.target.value)}
-                                                    className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                                                />
+                                            <div className="md:col-span-2 border-t border-blue-200 pt-4 mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-[10px] font-bold uppercase text-red-500 mb-1 flex justify-between">
+                                                        <span>Đặt lại mật khẩu</span>
+                                                        <span className="italic font-normal normal-case opacity-70">⚠ Chỉ nhập nếu muốn đổi mật khẩu mới</span>
+                                                    </label>
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Mật khẩu mới (Min 8 ký tự)"
+                                                        value={editPassword}
+                                                        onChange={e => setEditPassword(e.target.value)}
+                                                        className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Xác nhận mật khẩu mới"
+                                                        value={confirmPassword}
+                                                        onChange={e => setConfirmPassword(e.target.value)}
+                                                        className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </section>
