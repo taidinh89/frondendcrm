@@ -57,14 +57,25 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
     };
 
     const handleSave = async () => {
+        if (!formData.name) {
+            toast.error("Tên thương hiệu không được để trống");
+            return;
+        }
         setIsSaving(true);
         try {
-            await metaApi.updateBrand(editingItem.id, formData);
-            toast.success("Cập nhật thành công");
-
-            // Refresh local list
-            const updatedBrands = brands.map(b => b.id === editingItem.id ? { ...b, ...formData } : b);
-            setBrands(updatedBrands);
+            let res;
+            if (editingItem.id) {
+                // UPDATE
+                res = await metaApi.updateBrand(editingItem.id, formData);
+                setBrands(prev => prev.map(b => b.id === editingItem.id ? { ...b, ...formData } : b));
+                toast.success("Cập nhật thành công");
+            } else {
+                // CREATE
+                res = await metaApi.createBrand(formData);
+                const newBrand = res.data.data || res.data;
+                setBrands(prev => [newBrand, ...prev]);
+                toast.success("Tạo mới thành công");
+            }
 
             setViewMode('list');
             setEditingItem(null);
@@ -76,8 +87,26 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
     };
 
     const handleCreate = () => {
-        // Implement create logic if needed, or link to full manager
-        toast("Vui lòng vào trang Quản lý Thương hiệu để thêm mới", { icon: 'ℹ️' });
+        setEditingItem({ id: null });
+        setFormData({ name: '', is_active: true, image: '', meta_description: '' });
+        setViewMode('edit');
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm(`Bạn có chắc muốn xóa thương hiệu "${editingItem.name}"?`)) return;
+        setIsSaving(true);
+        try {
+            await metaApi.deleteBrand(editingItem.id);
+            toast.success("Đã xóa thương hiệu");
+            setBrands(prev => prev.filter(b => b.id !== editingItem.id));
+            if (String(selectedId) === String(editingItem.id) && onSelect) onSelect(null);
+            setViewMode('list');
+            setEditingItem(null);
+        } catch (error) {
+            toast.error("Lỗi xóa: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -93,7 +122,7 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
                     <div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Brand Selector</div>
                         <h2 className="text-lg font-black text-gray-900 uppercase leading-none">
-                            {viewMode === 'edit' ? `Chỉnh sửa: ${editingItem?.name}` : 'Chọn Thương Hiệu'}
+                            {viewMode === 'edit' ? (editingItem?.id ? `Chỉnh sửa: ${editingItem.name}` : 'Thêm thương hiệu mới') : 'Chọn Thương Hiệu'}
                         </h2>
                     </div>
                 </div>
@@ -265,9 +294,16 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
                     </>
                 ) : (
                     <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-3xl mx-auto w-full">
-                        <button onClick={() => setViewMode('list')} className="mb-6 text-gray-400 hover:text-gray-600 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-                            <Icon name="chevronLeft" className="w-4 h-4" /> Quay lại danh sách
-                        </button>
+                        <div className="flex justify-between items-center mb-6">
+                            <button onClick={() => setViewMode('list')} className="text-gray-400 hover:text-gray-600 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                                <Icon name="chevronLeft" className="w-4 h-4" /> Quay lại danh sách
+                            </button>
+                            {editingItem?.id && (
+                                <button onClick={handleDelete} disabled={isSaving} className="text-red-400 hover:text-red-600 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                                    <Icon name="trash" className="w-3.5 h-3.5" /> Xóa
+                                </button>
+                            )}
+                        </div>
 
                         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 space-y-6 animate-fadeIn">
                             <div className="flex items-center justify-center mb-6">

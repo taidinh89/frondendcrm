@@ -63,6 +63,10 @@ import { ProductStandardization } from './pages/ProductStandardization.jsx';
 import { ProductMappingManager } from './pages/ProductMappingManager.jsx';
 import { EcountProductManager } from './pages/EcountProductManager.jsx';
 
+// [NEW] User & Auth Pages
+import { ProfilePage } from './pages/Profile/ProfilePage.jsx';
+import { ResetPasswordPage } from './pages/Auth/ResetPasswordPage.jsx';
+
 // --- 3. CẤU HÌNH MENU (NAV ITEMS) ---
 const navItems = [
     {
@@ -265,6 +269,14 @@ const App = () => {
     const onLogout = () => {
         // Clear token khi logout chủ động
         localStorage.removeItem('auth_token');
+
+        // [CLEANUP] Xóa sạch các bản nháp bài viết khi đăng xuất
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('rte_draft_')) {
+                localStorage.removeItem(key);
+            }
+        });
+
         setUser(null);
         navigate('/login');
     };
@@ -334,7 +346,21 @@ const App = () => {
                             ))}
 
                             <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
+                            <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/product-mapping/:id" element={<ProductMappingManager />} />
+
+                            {/* [NEW] User Profile Route (Protected) */}
+                            <Route
+                                path="/profile"
+                                element={
+                                    user ? (
+                                        <ProfilePage currentUser={user} setAppTitle={setAppTitle} />
+                                    ) : (
+                                        <Navigate to="/login" />
+                                    )
+                                }
+                            />
+
                             <Route path="/login" element={<Navigate to="/" />} />
                             <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-400 font-bold text-2xl">404 - Trang không tồn tại</div>} />
                         </Routes>
@@ -349,6 +375,10 @@ const App = () => {
 
     return (
         <Routes>
+            {/* [NEW] Public Password Reset Routes */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/password/reset" element={<ResetPasswordPage />} />
+
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
             <Route path="/*" element={user ? <MainLayout user={user} onLogout={onLogout} /> : <Navigate to="/login" />} />
         </Routes>

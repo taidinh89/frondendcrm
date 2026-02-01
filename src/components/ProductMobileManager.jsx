@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { productApi } from '../api/admin/productApi';
 import { Icon, Button, Modal } from './ui';
 import ProductMobileDetail from './ProductMobileDetail';
+import ProductMobileDetailV2 from './ProductMobileDetailV2';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -99,6 +100,11 @@ const ProductMobileManager = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [detailMode, setDetailMode] = useState('view');
+    const [detailVersion, setDetailVersion] = useState(localStorage.getItem('pm_local_version') || 'v1');
+
+    useEffect(() => {
+        localStorage.setItem('pm_local_version', detailVersion);
+    }, [detailVersion]);
 
     // Nạp Meta
     useEffect(() => {
@@ -224,7 +230,8 @@ const ProductMobileManager = () => {
     return (
         <div className="bg-[#f8f9fc] min-h-screen pb-32 font-sans selection:bg-indigo-100">
             {/* TOP BAR PREMIUM - CLEAN VERSION */}
-            <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center gap-3 shadow-sm">
+            {/* TOP BAR PREMIUM - CLEAN VERSION */}
+            <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 shadow-sm">
                 <div className="flex-1 relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Icon name="search" className="w-4 h-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
@@ -248,6 +255,12 @@ const ProductMobileManager = () => {
                     className="bg-indigo-600 text-white p-3.5 rounded-2xl active:scale-95 shadow-xl shadow-indigo-100 transition-all"
                 >
                     <Icon name="plus" className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={() => setDetailVersion(v => v === 'v1' ? 'v2' : 'v1')}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${detailVersion === 'v2' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100'}`}
+                >
+                    {detailVersion === 'v1' ? 'V1' : 'V2'}
                 </button>
             </div>
 
@@ -672,14 +685,27 @@ const ProductMobileManager = () => {
 
             {/* DETAIL MODAL */}
             {isDetailOpen && (
-                <ProductMobileDetail
-                    isOpen={isDetailOpen}
-                    onClose={() => setIsDetailOpen(false)}
-                    product={selectedProduct}
-                    mode={detailMode}
-                    onRefresh={() => fetchProducts(true)}
-                    dictionary={meta}
-                />
+                detailVersion === 'v1' ? (
+                    <ProductMobileDetail
+                        isOpen={isDetailOpen}
+                        onClose={() => setIsDetailOpen(false)}
+                        product={selectedProduct}
+                        mode={detailMode}
+                        onRefresh={() => fetchProducts(true)}
+                        dictionary={meta}
+                        onSwitchVersion={() => setDetailVersion('v2')}
+                    />
+                ) : (
+                    <ProductMobileDetailV2
+                        isOpen={isDetailOpen}
+                        onClose={() => setIsDetailOpen(false)}
+                        product={selectedProduct}
+                        mode={detailMode}
+                        onRefresh={() => fetchProducts(true)}
+                        dictionary={meta}
+                        onSwitchVersion={() => setDetailVersion('v1')}
+                    />
+                )
             )}
         </div>
     );

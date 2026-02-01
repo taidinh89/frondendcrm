@@ -6,12 +6,12 @@ import { toast } from 'react-toastify';
 const StatCard = ({ title, count, type, icon, activeFilter, onClick, colorClass }) => {
     const isActive = activeFilter === type;
     return (
-        <div 
+        <div
             onClick={() => onClick(type)}
             className={`
                 relative overflow-hidden rounded-[2rem] p-6 cursor-pointer transition-all duration-300 border
-                ${isActive 
-                    ? `bg-gradient-to-br ${colorClass} text-white shadow-xl scale-105 ring-2 ring-offset-2 ring-blue-300 border-transparent` 
+                ${isActive
+                    ? `bg-gradient-to-br ${colorClass} text-white shadow-xl scale-105 ring-2 ring-offset-2 ring-blue-300 border-transparent`
                     : 'bg-white border-gray-100 hover:bg-gray-50 text-gray-600 hover:shadow-md'
                 }
             `}
@@ -42,15 +42,20 @@ const UserRoleManager = () => {
     const [roles, setRoles] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // UI States
     const [filterType, setFilterType] = useState('all'); // all, active, admin, locked
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // Edit Modal States
     const [editingUser, setEditingUser] = useState(null);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [selectedDepts, setSelectedDepts] = useState([]);
+
+    // [NEW] Form States
+    const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
+    const [editPassword, setEditPassword] = useState('');
 
     useEffect(() => { fetchData(); }, []);
 
@@ -62,10 +67,10 @@ const UserRoleManager = () => {
                 axios.get('/api/security/roles?per_page=100'),
                 axios.get('/api/security/departments?per_page=100')
             ]);
-            
+
             // Helper lấy data an toàn
             const getData = (res) => res.data.data || res.data || [];
-            
+
             setUsers(getData(uRes));
             setRoles(getData(rRes).filter(r => r.name !== 'Super Admin')); // Ẩn Super Admin để tránh xóa nhầm
             setDepartments(getData(dRes));
@@ -108,7 +113,7 @@ const UserRoleManager = () => {
     // --- LỌC DANH SÁCH ---
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         let matchesFilter = true;
         if (filterType === 'active') matchesFilter = u.is_active;
         if (filterType === 'locked') matchesFilter = !u.is_active;
@@ -126,7 +131,7 @@ const UserRoleManager = () => {
             return;
         }
 
-        if(!window.confirm(`Bạn muốn ${user.is_active ? 'KHÓA 🔒' : 'MỞ KHÓA 🔓'} tài khoản ${user.name}?`)) return;
+        if (!window.confirm(`Bạn muốn ${user.is_active ? 'KHÓA 🔒' : 'MỞ KHÓA 🔓'} tài khoản ${user.name}?`)) return;
 
         try {
             const newStatus = !user.is_active;
@@ -142,7 +147,7 @@ const UserRoleManager = () => {
             toast.error("KHÔNG THỂ XÓA SUPER ADMIN!");
             return;
         }
-        if(!window.confirm(`CẢNH BÁO: Xóa nhân sự [${user.name}]?\nDữ liệu liên quan sẽ mất vĩnh viễn.`)) return;
+        if (!window.confirm(`CẢNH BÁO: Xóa nhân sự [${user.name}]?\nDữ liệu liên quan sẽ mất vĩnh viễn.`)) return;
 
         try {
             setUsers(users.filter(u => u.id !== user.id));
@@ -153,24 +158,65 @@ const UserRoleManager = () => {
 
     // --- MODAL CONFIGURATION ---
     const openEditor = (user) => {
+        if (!user) {
+            // Mode: Create New
+            setEditingUser({ id: null, name: '', email: '', is_admin: 0, is_active: true });
+            setEditName('');
+            setEditEmail('');
+            setEditPassword('');
+            setSelectedRoles([]);
+            setSelectedDepts([{ id: '', position: 'Nhân viên', access_level: 'own_only' }]);
+            return;
+        }
+
+        // Mode: Edit
         setEditingUser(user);
+        setEditName(user.name);
+        setEditEmail(user.email);
+        setEditPassword(''); // Reset password field
         setSelectedRoles(user.roles?.map(r => r.id) || []);
-        
+
         const currentDepts = user.departments?.map(d => ({
             id: d.id, name: d.name, position: d.pivot?.position || 'Nhân viên', access_level: d.pivot?.access_level || 'own_only'
         })) || [];
         if (currentDepts.length === 0) currentDepts.push({ id: '', position: 'Nhân viên', access_level: 'own_only' });
-        
+
         setSelectedDepts(currentDepts);
     };
 
     const handleSave = async () => {
         try {
-            await axios.put(`/api/security/users/${editingUser.id}`, { name: editingUser.name, roles: selectedRoles });
+            const payload = {
+                name: editName,
+                email: editEmail,
+                roles: selectedRoles,
+                is_active: editingUser.is_active // Retain status if new or edit
+            };
+
+            if (editPassword) {
+                payload.password = editPassword;
+            }
+
+            let targetId = editingUser.id;
+
+            if (targetId) {
+                // Update
+                await axios.put(`/api/security/users/${targetId}`, payload);
+            } else {
+                // Create
+                if (!editPassword) {
+                    toast.error("Vui lòng nhập mật khẩu cho nhân sự mới!");
+                    return;
+                }
+                const res = await axios.post('/api/security/users', payload);
+                targetId = res.data.data.id;
+            }
+
             const deptPayload = {};
             selectedDepts.filter(d => d.id).forEach(d => { deptPayload[d.id] = { position: d.position, access_level: d.access_level }; });
-            await axios.put(`/api/security/users/${editingUser.id}/departments`, { departments: deptPayload });
-            toast.success("Cập nhật thành công!");
+            await axios.put(`/api/security/users/${targetId}/departments`, { departments: deptPayload });
+
+            toast.success(editingUser.id ? "Cập nhật thành công!" : "Tạo mới thành công!");
             setEditingUser(null);
             fetchData();
         } catch (e) { toast.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message)); }
@@ -181,7 +227,7 @@ const UserRoleManager = () => {
     return (
         <div className="p-6 bg-[#f8fafc] min-h-screen font-sans text-gray-800">
             <div className="max-w-[1600px] mx-auto space-y-8">
-                
+
                 {/* 1. DASHBOARD */}
                 <div>
                     <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-6">
@@ -197,15 +243,20 @@ const UserRoleManager = () => {
 
                 {/* 2. TOOLBAR */}
                 <div className="bg-white p-2 pr-4 rounded-[1.5rem] border border-gray-200 shadow-sm flex items-center justify-between sticky top-4 z-20">
-                    <input 
+                    <input
                         className="flex-1 bg-transparent px-6 py-3 outline-none font-bold text-gray-600 placeholder-gray-400"
                         placeholder={`🔍 Tìm kiếm trong ${filteredUsers.length} nhân sự...`}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
-                    {filterType !== 'all' && (
-                        <button onClick={() => setFilterType('all')} className="text-xs font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors">✕ Xóa bộ lọc</button>
-                    )}
+                    <div className="flex gap-2">
+                        {filterType !== 'all' && (
+                            <button onClick={() => setFilterType('all')} className="text-xs font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors">✕ Xóa bộ lọc</button>
+                        )}
+                        <button onClick={() => openEditor(null)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95">
+                            <span className="text-lg leading-none">+</span> Tạo Mới
+                        </button>
+                    </div>
                 </div>
 
                 {/* 3. MAIN LIST */}
@@ -276,7 +327,7 @@ const UserRoleManager = () => {
                                                     {user.is_active ? '🔒' : '🔓'}
                                                 </button>
                                             )}
-                                            
+
                                             {/* Nút Xóa (Ẩn nếu là Admin cứng) */}
                                             {(!user.is_admin) && (
                                                 <button onClick={(e) => deleteUser(e, user)} title="Xóa" className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 flex items-center justify-center transition-all">🗑️</button>
@@ -295,15 +346,15 @@ const UserRoleManager = () => {
                 {editingUser && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
                         <div className="bg-white w-full max-w-5xl h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-zoom-in border border-white/20">
-                            
+
                             {/* Modal Header */}
                             <div className="p-6 bg-white border-b flex justify-between items-center z-10">
                                 <div>
                                     <h3 className="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
-                                        Hồ sơ: {editingUser.name}
+                                        Hồ sơ: {editName}
                                         {(editingUser.is_admin === 1) && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-200">👑 SYSTEM ADMIN</span>}
                                     </h3>
-                                    <div className="text-xs text-gray-500 mt-1">{editingUser.email}</div>
+                                    <div className="text-xs text-gray-500 mt-1">{editEmail}</div>
                                 </div>
                                 <button onClick={() => setEditingUser(null)} className="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 font-bold">✕</button>
                             </div>
@@ -311,11 +362,46 @@ const UserRoleManager = () => {
                             {/* Modal Body */}
                             <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                                 <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-white">
+                                    <section className="mb-8">
+                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-4">1. Thông tin cơ bản & Mật khẩu</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                                            <div>
+                                                <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Họ và tên</label>
+                                                <input
+                                                    value={editName}
+                                                    onChange={e => setEditName(e.target.value)}
+                                                    className="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Email đăng nhập</label>
+                                                <input
+                                                    value={editEmail}
+                                                    onChange={e => setEditEmail(e.target.value)}
+                                                    className="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 border-t border-blue-200 pt-4 mt-2">
+                                                <label className="block text-[10px] font-bold uppercase text-red-500 mb-1 flex justify-between">
+                                                    <span>Đặt lại mật khẩu</span>
+                                                    <span className="italic font-normal normal-case opacity-70">⚠ Chỉ nhập nếu muốn đổi mật khẩu mới</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nhập mật khẩu mới (Để trống nếu không đổi)"
+                                                    value={editPassword}
+                                                    onChange={e => setEditPassword(e.target.value)}
+                                                    className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </section>
+
                                     <section>
-                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-4">1. Vai trò Hệ thống</h4>
+                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-4">2. Vai trò Hệ thống</h4>
                                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                             {roles.map(r => (
-                                                <div key={r.id} onClick={() => selectedRoles.includes(r.id) ? setSelectedRoles(selectedRoles.filter(id => id !== r.id)) : setSelectedRoles([...selectedRoles, r.id])} 
+                                                <div key={r.id} onClick={() => selectedRoles.includes(r.id) ? setSelectedRoles(selectedRoles.filter(id => id !== r.id)) : setSelectedRoles([...selectedRoles, r.id])}
                                                     className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 ${selectedRoles.includes(r.id) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 text-gray-600'}`}>
                                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedRoles.includes(r.id) ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white'}`}>{selectedRoles.includes(r.id) && '✓'}</div><span className="text-xs font-bold">{r.name}</span>
                                                 </div>
@@ -323,7 +409,7 @@ const UserRoleManager = () => {
                                         </div>
                                     </section>
                                     <section>
-                                        <h4 className="text-xs font-black text-orange-600 uppercase tracking-[0.2em] mb-4">2. Kiêm nhiệm & Vị trí</h4>
+                                        <h4 className="text-xs font-black text-orange-600 uppercase tracking-[0.2em] mb-4">3. Kiêm nhiệm & Vị trí</h4>
                                         <div className="space-y-3">
                                             {selectedDepts.map((item, idx) => (
                                                 <div key={idx} className="flex gap-3 items-center bg-gray-50 p-3 rounded-2xl border border-gray-200">

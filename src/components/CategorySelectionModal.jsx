@@ -138,20 +138,63 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
     };
 
     const handleSave = async () => {
+        if (!formData.name) {
+            toast.error("Tên danh mục không được để trống");
+            return;
+        }
         setIsSaving(true);
         try {
-            await metaApi.updateCategory(editingItem.id, formData);
-            toast.success("Cập nhật thành công");
-
-            // Refresh
-            const updated = categories.map(c => c.id === editingItem.id ? { ...c, ...formData } : c);
-            setCategories(updated);
-            setTreeCategories(updated);
+            let res;
+            if (editingItem.id) {
+                // UPDATE
+                res = await metaApi.updateCategory(editingItem.id, formData);
+                const updated = categories.map(c => c.id === editingItem.id ? { ...c, ...formData } : c);
+                setCategories(updated);
+                setTreeCategories(updated); // In a real app we might need to re-fetch to rebuild tree properly
+                toast.success("Cập nhật thành công");
+            } else {
+                // CREATE
+                res = await metaApi.createCategory(formData);
+                const newCat = res.data.data || res.data;
+                const newCategories = [...categories, newCat];
+                setCategories(newCategories);
+                setTreeCategories(newCategories);
+                toast.success("Tạo mới thành công");
+            }
 
             setViewMode(search ? 'grid' : 'tree');
             setEditingItem(null);
         } catch (error) {
             toast.error("Lỗi lưu trữ: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCreate = () => {
+        setEditingItem({ id: null });
+        setFormData({
+            name: '', code: '', sort_order: 0,
+            is_active: true, is_featured: false, parent_id: null,
+            image: '', meta_description: ''
+        });
+        setViewMode('edit');
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm(`Bạn có chắc muốn xóa danh mục "${editingItem.name}"?`)) return;
+        setIsSaving(true);
+        try {
+            await metaApi.deleteCategory(editingItem.id);
+            toast.success("Đã xóa danh mục");
+            const newCats = categories.filter(c => c.id !== editingItem.id);
+            setCategories(newCats);
+            setTreeCategories(newCats);
+            if (String(selectedId) === String(editingItem.id) && onSelect) onSelect(null);
+            setViewMode('tree');
+            setEditingItem(null);
+        } catch (error) {
+            toast.error("Lỗi xóa: " + (error.response?.data?.message || error.message));
         } finally {
             setIsSaving(false);
         }
@@ -281,7 +324,7 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
                     <div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Category Selector</div>
                         <h2 className="text-lg font-black text-gray-900 uppercase leading-none">
-                            {viewMode === 'edit' ? `Sửa: ${editingItem?.name}` : 'Chọn Danh Mục'}
+                            {viewMode === 'edit' ? (editingItem?.id ? `Sửa: ${editingItem.name}` : 'Thêm Danh Mục Mới') : 'Chọn Danh Mục'}
                         </h2>
                     </div>
                 </div>
@@ -324,6 +367,9 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
                                 </button>
                                 <button onClick={() => setViewMode('grid')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}>
                                     <Icon name="image" className="w-4 h-4" />
+                                </button>
+                                <button onClick={handleCreate} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 ml-2 shadow-lg shadow-blue-200">
+                                    <Icon name="plus" className="w-4 h-4" /> Thêm
                                 </button>
                             </div>
                         </div>
@@ -382,9 +428,16 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
                     </>
                 ) : (
                     <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto w-full">
-                        <button onClick={() => setViewMode(search ? 'grid' : 'tree')} className="mb-6 text-gray-400 hover:text-gray-600 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-                            <Icon name="chevronLeft" className="w-4 h-4" /> Quay lại
-                        </button>
+                        <div className="flex justify-between items-center mb-6">
+                            <button onClick={() => setViewMode(search ? 'grid' : 'tree')} className="text-gray-400 hover:text-gray-600 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                                <Icon name="chevronLeft" className="w-4 h-4" /> Quay lại
+                            </button>
+                            {editingItem?.id && (
+                                <button onClick={handleDelete} disabled={isSaving} className="text-red-400 hover:text-red-600 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                                    <Icon name="trash" className="w-3.5 h-3.5" /> Xóa
+                                </button>
+                            )}
+                        </div>
 
                         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 space-y-6 animate-fadeIn">
                             <div className="flex items-center justify-center mb-6">

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import MediaStudioModal from './MediaStudioModal';
 
-import { Icon, Pagination, Button } from './ui';
+import { Icon, Button } from './ui';
 import { mediaApi } from '../api/admin/mediaApi';
 import { productApi } from '../api/admin/productApi';
 import { metaApi } from '../api/admin/metaApi';
@@ -34,8 +34,12 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
 
     // --- STATE UI ---
     const [selectedIds, setSelectedIds] = useState([]);
+    const [viewMode, setViewMode] = useState('grid_md'); // 'grid_lg' | 'grid_md' | 'grid_sm' | 'list'
+    const [largePreviewItem, setLargePreviewItem] = useState(null);
     const [activeItem, setActiveItem] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const observerTarget = useRef(null);
     const [isCreatingCol, setIsCreatingCol] = useState(false);
     const [newColName, setNewColName] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -49,16 +53,23 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
 
 
     // --- 1. LOAD DATA ---
-    const fetchFiles = useCallback(async (page = 1) => {
-        setLoading(true);
+    const fetchFiles = useCallback(async (page = 1, append = false) => {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+
         try {
             const res = await axios.get('/api/v1/admin/media-library', { params: { ...filters, page } });
-            setFiles(res.data.data);
+            if (append) {
+                setFiles(prev => [...prev, ...res.data.data]);
+            } else {
+                setFiles(res.data.data);
+            }
             setPagination(res.data);
         } catch (e) {
             toast.error("Lỗi tải dữ liệu media");
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     }, [filters]);
 
@@ -79,9 +90,31 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     };
 
     useEffect(() => {
-        fetchFiles();
+        fetchFiles(1, false);
         fetchMeta();
     }, [fetchFiles]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                // Thêm rootMargin để load sớm hơn khi user cuộn gần tới đáy
+                if (entries[0].isIntersecting && pagination && pagination.current_page < pagination.last_page && !loading && !loadingMore) {
+                    fetchFiles(pagination.current_page + 1, true);
+                }
+            },
+            { threshold: 0.1, rootMargin: '200px' }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [pagination, loading, loadingMore, fetchFiles]);
 
     // --- 2. HANDLERS BỘ SƯU TẬP ---
     const handleCreateCollection = async () => {
@@ -113,8 +146,32 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
             await mediaApi.addToCollection(collectionId, ids);
             toast.success("Đã thêm vào bộ sưu tập");
             fetchMeta();
-            if (activeItem && ids.includes(activeItem.id)) {
-                fetchFiles(pagination?.current_page || 1);
+
+            // Cập nhật local state: Tìm Collection vừa chọn
+            const targetCol = collections.find(c => c.id == collectionId);
+            if (targetCol) {
+                // Update danh sách file
+                setFiles(prev => prev.map(f => {
+                    if (ids.includes(f.id)) {
+                        const currentCols = f.collections || [];
+                        // Avoid dups
+                        if (!currentCols.find(c => c.id == collectionId)) {
+                            return { ...f, collections: [...currentCols, targetCol] };
+                        }
+                    }
+                    return f;
+                }));
+
+                // Update activeItem nếu đang chọn
+                if (activeItem && ids.includes(activeItem.id)) {
+                    setActiveItem(prev => {
+                        const currentCols = prev.collections || [];
+                        if (!currentCols.find(c => c.id == collectionId)) {
+                            return { ...prev, collections: [...currentCols, targetCol] };
+                        }
+                        return prev;
+                    });
+                }
             }
         } catch (e) { toast.error("Lỗi thêm"); }
     };
@@ -129,7 +186,14 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                 internal_notes: activeItem.internal_notes
             });
             toast.success("Đã lưu thông tin");
-            fetchFiles(pagination?.current_page || 1);
+            // Cập nhật local state thay vì fetch lại
+            setFiles(prev => prev.map(f => f.id === activeItem.id ? {
+                ...f, ...{
+                    original_name: activeItem.original_name,
+                    alt_text_default: activeItem.alt_text_default,
+                    internal_notes: activeItem.internal_notes
+                }
+            } : f));
         } catch (e) { toast.error("Lỗi lưu metadata"); }
     };
 
@@ -159,7 +223,9 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
             toast.success("Đã xóa");
             if (activeItem?.id === id) setActiveItem(null);
             setSelectedIds(prev => prev.filter(i => i !== id));
-            fetchFiles(pagination?.current_page || 1);
+            // Xóa local state thay vì fetch lại
+            setFiles(prev => prev.filter(f => f.id !== id));
+
         } catch (e) {
             toast.error(e.response?.data?.message || "Lỗi xóa");
         }
@@ -195,6 +261,32 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     const resetFilters = () => {
         setFilters(initialFilters);
         setSelectedIds([]);
+    };
+
+    const getGridClass = () => {
+        switch (viewMode) {
+            case 'grid_huge': return 'grid-cols-1 md:grid-cols-2 gap-8';
+            case 'grid_lg': return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8';
+            case 'grid_md': return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6';
+            case 'grid_sm': return 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3';
+            case 'list': return 'grid-cols-1 gap-2';
+            default: return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6';
+        }
+    };
+
+    const handleDownload = async (url, filename) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename || "download";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            toast.error("Không thể tải ảnh");
+        }
     };
 
     return (
@@ -351,44 +443,65 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
 
             {/* === CỘT 2: MAIN GRID === */}
             <div className="flex-1 flex flex-col min-w-0 bg-white md:rounded-l-[3rem] shadow-2xl relative z-10">
-                <div className="h-20 border-b border-slate-100 px-8 flex items-center justify-between">
-                    <div className="flex-1 flex items-center gap-4">
-                        <div className="relative group w-full max-w-md">
-                            <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600" />
-                            <input
-                                className="bg-slate-50 rounded-2xl pl-12 pr-6 py-3 w-full border-2 border-transparent focus:border-indigo-100 focus:bg-white outline-none font-bold placeholder:text-slate-300 transition-all shadow-sm group-focus-within:shadow-indigo-50"
-                                placeholder="Tìm tên file..."
-                                value={filters.search}
-                                onChange={e => setFilters({ ...filters, search: e.target.value })}
-                            />
+                <div className="h-20 border-b border-slate-100 px-8 flex items-center justify-between gap-4">
+                    {/* SEARCH INPUT */}
+                    <div className="flex-1 max-w-lg relative group">
+                        <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600" />
+                        <input
+                            className="bg-slate-50 rounded-2xl pl-12 pr-6 py-3 w-full border-2 border-transparent focus:border-indigo-100 focus:bg-white outline-none font-bold placeholder:text-slate-300 transition-all shadow-sm group-focus-within:shadow-indigo-50"
+                            placeholder="Tìm tên file..."
+                            value={filters.search}
+                            onChange={e => setFilters({ ...filters, search: e.target.value })}
+                        />
+                    </div>
+
+                    {/* ACTIONS BAR (VIEW MODES & UPLOAD) */}
+                    <div className="flex items-center gap-3">
+                        {/* 4 VIEW MODES SWITCHER */}
+                        <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+                            <button onClick={() => setViewMode('grid_huge')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid_huge' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Siêu lớn">
+                                <Icon name="maximize" className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setViewMode('grid_lg')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid_lg' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Lưới lớn">
+                                <Icon name="grid" className="w-4 h-4" /> {/* Icon đại diện Lớn */}
+                            </button>
+                            <button onClick={() => setViewMode('grid_md')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid_md' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Lưới vừa">
+                                <Icon name="grid" className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setViewMode('grid_sm')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid_sm' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Lưới nhỏ">
+                                <Icon name="grid" className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Danh sách">
+                                <Icon name="list" className="w-4 h-4" />
+                            </button>
                         </div>
-                        <label className={`hidden md:flex bg-indigo-600 text-white px-8 py-3 rounded-2xl cursor-pointer hover:bg-indigo-700 font-black uppercase text-[10px] tracking-widest items-center gap-3 shadow-lg shadow-indigo-100 active:scale-95 transition-all ${uploading ? 'opacity-50' : ''}`}>
-                            <Icon name="cloud-upload" className="w-4 h-4" /> Tải lên mới
+
+                        <label className={`hidden md:flex bg-indigo-600 text-white px-6 py-3 rounded-2xl cursor-pointer hover:bg-indigo-700 font-black uppercase text-[10px] tracking-widest items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 transition-all ${uploading ? 'opacity-50' : ''}`}>
+                            <Icon name="cloud-upload" className="w-4 h-4" /> <span className="hidden xl:inline">Tải lên mới</span>
                             <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
                         </label>
                     </div>
 
-                    <div className="flex gap-4 ml-8">
+                    {/* SELECTION ACTIONS */}
+                    <div className="flex gap-2">
                         {!isStandalone && (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        const selectedItems = files.filter(f => selectedIds.includes(f.id));
-                                        onSelect && onSelect(multiple ? selectedItems : selectedItems[0]);
-                                    }}
-                                    disabled={selectedIds.length === 0}
-                                    className="px-10 py-3 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-                                >
-                                    Xác nhận {selectedIds.length > 0 && `(${selectedIds.length})`}
-                                </button>
-                            </>
+                            <button
+                                onClick={() => {
+                                    const selectedItems = files.filter(f => selectedIds.includes(f.id));
+                                    onSelect && onSelect(multiple ? selectedItems : selectedItems[0]);
+                                }}
+                                disabled={selectedIds.length === 0}
+                                className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 whitespace-nowrap"
+                            >
+                                Xác nhận {selectedIds.length > 0 && `(${selectedIds.length})`}
+                            </button>
                         )}
                         {isStandalone && selectedIds.length > 0 && (
                             <button
                                 onClick={() => setSelectedIds([])}
-                                className="px-6 py-3 bg-red-50 text-red-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                                className="px-4 py-3 bg-red-50 text-red-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all whitespace-nowrap"
                             >
-                                Bỏ chọn ({selectedIds.length})
+                                Bỏ ({selectedIds.length})
                             </button>
                         )}
                     </div>
@@ -462,7 +575,7 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                                     <span className="text-[10px] font-black uppercase text-slate-400">Nạp dữ liệu từ kho...</span>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                                <div className={`grid ${getGridClass()} auto-rows-max pb-4`}>
                                     {files.map(file => (
                                         <div
                                             key={file.id}
@@ -474,19 +587,63 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                                                     setSelectedIds([file.id]);
                                                 }
                                             }}
-                                            className={`group relative aspect-square rounded-[2rem] border-4 transition-all cursor-pointer overflow-hidden ${selectedIds.includes(file.id) ? 'border-indigo-600 ring-8 ring-indigo-50 shadow-xl' : (activeItem?.id === file.id ? 'border-indigo-300' : 'border-slate-50 hover:border-indigo-100 shadow-sm')}`}
+                                            className={`group relative transition-all cursor-pointer overflow-hidden 
+                                                ${viewMode === 'list'
+                                                    ? 'flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 shadow-sm'
+                                                    : `aspect-square bg-white border-4 ${selectedIds.includes(file.id) ? 'border-indigo-600 ring-4 ring-indigo-50 shadow-xl z-10' : (activeItem?.id === file.id ? 'border-indigo-300 shadow-md' : 'border-transparent hover:border-indigo-100 hover:shadow-lg shadow-sm')} rounded-[1.5rem]`
+                                                }
+                                            `}
                                         >
-                                            {file.is_image ? <img src={file.preview_url} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" alt={file.original_name} /> : <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-2"><Icon name="file-text" className="w-10 h-10" /><span className="text-[8px] font-black uppercase tracking-widest">{file.mime_type?.split('/')[1]}</span></div>}
-                                            <div className={`absolute inset-0 bg-indigo-600/10 transition-opacity ${selectedIds.includes(file.id) ? 'opacity-100' : 'opacity-0'}`} />
-                                            <div className={`absolute top-4 right-4 w-7 h-7 rounded-xl border-2 transition-all flex items-center justify-center ${selectedIds.includes(file.id) ? 'bg-indigo-600 border-indigo-600 scale-110 shadow-lg' : 'bg-white/80 border-slate-200 opacity-0 group-hover:opacity-100'}`}>{selectedIds.includes(file.id) && <Icon name="check" className="w-4 h-4 text-white" />}</div>
-                                            {file.usage_count > 1 && <div className="absolute top-4 left-4 h-7 px-2.5 bg-indigo-900 text-white rounded-xl flex items-center gap-1.5 shadow-lg border border-indigo-800"><Icon name="globe" className="w-3 h-3" /><span className="text-[9px] font-black">{file.usage_count}</span></div>}
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[9px] font-bold text-white truncate">{file.original_name}</p>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <p className="text-[7px] font-black text-slate-300 uppercase">{file.size_kb} KB</p>
-                                                    {file.usage_count > 0 && <span className="text-[7px] font-black text-emerald-400 uppercase">IN USE</span>}
-                                                </div>
-                                            </div>
+                                            {/* PREVIEW IMAGE/ICON logic */}
+                                            {viewMode === 'list' ? (
+                                                // LIST VIEW TEMPLATE
+                                                <>
+                                                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
+                                                        {file.is_image ? <img src={file.preview_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><Icon name="file" className="w-5 h-5" /></div>}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`font-bold text-xs truncate ${selectedIds.includes(file.id) ? 'text-indigo-700' : 'text-slate-700'}`}>{file.original_name}</p>
+                                                        <p className="text-[9px] text-slate-400 uppercase tracking-widest">{file.size_kb} KB • {file.mime_type}</p>
+                                                    </div>
+                                                    {selectedIds.includes(file.id) && <Icon name="check-circle" className="w-5 h-5 text-indigo-600" />}
+                                                </>
+                                            ) : (
+                                                // GRID VIEW TEMPLATE
+                                                <>
+                                                    {file.is_image ? <img src={file.preview_url} className={`w-full h-full ${viewMode === 'grid_lg' ? 'object-contain p-2' : 'object-cover'} transition-transform duration-500 group-hover:scale-105`} alt={file.original_name} />
+                                                        : <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2"><Icon name="file-text" className={`${viewMode === 'grid_sm' ? 'w-6 h-6' : 'w-10 h-10'}`} /><span className="text-[8px] font-black uppercase tracking-widest">{file.mime_type?.split('/')[1]}</span></div>}
+
+                                                    {/* Overlays */}
+                                                    <div className={`absolute inset-0 bg-indigo-600/10 transition-opacity ${selectedIds.includes(file.id) ? 'opacity-100' : 'opacity-0'}`} />
+
+                                                    {/* CHECK ICON */}
+                                                    <div className={`absolute top-2 right-2 w-6 h-6 rounded-lg border transition-all flex items-center justify-center z-10 ${selectedIds.includes(file.id) ? 'bg-indigo-600 border-indigo-600 scale-100 shadow-lg' : 'bg-white/90 border-slate-200 opacity-0 group-hover:opacity-100'}`}>
+                                                        {selectedIds.includes(file.id) && <Icon name="check" className="w-3 h-3 text-white" />}
+                                                    </div>
+
+                                                    {/* ZOOM BUTTON (Only show in Grid modes) */}
+                                                    {file.is_image && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setLargePreviewItem(file); }}
+                                                            className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-black/50 text-white backdrop-blur-sm border border-transparent hover:bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"
+                                                            title="Xem ảnh lớn"
+                                                        >
+                                                            <Icon name="maximize" className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+
+                                                    {/* INFO BAR */}
+                                                    <div className={`absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end transition-transform duration-300 ${viewMode === 'grid_sm' ? 'h-full opacity-0 group-hover:opacity-100' : 'translate-y-full group-hover:translate-y-0'}`}>
+                                                        <p className="text-[9px] font-bold text-white truncate drop-shadow-md">{file.original_name}</p>
+                                                        {viewMode !== 'grid_sm' && (
+                                                            <div className="flex justify-between items-center mt-0.5">
+                                                                <p className="text-[7px] font-black text-slate-300 uppercase">{file.size_kb} KB</p>
+                                                                {file.usage_count > 0 && <span className="text-[7px] font-black text-emerald-400 uppercase">IN USE</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -495,8 +652,21 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                     )}
                 </div>
 
-                <div className="h-20 border-t border-slate-100 px-8 flex items-center justify-center">
-                    {pagination && <Pagination pagination={pagination} onPageChange={fetchFiles} />}
+                <div className="py-6 flex flex-col items-center justify-center gap-2">
+                    <div ref={observerTarget} className="h-4 w-full" />
+                    {loadingMore && (
+                        <div className="flex items-center gap-2 text-indigo-600 text-[10px] uppercase font-black animate-pulse bg-indigo-50 px-4 py-2 rounded-full">
+                            <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                            Đang tải thêm...
+                        </div>
+                    )}
+                    {pagination && pagination.current_page === pagination.last_page && files.length > 0 && (
+                        <div className="flex items-center gap-2 text-slate-300 text-[10px] uppercase font-black tracking-widest mt-4">
+                            <span className="w-8 h-px bg-slate-200"></span>
+                            Hết dữ liệu
+                            <span className="w-8 h-px bg-slate-200"></span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -508,9 +678,28 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                         <button onClick={() => setActiveItem(null)} className="text-slate-400 hover:text-slate-600"><Icon name="x" className="w-4 h-4" /></button>
                     </div>
 
-                    <div className="aspect-square bg-white rounded-[2rem] border-4 border-white shadow-2xl p-2 mb-8 overflow-hidden relative">
+                    <div className="aspect-square bg-white rounded-[2rem] border-4 border-white shadow-xl p-2 mb-6 overflow-hidden relative group">
                         {activeItem.is_image ? <img src={activeItem.preview_url} className="w-full h-full object-contain rounded-[1.5rem]" /> : <div className="w-full h-full flex flex-col items-center justify-center gap-4"><Icon name="file-text" className="w-16 h-16 text-slate-200" /><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeItem.mime_type}</span></div>}
-                        {activeItem.is_image && <button onClick={() => { setIsStudioOpen(true); setStudioOverlay(null); }} className="absolute bottom-4 right-4 p-3 bg-indigo-600 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center gap-2 group"><Icon name="edit" className="w-4 h-4" /><span className="text-[9px] font-black uppercase hidden group-hover:block">Media Studio</span></button>}
+
+                        {/* Overlay Actions on Inspector Image */}
+                        {activeItem.is_image && (
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-[1.5rem]">
+                                <button
+                                    onClick={() => setLargePreviewItem(activeItem)}
+                                    className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
+                                    title="Xem full kích thước"
+                                >
+                                    <Icon name="maximize" className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDownload(activeItem.preview_url, activeItem.original_name)}
+                                    className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
+                                    title="Tải xuống"
+                                >
+                                    <Icon name="download" className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-6">
@@ -596,6 +785,44 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                         else setSelectedIds([newFile.id]);
                     }}
                 />
+            )}
+
+            {/* --- MODAL CON: LARGE IMAGE PREVIEW --- */}
+            {largePreviewItem && (
+                <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-2xl flex flex-col animate-fadeIn">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-8 py-6">
+                        <div className="text-white/80">
+                            <h3 className="text-lg font-bold">{largePreviewItem.original_name}</h3>
+                            <p className="text-xs uppercase tracking-widest opacity-60">{largePreviewItem.mime_type} • {largePreviewItem.size_kb} KB</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => handleDownload(largePreviewItem.preview_url, largePreviewItem.original_name)}
+                                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                                title="Tải xuống"
+                            >
+                                <Icon name="download" className="w-6 h-6" />
+                            </button>
+                            <button
+                                onClick={() => setLargePreviewItem(null)}
+                                className="p-3 bg-white/10 hover:bg-red-500 text-white rounded-full transition-all"
+                                title="Đóng"
+                            >
+                                <Icon name="x" className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Image Area */}
+                    <div className="flex-1 flex items-center justify-center p-10 overflow-hidden">
+                        <img
+                            src={largePreviewItem.preview_url}
+                            className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-2xl rounded-lg"
+                            alt="Large View"
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

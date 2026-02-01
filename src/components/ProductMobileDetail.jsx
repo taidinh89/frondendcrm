@@ -8,6 +8,7 @@ import { metaApi } from '../api/admin/metaApi';
 import BrandSelectionModal from './BrandSelectionModal.jsx';
 import CategorySelectionModal from './CategorySelectionModal.jsx';
 import MediaManagerModal from './MediaManagerModal.jsx';
+import { PLACEHOLDER_UPLOAD_ERROR, PLACEHOLDER_WORD_ERROR } from '../constants/placeholders';
 
 
 // --- HIỆU ỨNG PHONG CÁCH TƯƠNG LAI ---
@@ -224,7 +225,7 @@ const getShortProName = (name) => {
     return name.split(' ').slice(0, 5).join(' ').replace(/[^a-zA-Z0-9- ]/g, '');
 };
 
-const WORD_IMAGE_ERROR_PLACEHOLDER = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmVlMmUyIiAvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iU2Fucy1TZXJpZiwgQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiNkYzI2MjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5M4buXaSBBbmggV29yZCAoZmlsZTovLyk8L3RleHQ+CiAgPHRleHQgeD0iNTAlIiB5PSI3MCUiIGZvbnQtZmFtaWx5PSJTYW5zLVNlcmlmLCBBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iI2I5MWMyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VnVpIGzDsm5nIGNvcHkg4bqjbmggbsOgeSByacOqbmcgdOG7qyBXb3JkPC90ZXh0Pgo8L3N2Zz4=`;
+const WORD_IMAGE_ERROR_PLACEHOLDER = PLACEHOLDER_WORD_ERROR;
 
 // --- HELPER DỌN DẸP HTML TỒN TẠI SAU KHI PASTE (WORD, WEBSITE, ETC) ---
 const cleanHtmlForEditor = (html) => {
@@ -404,7 +405,7 @@ const processHtmlImages = async (htmlContent, proName) => {
                 logTrace('SUCCESS', `Auto Localized sequentially: ${newUrl}`);
             } catch (err) {
                 console.error(`[PASTE_DEBUG] Img #${index} Failed:`, err);
-                img.setAttribute('src', 'https://placehold.co/600x100/f3f4f6/9ca3af?text=Loi+Upload+Anh');
+                img.setAttribute('src', PLACEHOLDER_UPLOAD_ERROR);
             }
         }
     }
@@ -1066,7 +1067,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictionary, onSuccess }) => {
+const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictionary, onSuccess, onSwitchVersion }) => {
     const [activeTab, setActiveTab] = useState('standard');
     const [currentMode, setCurrentMode] = useState(mode);
     const [currentId, setCurrentId] = useState(product?.id);
@@ -1324,7 +1325,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             const newImage = res.data;
             const finalUrl = newImage.url || newImage.image_url || newImage.displayUrl;
 
-            console.log("[DEBUG] Upload Success:", newImage);
+            // console.log("[DEBUG] Upload Success:", newImage);
 
             if (targetMode === 'editor') {
                 // Mode EDITOR: Chèn HTML vào nội dung
@@ -1386,29 +1387,29 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         const hasHtmlImages = htmlData && htmlData.includes('<img');
         const hasComplexHtml = htmlData && (htmlData.includes('<a') || htmlData.includes('<table') || htmlData.includes('style='));
 
-        console.group(`[FIELD_PASTE_LOG] Target Field: ${fieldName}`);
+        // console.group(`[FIELD_PASTE_LOG] Target Field: ${fieldName}`);
         logTrace('PASTE', `Field Paste Detected: ${fieldName}. isWord=${!!isWord}, hasImg=${hasHtmlImages}, hasComplex=${!!hasComplexHtml}`);
-        console.log("-> HTML Length:", htmlData?.length || 0);
-        console.log("-> Text Length:", textPlain?.length || 0);
-        console.log("-> Has Images/Complex:", hasHtmlImages || hasImageFile || hasComplexHtml);
+        // console.log("-> HTML Length:", htmlData?.length || 0);
+        // console.log("-> Text Length:", textPlain?.length || 0);
+        // console.log("-> Has Images/Complex:", hasHtmlImages || hasImageFile || hasComplexHtml);
 
         // NẾU LÀ WORD HOẶC CÓ ẢNH HOẶC HTML PHỨC TẠP -> TA CHẶN VÀ XỬ LÝ RIÊNG ĐỂ DỌN RÁC
         if (isWord || hasImageFile || hasHtmlImages || hasComplexHtml) {
             if (isProcessingPaste.current) {
-                console.warn(`🛑 [FIELD_PASTE_LOG] BLOCKED: Lock active for ${fieldName}`);
+                // console.warn(`🛑 [FIELD_PASTE_LOG] BLOCKED: Lock active for ${fieldName}`);
                 e.preventDefault();
                 e.stopPropagation();
-                console.groupEnd();
+                // console.groupEnd();
                 return;
             }
 
-            console.log("🔓 [FIELD_PASTE_LOG] TAKING CONTROL...");
+            // console.log("🔓 [FIELD_PASTE_LOG] TAKING CONTROL...");
             isProcessingPaste.current = true;
             e.preventDefault();
             e.stopPropagation();
         } else {
-            console.log("-> Passing to Default Browser Handler");
-            console.groupEnd();
+            // console.log("-> Passing to Default Browser Handler");
+            // console.groupEnd();
             return;
         }
 
@@ -1783,11 +1784,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             return { ...img, displayUrl, resolveMethod };
         });
 
-        console.log("[DEBUG_DETAIL] Unified Image Processing:", result.map(i => ({
-            isMain: i.is_main,
-            method: i.resolveMethod,
-            final: i.displayUrl
-        })));
+        // console.log("[DEBUG_DETAIL] Unified Image Processing:", result.map(i => ({
+        //     isMain: i.is_main,
+        //     method: i.resolveMethod,
+        //     final: i.displayUrl
+        // })));
         return result;
     }, [fullImages, mediaFilter, formData.media, formData.proThum]);
 
@@ -1799,7 +1800,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             // Hiển thị ảnh đã sync QVC HOẶC ảnh vừa mới upload (is_temp)
             list = unifiedImages.filter(img => img.onQVC || img.is_temp);
         }
-        console.log("[DEBUG] Standard Tab Images Count:", list.length, "showAll:", showAllStandardImages);
+        // console.log("[DEBUG] Standard Tab Images Count:", list.length, "showAll:", showAllStandardImages);
         return list;
     }, [unifiedImages, showAllStandardImages]);
 
@@ -1815,6 +1816,27 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     const [brandManager, setBrandManager] = useState({ open: false, mode: 'list', selected: null });
     const [catManager, setCatManager] = useState({ open: false, mode: 'list', selected: null });
     const [previewImage, setPreviewImage] = useState(null); // State for Image Lightbox Preview
+
+    const downloadImage = async (url) => {
+        if (!url) return;
+        const tid = toast.loading("Đang chuẩn bị tải...");
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `product_img_${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+            toast.success("Đã tải xuống!", { id: tid });
+        } catch (e) {
+            window.open(url, '_blank');
+            toast.dismiss(tid);
+        }
+    };
 
     if (isLoading) return (
         <Modal isOpen={isOpen} onClose={onClose} isFullScreen={true} title="Đang tải...">
@@ -1853,6 +1875,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                         />
                     </div>
                     <div className="flex items-center gap-2">
+                        {onSwitchVersion && (
+                            <button onClick={onSwitchVersion} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100">
+                                <Icon name="refresh" className="w-3 h-3" /> THỬ NGHIỆM V2
+                            </button>
+                        )}
                         {formData.request_path && (
                             <a href={`https://qvc.vn${formData.request_path}`} target="_blank" className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all">
                                 <Icon name="external-link" className="w-3 h-3" /> XEM TRÊN QVC
@@ -3245,12 +3272,21 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 {/* [IMAGE_LIGHTBOX] Xem ảnh lớn */}
                 {previewImage && (
                     <div className="fixed inset-0 z-[3000] bg-black/95 flex items-center justify-center p-4 md:p-10 animate-fadeIn" onClick={() => setPreviewImage(null)}>
-                        <button
-                            className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
-                            onClick={() => setPreviewImage(null)}
-                        >
-                            <Icon name="x" className="w-6 h-6" />
-                        </button>
+                        <div className="absolute top-6 right-6 flex gap-3">
+                            <button
+                                className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
+                                onClick={(e) => { e.stopPropagation(); downloadImage(previewImage); }}
+                                title="Tải ảnh"
+                            >
+                                <Icon name="download" className="w-6 h-6" />
+                            </button>
+                            <button
+                                className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
+                                onClick={() => setPreviewImage(null)}
+                            >
+                                <Icon name="x" className="w-6 h-6" />
+                            </button>
+                        </div>
                         <img
                             src={previewImage}
                             alt="Preview"
