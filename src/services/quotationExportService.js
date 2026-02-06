@@ -1,5 +1,3 @@
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 import axios from 'axios';
 
 // ==========================================================================
@@ -50,19 +48,19 @@ const fetchImageBuffer = async (url) => {
         // Ảnh nội bộ
         if (url.startsWith('/') || url.includes(window.location.origin)) {
             response = await axios.get(url, { responseType: 'arraybuffer' });
-        } 
+        }
         // Ảnh ngoại vi -> Qua Proxy (Đường dẫn chuẩn Laravel API v1)
         else {
-            response = await axios.get('/api/v1/proxy-image', { 
+            response = await axios.get('/api/v1/proxy-image', {
                 params: { url: url },
-                responseType: 'arraybuffer' 
+                responseType: 'arraybuffer'
             });
         }
         if (response.status === 200 && response.data) return response.data;
         return null;
-    } catch (error) { 
+    } catch (error) {
         console.warn(`[Excel] ⚠️ Lỗi tải ảnh ${url}:`, error.message);
-        return null; 
+        return null;
     }
 };
 
@@ -71,6 +69,13 @@ const fetchImageBuffer = async (url) => {
 // ==========================================================================
 export const exportQuotationToExcel = async (data, settings) => {
     if (!data) return;
+
+    // Tải động thư viện
+    const [ExcelJS, { saveAs }] = await Promise.all([
+        import('exceljs'),
+        import('file-saver')
+    ]);
+
     console.log("=== BẮT ĐẦU XUẤT EXCEL (UPDATED) ===");
 
     // A. LỌC DỮ LIỆU & TẢI ẢNH
@@ -80,7 +85,7 @@ export const exportQuotationToExcel = async (data, settings) => {
 
     if (isImages) {
         const promises = itemsToExport.map(async (item) => {
-            let imgUrl = item.image; 
+            let imgUrl = item.image;
             if (!imgUrl && item.proThum) {
                 imgUrl = item.proThum.startsWith('http') ? item.proThum : `https://qvc.vn/p/250_${item.proThum}`;
             }
@@ -98,23 +103,23 @@ export const exportQuotationToExcel = async (data, settings) => {
 
     // C. CẤU HÌNH CỘT (Dựa trên templateType)
     const columns = [{ key: 'stt', width: 6 }]; // A
-    
+
     if (isImages) {
         columns.push({ key: 'image', width: 15 }); // B
         columns.push({ key: 'name', width: 45 }); // C
     } else {
         columns.push({ key: 'name', width: 60 }); // B
     }
-    
+
     columns.push({ key: 'unit', width: 10 });     // D
     columns.push({ key: 'qty', width: 10 });      // E
-    
+
     // Nếu KHÔNG phải mẫu Kỹ thuật -> Hiện giá
     if (settings.templateType !== 'technical') {
         columns.push({ key: 'price', width: 16 }); // F
         columns.push({ key: 'amount', width: 20 });// G
     }
-    
+
     worksheet.columns = columns;
     const lastColLetter = worksheet.getColumn(columns.length).letter;
 
@@ -149,7 +154,7 @@ export const exportQuotationToExcel = async (data, settings) => {
         // Kẻ line xanh
         const lineRow = worksheet.getRow(5);
         lineRow.height = 2;
-        for(let c=1; c<=columns.length; c++) lineRow.getCell(c).fill = STYLES.fillBlue;
+        for (let c = 1; c <= columns.length; c++) lineRow.getCell(c).fill = STYLES.fillBlue;
         currentRow = 7;
     }
 
@@ -169,7 +174,7 @@ export const exportQuotationToExcel = async (data, settings) => {
     currentRow += 2;
 
     // F. KHÁCH HÀNG
-    const valueColIndex = isImages ? 3 : 2; 
+    const valueColIndex = isImages ? 3 : 2;
     const customerFields = [
         { label: 'Kính gửi:', val: data.customer_name || 'Khách lẻ' },
         { label: 'Địa chỉ:', val: data.customer_address || '-' },
@@ -180,11 +185,11 @@ export const exportQuotationToExcel = async (data, settings) => {
         const labelCell = worksheet.getCell(`A${currentRow}`);
         labelCell.value = field.label;
         labelCell.font = { bold: true };
-        
+
         const valCell = worksheet.getRow(currentRow).getCell(valueColIndex);
         valCell.value = field.val;
         valCell.font = { bold: true, size: 11 };
-        valCell.alignment = { horizontal: 'left', vertical: 'middle' }; 
+        valCell.alignment = { horizontal: 'left', vertical: 'middle' };
         currentRow++;
     });
     currentRow++;
@@ -201,7 +206,7 @@ export const exportQuotationToExcel = async (data, settings) => {
         headerRow.getCell(c++).value = 'Đơn giá';
         headerRow.getCell(c++).value = 'Thành tiền';
     }
-    
+
     headerRow.height = 30;
     headerRow.eachCell((cell) => {
         cell.fill = STYLES.fillBlue;
@@ -218,8 +223,8 @@ export const exportQuotationToExcel = async (data, settings) => {
         const item = itemsToExport[i];
         const row = worksheet.getRow(currentRow);
         const hasImg = isImages && item._imgBuffer;
-        
-        row.height = hasImg ? DIMS.rowHeightImage : 35; 
+
+        row.height = hasImg ? DIMS.rowHeightImage : 35;
 
         let col = 1;
         // STT
@@ -237,7 +242,7 @@ export const exportQuotationToExcel = async (data, settings) => {
                 worksheet.addImage(imgId, {
                     tl: { col: col - 2 + 0.1, row: currentRow - 1 + 0.1 },
                     ext: { width: DIMS.prodImgWidth, height: DIMS.prodImgHeight },
-                    editAs: 'oneCell' 
+                    editAs: 'oneCell'
                 });
             }
         }
@@ -292,7 +297,7 @@ export const exportQuotationToExcel = async (data, settings) => {
     // I. FOOTER TỔNG TIỀN (Chỉ hiện khi không phải Technical)
     if (settings.templateType !== 'technical') {
         const startMergeCol = 'A';
-        const endMergeCol = String.fromCharCode(lastColLetter.charCodeAt(0) - 1); 
+        const endMergeCol = String.fromCharCode(lastColLetter.charCodeAt(0) - 1);
 
         worksheet.mergeCells(`${startMergeCol}${currentRow}:${endMergeCol}${currentRow}`);
         const labelTotal = worksheet.getCell(`${startMergeCol}${currentRow}`);
@@ -329,13 +334,13 @@ export const exportQuotationToExcel = async (data, settings) => {
     // J. CHỮ KÝ (Kiểm tra settings.showSignatures)
     if (settings.showSignatures) {
         currentRow += 3;
-        const signColStart = String.fromCharCode(lastColLetter.charCodeAt(0) - 2); 
+        const signColStart = String.fromCharCode(lastColLetter.charCodeAt(0) - 2);
         worksheet.mergeCells(`${signColStart}${currentRow}:${lastColLetter}${currentRow}`);
         const signTitle = worksheet.getCell(`${signColStart}${currentRow}`);
         signTitle.value = COMPANY_CONFIG.signTitle;
         signTitle.alignment = STYLES.alignCenter;
         signTitle.font = { bold: true };
-        
+
         currentRow++;
         worksheet.mergeCells(`${signColStart}${currentRow}:${lastColLetter}${currentRow}`);
         const signSub = worksheet.getCell(`${signColStart}${currentRow}`);

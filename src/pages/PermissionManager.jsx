@@ -8,26 +8,26 @@ import { toast } from 'react-toastify';
 const SYSTEM_FEATURES = [
     { type: 'frontend', group: 'Kinh doanh', code: 'customer.view', label: 'Truy cập trang Khách hàng' },
     { type: 'frontend', group: 'Kinh doanh', code: 'customer-360.view', label: 'Xem Chân dung 360' },
-    { type: 'backend',  group: 'Kinh doanh', code: 'customer.create', label: 'Nút Thêm/Sửa Khách hàng' },
-    { type: 'backend',  group: 'Kinh doanh', code: 'customer.delete', label: 'Nút Xóa Khách hàng' },
+    { type: 'backend', group: 'Kinh doanh', code: 'customer.create', label: 'Nút Thêm/Sửa Khách hàng' },
+    { type: 'backend', group: 'Kinh doanh', code: 'customer.delete', label: 'Nút Xóa Khách hàng' },
     { type: 'frontend', group: 'Kinh doanh', code: 'sales.view', label: 'Truy cập trang Đơn bán' },
     { type: 'frontend', group: 'Kinh doanh', code: 'quotation.create', label: 'Truy cập trang Báo giá' },
-    { type: 'backend',  group: 'Kinh doanh', code: 'sales.create', label: 'Hành động Tạo/Sửa đơn' },
-    { type: 'backend',  group: 'Kinh doanh', code: 'sales.approve', label: 'Hành động Duyệt đơn' },
+    { type: 'backend', group: 'Kinh doanh', code: 'sales.create', label: 'Hành động Tạo/Sửa đơn' },
+    { type: 'backend', group: 'Kinh doanh', code: 'sales.approve', label: 'Hành động Duyệt đơn' },
     { type: 'frontend', group: 'Kho vận', code: 'inventory.view', label: 'Truy cập trang Tồn kho' },
     { type: 'frontend', group: 'Kho vận', code: 'purchase.view', label: 'Truy cập trang Mua hàng' },
-    { type: 'backend',  group: 'Kho vận', code: 'inventory.adjust', label: 'Hành động Kiểm kê/Điều chỉnh' },
+    { type: 'backend', group: 'Kho vận', code: 'inventory.adjust', label: 'Hành động Kiểm kê/Điều chỉnh' },
     { type: 'frontend', group: 'Tài chính', code: 'invoice.view', label: 'Truy cập Hóa đơn điện tử' },
     { type: 'frontend', group: 'Tài chính', code: 'report.debt', label: 'Truy cập Báo cáo Công nợ' },
     { type: 'frontend', group: 'Tài chính', code: 'report.sales', label: 'Truy cập Báo cáo Doanh thu' },
     { type: 'frontend', group: 'Báo cáo', code: 'report.product', label: 'Phân tích Nhóm Sản phẩm' },
     { type: 'frontend', group: 'Báo cáo', code: 'report.partner', label: 'Phân tích Đối tác & NCC' },
     { type: 'frontend', group: 'Tài chính', code: 'sepay.viewall', label: 'Xem tất cả giao dịch Sepay' },
-    { type:'frontend', group: 'Tài chính', code: 'sepay.create', label: 'Tạo giao dịch Sepay' },
+    { type: 'frontend', group: 'Tài chính', code: 'sepay.create', label: 'Tạo giao dịch Sepay' },
     { type: 'frontend', group: 'Hệ thống', code: 'system.monitor', label: 'Truy cập Giám sát hệ thống' },
     { type: 'frontend', group: 'Hệ thống', code: 'system.security', label: 'Truy cập Phân quyền' },
-    { type: 'backend',  group: 'Hệ thống', code: 'system.dictionary', label: 'Quản lý Từ điển dữ liệu' },
-    { type: 'backend',  group: 'Hệ thống', code: 'system.sync', label: 'Cấu hình Đồng bộ API' },
+    { type: 'backend', group: 'Hệ thống', code: 'system.dictionary', label: 'Quản lý Từ điển dữ liệu' },
+    { type: 'backend', group: 'Hệ thống', code: 'system.sync', label: 'Cấu hình Đồng bộ API' },
 ];
 
 // =================================================================================
@@ -42,12 +42,14 @@ const UserDepartmentModal = ({ user, onClose, onSave }) => {
         const fetchData = async () => {
             try {
                 const [deptRes, userRes] = await Promise.all([
-                    axios.get('/api/security/departments?per_page=100'),
-                    axios.get(`/api/security/users/${user.id}`)
+                    axios.get('/api/v2/security/departments?per_page=100'),
+                    axios.get(`/api/v2/security/users/${user.id}`)
                 ]);
                 setDepartments(Array.isArray(deptRes.data.data) ? deptRes.data.data : []);
-                if (userRes.data && Array.isArray(userRes.data.departments)) {
-                    setSelectedDepts(userRes.data.departments.map(d => ({
+                const userData = userRes.data?.data || userRes.data;
+                const userDepts = userData?.departments || [];
+                if (Array.isArray(userDepts)) {
+                    setSelectedDepts(userDepts.map(d => ({
                         id: d.id,
                         position: d.pivot?.position || 'staff',
                         access_level: d.pivot?.access_level || 'own_only',
@@ -62,7 +64,7 @@ const UserDepartmentModal = ({ user, onClose, onSave }) => {
     const handleSave = async () => {
         setLoading(true);
         try {
-            await axios.put(`/api/security/users/${user.id}/departments`, { departments: selectedDepts });
+            await axios.put(`/api/v2/security/users/${user.id}/departments`, { departments: selectedDepts });
             toast.success("Đã cập nhật cơ cấu nhân sự!");
             onSave(); onClose();
         } catch (e) { toast.error("Lỗi khi lưu!"); } finally { setLoading(false); }
@@ -170,10 +172,11 @@ const UserManagementTab = ({ currentUser }) => {
     const loadData = async () => {
         try {
             const [uRes, rRes] = await Promise.all([
-                axios.get('/api/security/users?per_page=100'),
-                axios.get('/api/security/roles?per_page=100')
+                axios.get('/api/v2/security/users?per_page=100'),
+                axios.get('/api/v2/security/roles?per_page=100')
             ]);
-            setUsers(uRes.data.data); setRoles(rRes.data.data);
+            setUsers(uRes.data.data || (Array.isArray(uRes.data) ? uRes.data : []));
+            setRoles(rRes.data.data || (Array.isArray(rRes.data) ? rRes.data : []));
         } catch (error) { toast.error("Lỗi tải dữ liệu"); } finally { setLoading(false); }
     };
     useEffect(() => { loadData(); }, []);
@@ -182,7 +185,7 @@ const UserManagementTab = ({ currentUser }) => {
         if (!canManage) return toast.error("Cần quyền Super Admin!");
         if (user.is_super_admin) return toast.warning("Không thể khóa Super Admin!");
         try {
-            await axios.put(`/api/security/users/${user.id}`, { ...user, is_active: !user.is_active });
+            await axios.put(`/api/v2/security/users/${user.id}`, { ...user, is_active: !user.is_active });
             setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: !user.is_active } : u));
             toast.success("Đã cập nhật trạng thái!");
         } catch (e) { toast.error("Lỗi cập nhật"); }
@@ -192,7 +195,7 @@ const UserManagementTab = ({ currentUser }) => {
         if (!canManage) return toast.error("Cần quyền Super Admin!");
         if (!window.confirm(`Xóa nhân viên ${user.name}?`)) return;
         try {
-            await axios.delete(`/api/security/users/${user.id}`);
+            await axios.delete(`/api/v2/security/users/${user.id}`);
             setUsers(prev => prev.filter(u => u.id !== user.id));
             toast.success("Đã xóa!");
         } catch (e) { toast.error("Lỗi xóa"); }
@@ -202,7 +205,7 @@ const UserManagementTab = ({ currentUser }) => {
         const currentIds = Array.isArray(user.roles) ? user.roles.map(r => r.id) : [];
         const newIds = currentIds.includes(role.id) ? currentIds.filter(i => i !== role.id) : [...currentIds, role.id];
         try {
-            await axios.put(`/api/security/users/${user.id}`, { ...user, roles: newIds });
+            await axios.put(`/api/v2/security/users/${user.id}`, { ...user, roles: newIds });
             setUsers(prev => prev.map(u => u.id === user.id ? { ...u, roles: newIds.map(rid => roles.find(r => r.id === rid)) } : u));
             toast.success("Đã lưu quyền!");
         } catch (e) { toast.error("Lỗi lưu"); }
@@ -287,8 +290,8 @@ const PermissionMatrix = ({ typeFilter }) => {
 
     const fetchData = async () => {
         try {
-            const rolesRes = await axios.get('/api/security/roles?per_page=100');
-            const roleData = rolesRes.data.data.filter(r => r.name !== 'Super Admin');
+            const rolesRes = await axios.get('/api/v2/security/roles?per_page=100');
+            const roleData = (rolesRes.data.data || (Array.isArray(rolesRes.data) ? rolesRes.data : [])).filter(r => r.name !== 'Super Admin');
             setRoles(roleData);
             const matrixData = {};
             roleData.forEach(r => { matrixData[r.id] = r.permissions ? r.permissions.map(p => p.name) : []; });
@@ -306,28 +309,28 @@ const PermissionMatrix = ({ typeFilter }) => {
 
     const handleSave = async (roleId) => {
         try {
-            await axios.post(`/api/security/roles/${roleId}/sync-permissions`, { permissions: matrix[roleId] });
+            await axios.post(`/api/v2/security/roles/${roleId}/sync-permissions`, { permissions: matrix[roleId] });
             toast.success("Đã lưu quyền!");
         } catch (e) { toast.error("Lỗi lưu quyền."); }
     };
 
     const handleModalSubmit = async () => {
         try {
-            if (modalAction === 'rename') await axios.put(`/api/security/roles/${selectedRole.id}`, { name: inputValue });
-            if (modalAction === 'clone') await axios.post(`/api/security/roles/${selectedRole.id}/clone`, { name: inputValue });
-            if (modalAction === 'create') await axios.post(`/api/security/roles`, { name: inputValue });
+            if (modalAction === 'rename') await axios.put(`/api/v2/security/roles/${selectedRole.id}`, { name: inputValue });
+            if (modalAction === 'clone') await axios.post(`/api/v2/security/roles/${selectedRole.id}/clone`, { name: inputValue });
+            if (modalAction === 'create') await axios.post(`/api/v2/security/roles`, { name: inputValue });
             if (modalAction === 'import') {
                 setMatrix(prev => ({ ...prev, [selectedRole.id]: [...(matrix[importSourceId] || [])] }));
-                setModalAction(null); return; 
+                setModalAction(null); return;
             }
-            if (modalAction === 'delete') await axios.delete(`/api/security/roles/${selectedRole.id}`);
+            if (modalAction === 'delete') await axios.delete(`/api/v2/security/roles/${selectedRole.id}`);
             setModalAction(null); fetchData();
         } catch (e) { toast.error("Lỗi thao tác"); }
     };
 
     const filteredFeatures = SYSTEM_FEATURES.filter(f => f.type === typeFilter);
     const grouped = {};
-    filteredFeatures.forEach(p => { if(!grouped[p.group]) grouped[p.group] = []; grouped[p.group].push(p); });
+    filteredFeatures.forEach(p => { if (!grouped[p.group]) grouped[p.group] = []; grouped[p.group].push(p); });
 
     if (loading) return <div>Đang tải...</div>;
 
@@ -345,7 +348,7 @@ const PermissionMatrix = ({ typeFilter }) => {
                                 <th key={r.id} className="p-2 border text-center min-w-[140px] bg-gray-100">
                                     <div className="flex items-center justify-between px-2 mb-1">
                                         <div className="font-bold text-gray-800 truncate max-w-[80px]">{r.name}</div>
-                                        <ActionMenu role={r} onRename={() => {setSelectedRole(r); setInputValue(r.name); setModalAction('rename');}} onClone={() => {setSelectedRole(r); setInputValue(r.name + ' Copy'); setModalAction('clone');}} onImport={() => {setSelectedRole(r); setModalAction('import');}} onDelete={() => {setSelectedRole(r); setModalAction('delete');}} />
+                                        <ActionMenu role={r} onRename={() => { setSelectedRole(r); setInputValue(r.name); setModalAction('rename'); }} onClone={() => { setSelectedRole(r); setInputValue(r.name + ' Copy'); setModalAction('clone'); }} onImport={() => { setSelectedRole(r); setModalAction('import'); }} onDelete={() => { setSelectedRole(r); setModalAction('delete'); }} />
                                     </div>
                                     <button onClick={() => handleSave(r.id)} className="text-[10px] bg-green-600 text-white px-3 py-0.5 rounded w-full">LƯU</button>
                                 </th>
@@ -402,7 +405,7 @@ const PermissionDefinitionTab = () => {
         setLoading(true);
         try {
             const payload = SYSTEM_FEATURES.map(f => ({ name: f.code, description: f.label }));
-            await axios.post('/api/security/permissions/bulk', { permissions: payload });
+            await axios.post('/api/v2/security/permissions/bulk', { permissions: payload });
             toast.success("Đồng bộ thành công!");
         } catch (e) { toast.error("Lỗi đồng bộ"); } finally { setLoading(false); }
     };

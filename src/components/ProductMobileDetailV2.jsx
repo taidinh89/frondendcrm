@@ -34,12 +34,12 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
         is_sale_off: false, is_student_support: false, is_installment_0: false,
         catId: [], description: '', spec: '', purchase_price_web: 0,
         meta_title: '', meta_keyword: '', meta_description: '', accessory: '',
-        view_count: 0, sold_count: 0, like_count: 0, updated_at: '', created_at: ''
+        view_count: 0, sold_count: 0, like_count: 0, updated_at: '', created_at: '',
+        media_ids: []
     });
 
     // Sub-States
     const [fullImages, setFullImages] = useState([]);
-    const [tempUploadedIds, setTempUploadedIds] = useState([]);
     const [tempBrand, setTempBrand] = useState(null);
     const [activeTab, setActiveTab] = useState('standard');
     const [standardContentSubTab, setStandardContentSubTab] = useState('summary');
@@ -170,7 +170,8 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 sold_count: d.sold_count || 0,
                 like_count: d.like_count || 0,
                 updated_at: d.updated_at,
-                created_at: d.created_at
+                created_at: d.created_at,
+                media_ids: formData.media_ids || [] // Preserve current pending media_ids
             });
         } catch (e) {
             toast.error("Không nạp được dữ liệu");
@@ -197,7 +198,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 is_sale_off: formData.is_sale_off ? 1 : 0,
                 is_student_support: formData.is_student_support ? 1 : 0,
                 is_installment_0: formData.is_installment_0 ? 1 : 0,
-                media_ids: Array.isArray(tempUploadedIds) ? tempUploadedIds : [],
+                media_ids: formData.media_ids || [],
                 marketing_flags: [
                     formData.is_hot ? 'hot' : null,
                     formData.is_new ? 'new' : null,
@@ -209,7 +210,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             if (currentMode === 'create') {
                 const res = await productApi.create(payload);
                 toast.success("Tạo mới thành công!", { id: tid });
-                setTempUploadedIds([]);
+                setFormData(prev => ({ ...prev, media_ids: [] }));
                 onRefresh && onRefresh();
                 if (onSuccess) { onSuccess(res.data); onClose(); return; }
                 if (res.data?.id) {
@@ -220,7 +221,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             } else {
                 await productApi.update(currentId || product?.id, payload);
                 toast.success("Cập nhật thành công!", { id: tid });
-                setTempUploadedIds([]);
+                setFormData(prev => ({ ...prev, media_ids: [] }));
                 onRefresh && onRefresh();
                 shouldClose ? onClose() : fetchDetail(currentId || product?.id);
             }
@@ -253,7 +254,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 setFormData(prev => ({ ...prev, [field]: (prev[field] || '') + html }));
                 toast.success("Đã chèn ảnh!", { id: tid });
             } else {
-                setTempUploadedIds(prev => [...prev, newImage.id]);
+                setFormData(prev => ({ ...prev, media_ids: [...(prev.media_ids || []), newImage.id] }));
                 setFullImages(prev => [...prev, { id: newImage.id, url: finalUrl, displayUrl: finalUrl, is_temp: true }]);
                 toast.success("Đã thêm vào thư viện!", { id: tid });
                 if (typeof fileOrUrl === 'string') setShowUrlInput(false);
@@ -265,11 +266,23 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
     const handleDeleteImage = async (img) => {
         if (!window.confirm("Xóa ảnh này?")) return;
+        const tid = toast.loading("Đang xóa...");
         try {
-            if (img.id) await productApi.deleteImage(product.id, img.id);
-            toast.success("Đã xóa");
+            if (img.id) {
+                console.log("🖱️ [FE_V2] Bấm xóa ảnh ID:", img.id);
+                console.log("Danh sách ảnh hiện tại (IDs):", fullImages.map(f => f.id));
+                await productApi.deleteImage(product.id, img.id);
+            } else if (img.name || img.image_name) {
+                // Delete legacy/QVC image 
+                const nameToDelete = img.name || img.image_name;
+                console.log("🖱️ [FE_V2] Bấm xóa ảnh Name (Legacy):", nameToDelete);
+                await productApi.deleteOldImageByName(product.id, nameToDelete);
+            }
+            toast.success("Đã xóa", { id: tid });
             fetchDetail(product.id);
-        } catch (e) { toast.error("Lỗi xóa: " + e.message); }
+        } catch (e) {
+            toast.error("Lỗi xóa: " + (e.response?.data?.message || e.message), { id: tid });
+        }
     };
 
     const handleSetMain = async (id) => {
@@ -378,16 +391,47 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
     // --- DERIVED DATA ---
     const standardImages = useMemo(() => {
-        const result = [...fullImages].map(img => {
-            let url = img.url || img.image_url || img.image;
-            if (url && !url.startsWith('http')) url = `https://qvc.vn/${url.replace(/^\//, '')}`;
+        const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
+
+        return [...fullImages].map(img => {
+            let url = img.url || img.image_url || img.image || img.displayUrl || img.preview_url;
+
+            if (url) {
+                if (url.startsWith('https://qvc.vn/Storage/')) {
+                    // [FIX] Nếu bị gán nhầm qvc.vn cho /Storage, chuyển nó về CRM
+                    url = url.replace('https://qvc.vn/Storage/', `${crmHost}/storage/`);
+                } else if (!url.startsWith('http')) {
+                    if (url.startsWith('/storage/') || url.startsWith('storage/')) {
+                        // CRM path
+                        const cleanPath = url.startsWith('/') ? url : `/${url}`;
+                        url = crmHost + cleanPath;
+                    } else {
+                        // Legacy QVC path
+                        url = `https://qvc.vn/${url.replace(/^\//, '')}`;
+                    }
+                }
+            }
+
             return { ...img, displayUrl: url || PLACEHOLDER_NO_IMAGE_SQUARE };
         });
-        if (showAllStandardImages) return result;
-        return result; // Mặc định hiển thị hết trong V2
-    }, [fullImages, showAllStandardImages]);
+    }, [fullImages]);
 
     if (!isOpen) return null;
+
+    const handleSync = async () => {
+        if (!currentId) return;
+        setIsLoading(true);
+        const tid = toast.loading("Đang đồng bộ dữ liệu từ Web...");
+        try {
+            await productApi.syncOne(currentId);
+            toast.success("Đồng bộ thành công!", { id: tid });
+            fetchDetail(currentId);
+        } catch (e) {
+            toast.error("Lỗi đồng bộ: " + (e.response?.data?.message || e.message), { id: tid });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // --- RENDER ---
     return (
@@ -401,6 +445,16 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     <p className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded inline-block mt-1">PRO VERSION - HIGH PERFORMANCE</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {currentMode === 'edit' && (
+                        <button
+                            onClick={handleSync}
+                            className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100"
+                            title="Lấy dữ liệu mới nhất từ QVC.vn"
+                        >
+                            <Icon name="refresh-cw" className="w-3 h-3" />
+                            <span>Sync Web</span>
+                        </button>
+                    )}
                     {formData.request_path && (
                         <a
                             href={`https://qvc.vn${formData.request_path}`}
@@ -498,7 +552,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     {standardImages.length > 0 ? (
                                         <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                                             {standardImages.map((img, i) => (
-                                                <div key={i} className={`relative aspect-square rounded-xl border overflow-hidden bg-white group hover:border-orange-500 transition-all shadow-sm ${img.is_main ? 'border-indigo-500 ring-2 ring-indigo-500 ring-offset-1' : 'border-slate-200'}`}>
+                                                <div key={img.id || img.image_name || img.name || i} className={`relative aspect-square rounded-xl border overflow-hidden bg-white group hover:border-orange-500 transition-all shadow-sm ${img.is_main ? 'border-indigo-500 ring-2 ring-indigo-500 ring-offset-1' : 'border-slate-200'}`}>
                                                     <img src={img.displayUrl} className="w-full h-full object-contain p-1.5" />
                                                     {img.is_main && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg shadow-sm">MAIN</div>}
                                                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-all backdrop-blur-[1px]">
@@ -634,15 +688,18 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         // Batch add to gallery
                         const newImages = items.map(media => ({
                             id: media.id,
-                            url: media.url,
-                            displayUrl: media.url,
+                            url: media.url || media.preview_url,
+                            displayUrl: media.url || media.preview_url,
                             is_temp: false
                         }));
                         setFullImages(prev => [...prev, ...newImages]);
+                        // [FIX] Add library selection to media_ids so they get saved
+                        setFormData(prev => ({ ...prev, media_ids: [...(prev.media_ids || []), ...items.map(m => m.id)] }));
                         toast.success(`Đã thêm ${items.length} ảnh`);
                     }
                     setMediaLibraryCallback(null);
                 }}
+                multiple={mediaManagerMode === 'gallery'}
                 mode={mediaManagerMode === 'editor' ? 'select' : 'multi-select'}
             />
 

@@ -13,7 +13,7 @@ const ImportLogViewer = () => {
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState(null);
     const [filter, setFilter] = useState({ source_type: '', status: '' });
-    
+
     // State cho Modal chi tiết lỗi
     const [selectedLog, setSelectedLog] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,11 +22,11 @@ const ImportLogViewer = () => {
     const fetchLogs = async (page = 1) => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/security/import-logs', {
+            const res = await axios.get('/api/v2/security/import-logs', {
                 params: { ...filter, page }
             });
             // Giả định backend trả về dữ liệu paginate chuẩn
-            setLogs(res.data.data);
+            setLogs(res.data?.data || (Array.isArray(res.data) ? res.data : []));
             setPagination(res.data.meta || res.data);
         } catch (error) {
             toast.error("Không thể tải nhật ký nạp liệu");
@@ -45,7 +45,7 @@ const ImportLogViewer = () => {
 
     return (
         <div className="p-6 bg-slate-50 min-h-screen space-y-6">
-            
+
             {/* HEADER */}
             <div className="flex justify-between items-center">
                 <div>
@@ -56,19 +56,19 @@ const ImportLogViewer = () => {
                     <p className="text-slate-400 text-xs mt-1 font-bold">Theo dõi lịch sử nạp Excel Bán hàng & Mua hàng [cite: 416]</p>
                 </div>
                 <div className="flex gap-3">
-                    <select 
+                    <select
                         className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-600 outline-none"
                         value={filter.source_type}
-                        onChange={(e) => setFilter({...filter, source_type: e.target.value})}
+                        onChange={(e) => setFilter({ ...filter, source_type: e.target.value })}
                     >
                         <option value="">Tất cả Nguồn</option>
                         <option value="SALE">Bán hàng (Sale)</option>
                         <option value="PURCHASE">Mua hàng (Purchase)</option>
                     </select>
-                    <select 
+                    <select
                         className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-600 outline-none"
                         value={filter.status}
-                        onChange={(e) => setFilter({...filter, status: e.target.value})}
+                        onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                     >
                         <option value="">Tất cả Trạng thái</option>
                         <option value="SUCCESS">Thành công</option>
@@ -100,9 +100,8 @@ const ImportLogViewer = () => {
                                     <td className="px-8 py-4 font-mono text-xs text-slate-500">#{log.batch_id} [cite: 415]</td>
                                     <td className="px-6 py-4 font-bold text-slate-700 text-sm">{log.file_name}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${
-                                            log.source_type === 'SALE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                        }`}>
+                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${log.source_type === 'SALE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                            }`}>
                                             {log.source_type}
                                         </span>
                                     </td>
@@ -116,7 +115,7 @@ const ImportLogViewer = () => {
                                         )}
                                     </td>
                                     <td className="px-8 py-4 text-right">
-                                        <button 
+                                        <button
                                             onClick={() => openErrorDetail(log)}
                                             className="text-blue-600 hover:text-blue-800 font-bold text-xs flex items-center gap-1 justify-end"
                                         >

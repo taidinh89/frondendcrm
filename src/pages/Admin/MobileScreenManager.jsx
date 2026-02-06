@@ -38,7 +38,7 @@ const ActionConfigForm = ({ configJson, onChange }) => {
                 });
                 setMode('GUI'); // Nếu detect đúng format thì chuyển sang GUI
             }
-        } catch (e) {}
+        } catch (e) { }
     }, []);
 
     // Cập nhật ngược lại cha khi data đổi
@@ -54,7 +54,7 @@ const ActionConfigForm = ({ configJson, onChange }) => {
                     <label className="text-xs font-bold text-gray-500">Cấu hình JSON (Nâng cao)</label>
                     <button type="button" onClick={() => setMode('GUI')} className="text-xs text-blue-600 hover:underline">Chuyển sang Giao diện</button>
                 </div>
-                <textarea 
+                <textarea
                     className="w-full border rounded p-2 text-xs font-mono h-32 bg-gray-900 text-green-400"
                     value={configJson}
                     onChange={e => onChange(e.target.value)}
@@ -74,7 +74,7 @@ const ActionConfigForm = ({ configJson, onChange }) => {
             <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                     <label className="block text-[10px] font-bold text-gray-600 mb-1">Loại Nghiệp vụ (Ref Type)</label>
-                    <select 
+                    <select
                         className="w-full border rounded p-1.5 text-xs bg-white"
                         value={data.payload?.ref_type}
                         onChange={e => updateParent({ ...data, payload: { ...data.payload, ref_type: e.target.value } })}
@@ -84,8 +84,8 @@ const ActionConfigForm = ({ configJson, onChange }) => {
                 </div>
                 <div>
                     <label className="block text-[10px] font-bold text-gray-600 mb-1">Câu nhắc (Instruction)</label>
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         className="w-full border rounded p-1.5 text-xs"
                         placeholder="VD: Chụp ảnh mặt trước..."
                         value={data.instruction}
@@ -96,15 +96,15 @@ const ActionConfigForm = ({ configJson, onChange }) => {
 
             <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                        type="checkbox" 
+                    <input
+                        type="checkbox"
                         className="w-4 h-4 rounded text-blue-600"
                         checked={data.require_gps}
                         onChange={e => updateParent({ ...data, require_gps: e.target.checked })}
                     />
                     <span className="text-xs font-medium">Bắt buộc bật GPS</span>
                 </label>
-                
+
                 <div className="text-[10px] text-gray-400 italic flex-1 text-right">
                     Endpoint: {data.endpoint}
                 </div>
@@ -115,13 +115,13 @@ const ActionConfigForm = ({ configJson, onChange }) => {
 
 // --- COMPONENT CHÍNH ---
 export default function MobileScreenManager() {
-    const { data: screensData, isLoading, refetch } = useApiData('/api/security/mobile-screens');
+    const { data: screensData, isLoading, refetch } = useApiData('/api/v2/security/mobile-screens');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
     const [formData, setFormData] = useState({
         key: '', label: '', type: 'GRID_ITEM', icon_url: '',
-        action_type: '', action_target: '', 
+        action_type: '', action_target: '',
         action_config: '{}', ui_config: '{}',
         is_active: true, order: 0
     });
@@ -156,10 +156,10 @@ export default function MobileScreenManager() {
             };
 
             if (editingItem) {
-                await axios.put(`/api/security/mobile-screens/${editingItem.id}`, payload);
+                await axios.put(`/api/v2/security/mobile-screens/${editingItem.id}`, payload);
                 toast.success('Cập nhật thành công!');
             } else {
-                await axios.post('/api/security/mobile-screens', payload);
+                await axios.post('/api/v2/security/mobile-screens', payload);
                 toast.success('Tạo mới thành công!');
             }
             setIsModalOpen(false);
@@ -174,7 +174,7 @@ export default function MobileScreenManager() {
     const handleDelete = async (id) => {
         if (!window.confirm('Xóa linh kiện này?')) return;
         try {
-            await axios.delete(`/api/security/mobile-screens/${id}`);
+            await axios.delete(`/api/v2/security/mobile-screens/${id}`);
             toast.success('Đã xóa!');
             refetch();
         } catch (e) { toast.error('Lỗi xóa'); }
@@ -239,30 +239,30 @@ export default function MobileScreenManager() {
                             <h3 className="font-bold text-lg">{editingItem ? 'Chỉnh sửa' : 'Tạo mới'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
                         </div>
-                        
+
                         <div className="p-6 overflow-y-auto custom-scrollbar">
                             <form id="screenForm" onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1">Mã Key *</label>
-                                        <input required className="w-full border rounded p-2 text-sm" value={formData.key} onChange={e => setFormData({...formData, key: e.target.value})} disabled={!!editingItem} placeholder="btn_..." />
+                                        <input required className="w-full border rounded p-2 text-sm" value={formData.key} onChange={e => setFormData({ ...formData, key: e.target.value })} disabled={!!editingItem} placeholder="btn_..." />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1">Tên hiển thị</label>
-                                        <input className="w-full border rounded p-2 text-sm" value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} />
+                                        <input className="w-full border rounded p-2 text-sm" value={formData.label} onChange={e => setFormData({ ...formData, label: e.target.value })} />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1">Loại hiển thị</label>
-                                        <select className="w-full border rounded p-2 text-sm bg-gray-50" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                                        <select className="w-full border rounded p-2 text-sm bg-gray-50" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}>
                                             {TYPE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1">Link Icon (URL)</label>
-                                        <input className="w-full border rounded p-2 text-sm" value={formData.icon_url} onChange={e => setFormData({...formData, icon_url: e.target.value})} placeholder="https://..." />
+                                        <input className="w-full border rounded p-2 text-sm" value={formData.icon_url} onChange={e => setFormData({ ...formData, icon_url: e.target.value })} placeholder="https://..." />
                                     </div>
                                 </div>
 
@@ -270,29 +270,29 @@ export default function MobileScreenManager() {
                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <label className="block text-xs font-bold text-blue-700 mb-1">Hành động (Action)</label>
-                                            <select className="w-full border rounded p-2 text-sm font-bold text-blue-700 bg-blue-50" value={formData.action_type} onChange={e => setFormData({...formData, action_type: e.target.value})}>
+                                            <select className="w-full border rounded p-2 text-sm font-bold text-blue-700 bg-blue-50" value={formData.action_type} onChange={e => setFormData({ ...formData, action_type: e.target.value })}>
                                                 <option value="">-- Không --</option>
                                                 {ACTION_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
                                             </select>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-gray-700 mb-1">Đích đến (Target)</label>
-                                            <input className="w-full border rounded p-2 text-sm" value={formData.action_target} onChange={e => setFormData({...formData, action_target: e.target.value})} placeholder="ScreenName / URL" />
+                                            <input className="w-full border rounded p-2 text-sm" value={formData.action_target} onChange={e => setFormData({ ...formData, action_target: e.target.value })} placeholder="ScreenName / URL" />
                                             <p className="text-[10px] text-gray-400 mt-1">VD: CheckInScreen, https://google.com</p>
                                         </div>
                                     </div>
 
                                     {/* FORM CẤU HÌNH THÔNG MINH (ACTION CONFIG) */}
                                     <div className="mb-4">
-                                        <ActionConfigForm 
-                                            configJson={formData.action_config} 
-                                            onChange={(val) => setFormData({...formData, action_config: val})} 
+                                        <ActionConfigForm
+                                            configJson={formData.action_config}
+                                            onChange={(val) => setFormData({ ...formData, action_config: val })}
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1">UI Config (JSON - Màu sắc, Style)</label>
-                                        <textarea className="w-full border rounded p-2 text-xs font-mono h-20 bg-gray-50" value={formData.ui_config} onChange={e => setFormData({...formData, ui_config: e.target.value})} placeholder='{"color": "red"}' />
+                                        <textarea className="w-full border rounded p-2 text-xs font-mono h-20 bg-gray-50" value={formData.ui_config} onChange={e => setFormData({ ...formData, ui_config: e.target.value })} placeholder='{"color": "red"}' />
                                     </div>
                                 </div>
                             </form>
@@ -300,7 +300,7 @@ export default function MobileScreenManager() {
 
                         <div className="p-4 border-t bg-gray-50 flex justify-between rounded-b-xl">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-5 h-5" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} />
+                                <input type="checkbox" className="w-5 h-5" checked={formData.is_active} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} />
                                 <span className="font-bold text-sm">Kích hoạt</span>
                             </label>
                             <button form="screenForm" type="submit" className="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 shadow">

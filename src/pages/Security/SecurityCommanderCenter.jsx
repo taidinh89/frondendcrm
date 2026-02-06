@@ -31,36 +31,36 @@ const ExecutiveDashboard = ({ onNavigate }) => {
             try {
                 // Gọi song song các API để lấy số liệu tổng hợp
                 const [uRes, pRes, rRes] = await Promise.all([
-                    axios.get('/api/security/users?per_page=1000'),
-                    axios.get('/api/security/permissions/matrix'),
-                    axios.get('/api/security/roles?per_page=100')
+                    axios.get('/api/v2/security/users?per_page=1000'),
+                    axios.get('/api/v2/security/permissions/matrix'),
+                    axios.get('/api/v2/security/roles?per_page=100')
                 ]);
 
-                const users = uRes.data.data || [];
-                const roleData = rRes.data.data || [];
+                const users = uRes.data?.data || (Array.isArray(uRes.data) ? uRes.data : []);
+                const roleData = rRes.data?.data || (Array.isArray(rRes.data) ? rRes.data : []);
                 const matrix = pRes.data.overview || {};
 
                 // Logic đếm Admin chuẩn (is_admin=1 HOẶC Role Super Admin)
-                const adminCount = users.filter(u => 
-                    u.is_admin === 1 || u.is_admin === true || 
+                const adminCount = users.filter(u =>
+                    u.is_admin === 1 || u.is_admin === true ||
                     u.roles?.some(r => r.name === 'Super Admin')
                 ).length;
 
                 setStats({
-                    users: { 
-                        total: users.length, 
-                        active: users.filter(u => u.is_active).length, 
+                    users: {
+                        total: users.length,
+                        active: users.filter(u => u.is_active).length,
                         locked: users.filter(u => !u.is_active).length,
-                        admins: adminCount 
+                        admins: adminCount
                     },
-                    system: { 
-                        total_api: matrix.total_routes || 0, 
-                        secured: matrix.secured || 0, 
-                        risk: matrix.unprotected || 0 
+                    system: {
+                        total_api: matrix.total_routes || 0,
+                        secured: matrix.secured || 0,
+                        risk: matrix.unprotected || 0
                     },
-                    roles: roleData.map(r => ({ 
-                        name: r.name, 
-                        count: users.filter(u => u.roles?.some(ur => ur.id === r.id)).length 
+                    roles: roleData.map(r => ({
+                        name: r.name,
+                        count: users.filter(u => u.roles?.some(ur => ur.id === r.id)).length
                     }))
                 });
             } catch (e) { console.error("Dashboard Load Error:", e); }
@@ -74,7 +74,7 @@ const ExecutiveDashboard = ({ onNavigate }) => {
         <div className="space-y-6 animate-fade-in-up">
             {/* Hàng 1: 3 Thẻ Quan trọng nhất */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+
                 {/* CARD 1: SỨC KHỎE AN NINH */}
                 <div onClick={() => onNavigate('bundles')} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-50 hover:-translate-y-1 transition-all cursor-pointer group">
                     <div className="flex justify-between items-center">
@@ -131,7 +131,7 @@ const ExecutiveDashboard = ({ onNavigate }) => {
 
             {/* Hàng 2: Biểu đồ phân bổ & Trợ lý */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* Cột trái: Phân bổ Role */}
                 <div className="lg:col-span-2 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                     <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6">Phân bổ Vai trò (Role Structure)</h3>
@@ -143,8 +143,8 @@ const ExecutiveDashboard = ({ onNavigate }) => {
                                     <span>{role.count} nhân sự</span>
                                 </div>
                                 <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                                    <div 
-                                        className={`h-full rounded-full transition-all duration-1000 ${role.name === 'Super Admin' ? 'bg-purple-500' : 'bg-blue-500'}`} 
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${role.name === 'Super Admin' ? 'bg-purple-500' : 'bg-blue-500'}`}
                                         style={{ width: `${stats.users.total ? (role.count / stats.users.total) * 100 : 0}%` }}
                                     ></div>
                                 </div>
@@ -208,24 +208,24 @@ const SecurityCommanderCenter = ({ setAppTitle }) => {
     return (
         <div className="p-4 md:p-8 bg-[#f1f5f9] min-h-screen font-sans text-gray-800">
             <div className="max-w-[1800px] mx-auto space-y-8">
-                
+
                 {/* 1. TOP HEADER NAVIGATION (COMMANDER STYLE) */}
                 <div className="bg-white p-3 rounded-[2rem] shadow-2xl shadow-slate-200/50 flex justify-between items-center sticky top-4 z-50 border border-white/50 backdrop-blur-md bg-white/90">
                     <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                        <button 
-                            onClick={() => setActiveTab('dashboard')} 
+                        <button
+                            onClick={() => setActiveTab('dashboard')}
                             className={`px-8 py-3 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
                         >
                             📊 Tổng hành dinh
                         </button>
-                        <button 
-                            onClick={() => setActiveTab('users')} 
+                        <button
+                            onClick={() => setActiveTab('users')}
                             className={`px-8 py-3 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
                         >
                             👥 Quản trị Nhân sự
                         </button>
-                        <button 
-                            onClick={() => setActiveTab('bundles')} 
+                        <button
+                            onClick={() => setActiveTab('bundles')}
                             className={`px-8 py-3 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'bundles' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 scale-105' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
                         >
                             🏗️ Kiến trúc Bảo mật
@@ -238,16 +238,16 @@ const SecurityCommanderCenter = ({ setAppTitle }) => {
 
                 {/* 2. MAIN CONTENT AREA */}
                 <div className="bg-white rounded-[3.5rem] shadow-sm border border-gray-100 p-8 min-h-[800px] relative">
-                    
+
                     {activeTab === 'dashboard' && <ExecutiveDashboard onNavigate={handleNavigate} />}
-                    
+
                     {/* Tái sử dụng Component cũ nhưng hiển thị trong giao diện mới */}
                     {activeTab === 'users' && (
                         <div className="animate-fade-in">
-                            <UserListTab /> 
+                            <UserListTab />
                         </div>
                     )}
-                    
+
                     {activeTab === 'bundles' && (
                         <div className="animate-fade-in">
                             <BundleArchitectTab />

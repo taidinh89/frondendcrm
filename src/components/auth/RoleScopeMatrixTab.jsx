@@ -12,13 +12,14 @@ const RoleScopeMatrixTab = ({ definitions, fetchDefinitions }) => {
 
     const fetchRoles = async () => {
         try {
-            const res = await axios.get('/api/security/roles?per_page=100');
+            const res = await axios.get('/api/v2/security/roles?per_page=100');
             // Loại bỏ Super Admin khỏi danh sách phân quyền vì Admin luôn có quyền tối cao
-            setRoles(res.data.data.filter(r => r.name !== 'Super Admin'));
-        } catch (e) { 
-            toast.error("Lỗi tải danh sách nhóm quyền"); 
-        } finally { 
-            setLoading(false); 
+            const roleData = (res.data?.data || (Array.isArray(res.data) ? res.data : [])).filter(r => r.name !== 'Super Admin');
+            setRoles(roleData);
+        } catch (e) {
+            toast.error("Lỗi tải danh sách nhóm quyền");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -29,11 +30,11 @@ const RoleScopeMatrixTab = ({ definitions, fetchDefinitions }) => {
         const role = roles.find(r => r.id === roleId);
         const newScopes = { ...role.data_scopes, [key]: value };
         try {
-            await axios.put(`/api/security/roles/${roleId}/scopes`, { data_scopes: newScopes });
+            await axios.put(`/api/v2/security/roles/${roleId}/scopes`, { data_scopes: newScopes });
             toast.success("Đã cập nhật phạm vi dữ liệu");
             fetchRoles();
-        } catch (e) { 
-            toast.error("Lỗi cập nhật phạm vi"); 
+        } catch (e) {
+            toast.error("Lỗi cập nhật phạm vi");
         }
     };
 
@@ -44,11 +45,11 @@ const RoleScopeMatrixTab = ({ definitions, fetchDefinitions }) => {
         const role = roles.find(r => r.id === roleId);
         const newPolicies = { ...role.access_policies, [key]: checked };
         try {
-            await axios.put(`/api/security/roles/${roleId}/scopes`, { access_policies: newPolicies });
+            await axios.put(`/api/v2/security/roles/${roleId}/scopes`, { access_policies: newPolicies });
             toast.success("Đã cập nhật chính sách bảo mật");
             fetchRoles();
-        } catch (e) { 
-            toast.error("Lỗi cập nhật chính sách"); 
+        } catch (e) {
+            toast.error("Lỗi cập nhật chính sách");
         }
     };
 
@@ -73,19 +74,17 @@ const RoleScopeMatrixTab = ({ definitions, fetchDefinitions }) => {
                             <td className="p-6">
                                 <div className="grid grid-cols-1 gap-4">
                                     {definitions.scopes.map(s => (
-                                        <div key={s.key} className={`flex flex-col p-3 rounded-xl border-2 transition-all ${
-                                            s.status === 'active' ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-60'
-                                        }`}>
+                                        <div key={s.key} className={`flex flex-col p-3 rounded-xl border-2 transition-all ${s.status === 'active' ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-60'
+                                            }`}>
                                             <div className="flex justify-between items-center mb-1">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{s.label}</label>
                                                 {/* HIỂN THỊ ĐÈN TRẠNG THÁI TỪ BACKEND */}
                                                 <div className={`w-2 h-2 rounded-full ${s.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-400'}`}></div>
                                             </div>
-                                            
-                                            <input 
-                                                className={`border rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
-                                                    s.status === 'active' ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                                                }`}
+
+                                            <input
+                                                className={`border rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-blue-500 outline-none transition-all ${s.status === 'active' ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                                                    }`}
                                                 placeholder={s.status === 'active' ? "Nhập mã (VD: VCB, MBBank)..." : "Chờ Dev tạo cột: " + s.db_column}
                                                 disabled={s.status !== 'active'}
                                                 defaultValue={role.data_scopes?.[s.key]?.join(', ')}
@@ -102,8 +101,8 @@ const RoleScopeMatrixTab = ({ definitions, fetchDefinitions }) => {
                                 <div className="grid grid-cols-1 gap-3">
                                     {definitions.policies.map(p => (
                                         <label key={p.key} className="group flex items-center gap-3 p-3 bg-white border-2 border-gray-100 rounded-xl hover:border-blue-300 cursor-pointer transition-all hover:shadow-sm">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                                 checked={role.access_policies?.[p.key] || false}
                                                 onChange={(e) => handleUpdatePolicy(role.id, p.key, e.target.checked)}

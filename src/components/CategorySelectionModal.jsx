@@ -28,7 +28,7 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
     const fetchCategories = async () => {
         setIsLoading(true);
         try {
-            const res = await metaApi.getCategoriesMinimal({ all: 1 });
+            const res = await metaApi.getCategoriesMinimalV2();
             const data = res.data.data || res.data || [];
 
             setTreeCategories(data);
@@ -146,15 +146,15 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
         try {
             let res;
             if (editingItem.id) {
-                // UPDATE
-                res = await metaApi.updateCategory(editingItem.id, formData);
+                // UPDATE V2
+                res = await metaApi.updateCategoryV2(editingItem.id, formData);
                 const updated = categories.map(c => c.id === editingItem.id ? { ...c, ...formData } : c);
                 setCategories(updated);
-                setTreeCategories(updated); // In a real app we might need to re-fetch to rebuild tree properly
+                setTreeCategories(updated);
                 toast.success("Cập nhật thành công");
             } else {
-                // CREATE
-                res = await metaApi.createCategory(formData);
+                // CREATE V2
+                res = await metaApi.createCategoryV2(formData);
                 const newCat = res.data.data || res.data;
                 const newCategories = [...categories, newCat];
                 setCategories(newCategories);
@@ -185,7 +185,7 @@ const CategorySelectionModal = ({ isOpen, onClose, onSelect, selectedId, multipl
         if (!window.confirm(`Bạn có chắc muốn xóa danh mục "${editingItem.name}"?`)) return;
         setIsSaving(true);
         try {
-            await metaApi.deleteCategory(editingItem.id);
+            await metaApi.deleteCategoryV2(editingItem.id);
             toast.success("Đã xóa danh mục");
             const newCats = categories.filter(c => c.id !== editingItem.id);
             setCategories(newCats);

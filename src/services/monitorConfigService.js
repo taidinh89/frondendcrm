@@ -6,7 +6,7 @@ const monitorConfigService = {
   // Gọi vào: api/security/monitor-services
   getAll: async () => {
     try {
-      const response = await axios.get('api/security/monitor-services');
+      const response = await axios.get('/api/v2/security/monitor-services');
       return response.data;
     } catch (error) {
       console.error("Lỗi lấy danh sách cấu hình:", error);
@@ -18,7 +18,7 @@ const monitorConfigService = {
   // Gọi vào: POST api/security/monitor-services
   create: async (data) => {
     try {
-      const response = await axios.post('api/security/monitor-services', data);
+      const response = await axios.post('/api/v2/security/monitor-services', data);
       return response.data;
     } catch (error) {
       throw error;
@@ -29,7 +29,7 @@ const monitorConfigService = {
   // Gọi vào: PUT api/security/monitor-services/{id}
   update: async (id, data) => {
     try {
-      const response = await axios.put(`api/security/monitor-services/${id}`, data);
+      const response = await axios.put(`/api/v2/security/monitor-services/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -40,7 +40,7 @@ const monitorConfigService = {
   // Gọi vào: DELETE api/security/monitor-services/{id}
   delete: async (id) => {
     try {
-      const response = await axios.delete(`api/security/monitor-services/${id}`);
+      const response = await axios.delete(`/api/v2/security/monitor-services/${id}`);
       return response.data;
     } catch (error) {
       throw error;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 // Giữ lại component UI cũ của bạn nếu muốn, hoặc dùng class Tailwind trực tiếp như dưới đây để đảm bảo hiển thị đúng
-import { Icon } from '../components/ui'; 
+import { Icon } from '../components/ui';
 
 const ImportManagement = ({ setAppTitle }) => {
     // --- STATE QUẢN LÝ ---
@@ -38,12 +38,12 @@ const ImportManagement = ({ setAppTitle }) => {
         const formData = new FormData();
         formData.append('file', file);
         // Gửi cờ debug: 1 (Soi) hoặc 0 (Chạy thật)
-        formData.append('debug', isDebug ? '1' : '0'); 
+        formData.append('debug', isDebug ? '1' : '0');
 
         // Chọn API Endpoint dựa trên loại nhập (Đúng như bạn yêu cầu)
-        const apiEndpoint = importType === 'PURCHASE' 
-            ? '/api/security/import/purchases'
-            : '/api/security/import/sales';
+        const apiEndpoint = importType === 'PURCHASE'
+            ? '/api/v2/security/import/purchases'
+            : '/api/v2/security/import/sales';
 
         try {
             const res = await axios.post(apiEndpoint, formData, {
@@ -51,7 +51,7 @@ const ImportManagement = ({ setAppTitle }) => {
             });
 
             setServerResult(res.data);
-            
+
             // Thông báo toast
             if (res.data.status === 'success') {
                 toast.success(isDebug ? 'Đã phân tích xong!' : 'Đã nhập kho thành công!');
@@ -72,7 +72,7 @@ const ImportManagement = ({ setAppTitle }) => {
     // --- RENDER GIAO DIỆN ---
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6 pb-20">
-            
+
             {/* 1. THANH ĐIỀU KHIỂN TRUNG TÂM */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
@@ -87,21 +87,19 @@ const ImportManagement = ({ setAppTitle }) => {
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => { setImportType('PURCHASE'); setServerResult(null); }}
-                            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${
-                                importType === 'PURCHASE' 
-                                ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${importType === 'PURCHASE'
+                                    ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
                         >
                             🚛 Nhập Mua Hàng
                         </button>
                         <button
                             onClick={() => { setImportType('SALE'); setServerResult(null); }}
-                            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${
-                                importType === 'SALE' 
-                                ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${importType === 'SALE'
+                                    ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
                         >
                             🛒 Nhập Bán Hàng
                         </button>
@@ -112,14 +110,14 @@ const ImportManagement = ({ setAppTitle }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Dropzone */}
                     <div className="lg:col-span-2 border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors hover:bg-blue-50 hover:border-blue-300">
-                        <input 
-                            type="file" 
-                            id="fileInput" 
-                            className="hidden" 
+                        <input
+                            type="file"
+                            id="fileInput"
+                            className="hidden"
                             accept=".csv, .xlsx, .xls"
                             onChange={handleFileChange}
                         />
-                        
+
                         {!file ? (
                             <label htmlFor="fileInput" className="cursor-pointer space-y-3">
                                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-3xl">
@@ -152,18 +150,18 @@ const ImportManagement = ({ setAppTitle }) => {
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm font-bold text-gray-700">Chế độ hoạt động</span>
                                 {/* Toggle Switch Custom */}
-                                <button 
+                                <button
                                     onClick={() => setIsDebug(!isDebug)}
                                     className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none ${isDebug ? 'bg-yellow-400' : 'bg-blue-600'}`}
                                 >
-                                    <span 
+                                    <span
                                         className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 transform ${isDebug ? 'translate-x-6' : 'translate-x-0'}`}
                                     />
                                 </button>
                             </div>
                             <p className={`text-xs ${isDebug ? 'text-yellow-700' : 'text-blue-700'} font-medium`}>
-                                {isDebug 
-                                    ? "🔍 DEBUG (SOI LỖI): Không lưu vào DB, chỉ kiểm tra logic." 
+                                {isDebug
+                                    ? "🔍 DEBUG (SOI LỖI): Không lưu vào DB, chỉ kiểm tra logic."
                                     : "🚀 CHẠY THẬT: Dữ liệu sẽ được lưu vào hệ thống."}
                             </p>
                         </div>
@@ -171,10 +169,9 @@ const ImportManagement = ({ setAppTitle }) => {
                         <button
                             onClick={handleUpload}
                             disabled={uploading || !file}
-                            className={`w-full py-3 px-4 rounded-lg text-white font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 ${
-                                uploading ? 'bg-gray-400 cursor-not-allowed' :
-                                isDebug ? 'bg-yellow-500 hover:bg-yellow-600 text-yellow-900' : 'bg-blue-600 hover:bg-blue-700'
-                            }`}
+                            className={`w-full py-3 px-4 rounded-lg text-white font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 ${uploading ? 'bg-gray-400 cursor-not-allowed' :
+                                    isDebug ? 'bg-yellow-500 hover:bg-yellow-600 text-yellow-900' : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
                         >
                             {uploading ? (
                                 <>⏳ Đang xử lý...</>
@@ -190,15 +187,13 @@ const ImportManagement = ({ setAppTitle }) => {
             {serverResult && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in-up">
                     {/* Header Kết quả */}
-                    <div className={`px-6 py-4 border-b flex justify-between items-center ${
-                        serverResult.status === 'success' ? 'bg-green-50' : 
-                        serverResult.status === 'preview' ? 'bg-yellow-50' : 'bg-red-50'
-                    }`}>
+                    <div className={`px-6 py-4 border-b flex justify-between items-center ${serverResult.status === 'success' ? 'bg-green-50' :
+                            serverResult.status === 'preview' ? 'bg-yellow-50' : 'bg-red-50'
+                        }`}>
                         <div>
-                            <h3 className={`font-bold ${
-                                serverResult.status === 'success' ? 'text-green-800' : 
-                                serverResult.status === 'preview' ? 'text-yellow-800' : 'text-red-800'
-                            }`}>
+                            <h3 className={`font-bold ${serverResult.status === 'success' ? 'text-green-800' :
+                                    serverResult.status === 'preview' ? 'text-yellow-800' : 'text-red-800'
+                                }`}>
                                 {serverResult.message || 'Kết quả xử lý'}
                             </h3>
                             {serverResult.debug_data && (
@@ -207,7 +202,7 @@ const ImportManagement = ({ setAppTitle }) => {
                                 </p>
                             )}
                         </div>
-                        
+
                         {/* Tab Switcher: UI vs Raw */}
                         <div className="flex bg-white/50 p-1 rounded-md">
                             <button onClick={() => setViewMode('ui')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'ui' ? 'bg-white shadow' : 'text-gray-500'}`}>Giao diện</button>
@@ -230,12 +225,11 @@ const ImportManagement = ({ setAppTitle }) => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {serverResult.debug_data.samples.map((row, idx) => (
-                                        <tr key={idx} className={`hover:bg-gray-50 transition-colors ${
-                                            row.status === 'ERROR' ? 'bg-red-50/50' : 
-                                            !row.final_db ? 'bg-gray-50 opacity-60' : ''
-                                        }`}>
+                                        <tr key={idx} className={`hover:bg-gray-50 transition-colors ${row.status === 'ERROR' ? 'bg-red-50/50' :
+                                                !row.final_db ? 'bg-gray-50 opacity-60' : ''
+                                            }`}>
                                             <td className="px-4 py-3 font-mono text-gray-500">{row.row_index}</td>
-                                            
+
                                             <td className="px-4 py-3">
                                                 {row.status === 'OK' && <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">HỢP LỆ</span>}
                                                 {row.status === 'ERROR' && <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold animate-pulse">LỖI</span>}
@@ -325,8 +319,8 @@ const ImportManagement = ({ setAppTitle }) => {
                     {/* VIEW MODE: RAW JSON */}
                     {viewMode === 'raw' && (
                         <div className="p-0">
-                            <textarea 
-                                readOnly 
+                            <textarea
+                                readOnly
                                 className="w-full h-96 bg-gray-900 text-green-400 font-mono text-xs p-4 focus:outline-none"
                                 value={JSON.stringify(serverResult, null, 2)}
                             />
@@ -334,7 +328,7 @@ const ImportManagement = ({ setAppTitle }) => {
                     )}
                 </div>
             )}
-            
+
             {/* CỐ VẤN THÔNG MINH (Chỉ hiện khi có lỗi) */}
             {serverResult?.debug_data?.samples?.some(s => s.status === 'ERROR') && (
                 <div className="bg-gradient-to-r from-red-50 to-white border-l-4 border-red-500 p-4 shadow-sm rounded-r-lg">
@@ -344,9 +338,9 @@ const ImportManagement = ({ setAppTitle }) => {
                             <h4 className="font-bold text-red-700 text-sm uppercase tracking-wide mb-1">TRỢ LÝ AI CỐ VẤN</h4>
                             <p className="text-sm text-gray-700">
                                 Tôi phát hiện file Excel của bạn có dòng bị lỗi.
-                                <br/>
+                                <br />
                                 👉 <strong>Nguyên nhân phổ biến:</strong> Mã sản phẩm mới chưa từng nhập (Master Data thiếu), hoặc Định dạng ngày tháng bị sai cột.
-                                <br/>
+                                <br />
                                 👉 <strong>Đề xuất:</strong> Hãy kiểm tra kỹ cột <code className="bg-red-100 px-1 rounded text-red-800 font-bold">Mã mặt hàng</code> và <code className="bg-red-100 px-1 rounded text-red-800 font-bold">Ngày chứng từ</code>. Hệ thống V2 sẽ tự động tạo Master Data nếu mã hợp lệ, nhưng nếu mã rỗng hoặc chứa ký tự lạ, nó sẽ chặn lại.
                             </p>
                         </div>

@@ -1,7 +1,7 @@
 // src/pages/EcountProductManager.jsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ecountApi } from '../api/admin/ecountApi';
 import { standardizationApi } from '../api/admin/standardizationApi';
 import { metaApi } from '../api/admin/metaApi';
@@ -45,6 +45,7 @@ const RawDataModal = ({ data, onClose }) => {
 
 export const EcountProductManager = ({ setAppTitle }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
@@ -159,29 +160,48 @@ export const EcountProductManager = ({ setAppTitle }) => {
     };
 
     const handleCreateToWeb = async (ecountCode, existingData = null) => {
-        if (isCreatingWeb) return;
+        if (!webDictionary) {
+            toast.error("Đang tải dữ liệu danh mục...");
+            return;
+        }
+
         setIsCreatingWeb(ecountCode);
-        const tid = toast.loading("Đang nạp dữ liệu từ ECount Master...");
+        const tid = toast.loading("Đang chuẩn bị dữ liệu...");
         try {
+            // 1. Get Ecount Info
+            // 1. Get Ecount Info
             let ecountData = existingData;
             if (!ecountData) {
-                const res = await ecountApi.showProduct(ecountCode);
-                ecountData = res.data;
+                // Try from viewingDetail
+                if (viewingDetail && viewingDetail.product.prod_cd === ecountCode) {
+                    ecountData = viewingDetail.product;
+                } else {
+                    // Fetch fresh if not found
+                    console.log("[DEBUG] Fetching Ecount Data for code:", ecountCode);
+                    const res = await ecountApi.showProduct(ecountCode);
+                    ecountData = res.data.product || res.data;
+                }
             }
 
-            // --- SMART MAPPING LOGIC (Ecount Code -> CRM ID) ---
+            if (!ecountData) throw new Error("Không tìm thấy dữ liệu nguồn");
+
+            console.log("[DEBUG] Raw Ecount Data:", ecountData);
             const mappedData = mapEcountToQvc(ecountData, webDictionary);
+            console.log("[DEBUG] Mapped QVC Data:", mappedData);
 
-            if (!mappedData) {
-                toast.error("Không thể map dữ liệu sản phẩm", { id: tid });
-                return;
-            }
+            // Navigate to separate route
+            navigate('/product-edit/new', {
+                state: {
+                    product: mappedData,
+                    dictionary: webDictionary,
+                    returnUrl: location.pathname
+                }
+            });
 
-            toast.success("Đã nạp gói dữ liệu chuẩn bị khởi tạo!", { id: tid });
-            setCreatingEntity(mappedData);
-            if (viewingDetail) setViewingDetail(null);
-        } catch (error) {
-            toast.error("Không thể lấy thông tin sản phẩm ECount", { id: tid });
+            toast.dismiss(tid);
+            setViewingDetail(null); // Close detail modal
+        } catch (e) {
+            toast.error("Lỗi: " + e.message, { id: tid });
         } finally {
             setIsCreatingWeb(null);
         }
@@ -976,34 +996,7 @@ export const EcountProductManager = ({ setAppTitle }) => {
                 )
             }
 
-            {
-                creatingEntity && (
-                    <ProductMobileDetail
-                        isOpen={!!creatingEntity}
-                        onClose={() => setCreatingEntity(null)}
-                        mode="create"
-                        product={creatingEntity}
-                        onRefresh={fetchData}
-                        dictionary={webDictionary}
-                        onRefreshDictionary={fetchWebDict}
-                        onSuccess={() => navigate('/product-mobile')}
-                    />
-                )
-            }
 
-            {
-                editingWebProductId && (
-                    <ProductMobileDetail
-                        isOpen={!!editingWebProductId}
-                        onClose={() => setEditingWebProductId(null)}
-                        mode="edit"
-                        product={{ id: editingWebProductId }}
-                        onRefresh={fetchData}
-                        dictionary={webDictionary}
-                        onRefreshDictionary={fetchWebDict}
-                    />
-                )
-            }
         </div >
     );
 };

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 const UserListTab = () => {
     // --- KHỞI TẠO STATES ---
-    const [users, setUsers] = useState([]); 
+    const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]); // Danh sách Bó quyền từ BE
     const [departments, setDepartments] = useState([]); // Danh sách Phòng ban từ BE
     const [scopeDefinitions, setScopeDefinitions] = useState([]); // Định nghĩa L2 từ BE
@@ -35,16 +35,16 @@ const UserListTab = () => {
         setLoading(true);
         try {
             const [uRes, rRes, dRes, sRes] = await Promise.all([
-                axios.get('/api/security/users?per_page=1000'), 
-                axios.get('/api/security/roles?per_page=100'),
-                axios.get('/api/security/departments?per_page=100'),
-                axios.get('/api/system/scope-definitions') 
+                axios.get('/api/v2/security/users?per_page=1000'),
+                axios.get('/api/v2/security/roles?per_page=100'),
+                axios.get('/api/v2/security/departments?per_page=100'),
+                axios.get('/api/system/scope-definitions')
             ]);
 
             setUsers(ensureArray(uRes.data));
             setRoles(ensureArray(rRes.data).filter(r => r.name !== 'Super Admin'));
             setDepartments(ensureArray(dRes.data));
-            setScopeDefinitions(Array.isArray(sRes.data) ? sRes.data : []);
+            setScopeDefinitions(sRes.data || {});
         } catch (e) {
             toast.error('Lỗi đồng bộ: ' + (e.response?.data?.message || e.message));
         } finally {
@@ -57,7 +57,7 @@ const UserListTab = () => {
     // 1. TÍNH NĂNG: BẬT/TẮT TRẠNG THÁI
     const toggleStatus = async (user) => {
         try {
-            await axios.put(`/api/security/users/${user.id}`, { is_active: !user.is_active ? 1 : 0 });
+            await axios.put(`/api/v2/security/users/${user.id}`, { is_active: !user.is_active ? 1 : 0 });
             fetchData();
         } catch (e) { toast.error('Lỗi thực thi'); }
     };
@@ -67,7 +67,7 @@ const UserListTab = () => {
         try {
             // Bước A: Cập nhật Vai trò (Lớp 1) và thông tin cơ bản
             // Gọi đến UserController@update
-            await axios.put(`/api/security/users/${editingUser.id}`, {
+            await axios.put(`/api/v2/security/users/${editingUser.id}`, {
                 name: editingUser.name,
                 roles: selectedRoles // Gửi mảng ID các Bó quyền đã chọn
             });
@@ -77,15 +77,15 @@ const UserListTab = () => {
             const deptPayload = {};
             (tempDepts || []).forEach(item => {
                 if (item.id) {
-                    deptPayload[item.id] = { 
-                        access_level: item.access_level, 
+                    deptPayload[item.id] = {
+                        access_level: item.access_level,
                         position: item.position || 'Nhân viên'
                     };
                 }
             });
 
-            await axios.put(`/api/security/users/${editingUser.id}/departments`, { 
-                departments: deptPayload 
+            await axios.put(`/api/v2/security/users/${editingUser.id}/departments`, {
+                departments: deptPayload
             });
 
             toast.success('Đã phân quyền và công tác thành công!');
@@ -111,8 +111,8 @@ const UserListTab = () => {
         <div className="space-y-6">
             {/* TOOLBAR */}
             <div className="flex flex-col sm:flex-row gap-4 bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-                <input 
-                    type="text" placeholder="Tìm tên, email nhân sự..." 
+                <input
+                    type="text" placeholder="Tìm tên, email nhân sự..."
                     className="flex-1 px-5 py-3 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                     value={searchTerm}
                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
@@ -173,7 +173,7 @@ const UserListTab = () => {
                                         </div>
                                     </td>
                                     <td className="p-6 text-center">
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setEditingUser(user);
                                                 // Nạp danh sách ID các quyền hiện có của user vào state để chọn
@@ -225,7 +225,7 @@ const UserListTab = () => {
                                 <label className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] block mb-5">Layer 1: Phân bổ Bó quyền chức năng</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {(roles || []).map(role => (
-                                        <button 
+                                        <button
                                             key={role.id}
                                             type="button"
                                             onClick={() => {
@@ -247,7 +247,7 @@ const UserListTab = () => {
                                 <div className="space-y-3">
                                     {(tempDepts || []).map((item, idx) => (
                                         <div key={idx} className="flex gap-2 items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                            <select 
+                                            <select
                                                 className="flex-1 bg-transparent text-sm font-bold outline-none text-gray-800"
                                                 value={item.id}
                                                 onChange={(e) => {
@@ -261,7 +261,7 @@ const UserListTab = () => {
                                             </select>
 
                                             {/* Ô BÔI ĐỎ TRONG ẢNH CỦA BẠN - Đã thêm Fallback dữ liệu mặc định */}
-                                            <select 
+                                            <select
                                                 className="w-44 bg-white border border-gray-200 rounded-xl px-3 py-2 text-[10px] font-black text-blue-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
                                                 value={item.access_level}
                                                 onChange={(e) => {
@@ -281,7 +281,7 @@ const UserListTab = () => {
                                             <button onClick={() => setTempDepts(tempDepts.filter((_, i) => i !== idx))} className="text-gray-300 hover:text-red-500 px-2 transition-colors">✕</button>
                                         </div>
                                     ))}
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => setTempDepts([...tempDepts, { id: '', access_level: 'own_only', position: 'Nhân viên' }])}
                                         className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-blue-50 transition-all"

@@ -55,9 +55,11 @@ export const ECOUNT_TO_QVC_MAP = {
  * @returns {Object} mappedData - The object ready to be fed into ProductMobileDetail form
  */
 export const mapEcountToQvc = (ecountData, webDictionary = { brands: [], categories: [] }) => {
-    if (!ecountData || !ecountData.product) return null;
+    if (!ecountData) return null;
 
-    const product = ecountData.product;
+    // Normalize input: verify if ecountData is the wrapper or the product itself
+    const product = ecountData.product || ecountData;
+    if (!product || !product.prod_cd) return null;
 
     // --- SMART MAPPING LOGIC (Ecount Code -> CRM ID) ---
     const ecBrand = String(product.class_cd || '').toUpperCase();
@@ -99,6 +101,7 @@ export const mapEcountToQvc = (ecountData, webDictionary = { brands: [], categor
         price: product.out_price5 || product.out_price || 0,
         market_price: product.out_price || 0,
         purchase_price_web: product.in_price || 0, // Giá nhập
+        warranty: product.cont2 || '', // Bảo hành từ Ecount mapped sang cont2
 
         // Stock
         quantity: ecountData.total_stock || 0,

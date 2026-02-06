@@ -11,11 +11,11 @@ const UserAccessAssignmentTab = () => {
         setLoading(true);
         try {
             const [uRes, rRes] = await Promise.all([
-                axios.get('/api/security/users?per_page=100'),
-                axios.get('/api/security/roles?per_page=100')
+                axios.get('/api/v2/security/users?per_page=100'),
+                axios.get('/api/v2/security/roles?per_page=100')
             ]);
-            setUsers(uRes.data.data || []);
-            setRoles(rRes.data.data.filter(r => r.name !== 'Super Admin') || []);
+            setUsers(uRes.data?.data || (Array.isArray(uRes.data) ? uRes.data : []));
+            setRoles((rRes.data?.data || (Array.isArray(rRes.data) ? rRes.data : [])).filter(r => r.name !== 'Super Admin'));
         } catch (e) { toast.error("Lỗi nạp dữ liệu"); }
         finally { setLoading(false); }
     };
@@ -27,7 +27,7 @@ const UserAccessAssignmentTab = () => {
         try {
             const currentStatus = (user.is_active === true || user.is_active === 1);
             const newStatus = !currentStatus;
-            await axios.put(`/api/security/users/${user.id}`, { is_active: newStatus ? 1 : 0 });
+            await axios.put(`/api/v2/security/users/${user.id}`, { is_active: newStatus ? 1 : 0 });
             toast.success(`Đã ${newStatus ? 'Bật' : 'Tắt'} nhân viên: ${user.name}`);
             fetchData();
         } catch (e) { toast.error("Lỗi cập nhật trạng thái"); }
@@ -37,7 +37,7 @@ const UserAccessAssignmentTab = () => {
     const changeUserRole = async (userId, roleId) => {
         try {
             // Sếp chỉ cần chọn Nhóm, Backend sẽ tự gán L1, L2, L3 tương ứng của Nhóm đó cho User
-            await axios.put(`/api/security/users/${userId}`, { roles: [roleId] });
+            await axios.put(`/api/v2/security/users/${userId}`, { roles: [roleId] });
             toast.success("Đã thay đổi gói quyền thành công!");
             fetchData();
         } catch (e) { toast.error("Lỗi di chuyển nhóm"); }
@@ -68,7 +68,7 @@ const UserAccessAssignmentTab = () => {
                             return (
                                 <tr key={user.id} className={`hover:bg-blue-50/50 transition-colors ${!isActive ? 'bg-gray-50/70 opacity-60' : ''}`}>
                                     <td className="p-6 text-center">
-                                        <button 
+                                        <button
                                             onClick={() => toggleActive(user)}
                                             className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}
                                         >
@@ -81,7 +81,7 @@ const UserAccessAssignmentTab = () => {
                                     </td>
                                     <td className="p-6">
                                         {/* SẾP CHỈ CẦN CHỌN Ở ĐÂY LÀ XONG */}
-                                        <select 
+                                        <select
                                             className="w-full border-2 border-gray-100 rounded-xl p-3 font-black text-xs text-blue-700 focus:border-blue-500 outline-none bg-blue-50/30"
                                             value={user.roles?.[0]?.id || ''}
                                             onChange={(e) => changeUserRole(user.id, e.target.value)}

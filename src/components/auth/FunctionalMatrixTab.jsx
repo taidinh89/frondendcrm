@@ -4,16 +4,16 @@ import { toast } from 'react-toastify';
 
 const FunctionalMatrixTab = () => {
     const [roles, setRoles] = useState([]);
-    const [groupedPermissions, setGroupedPermissions] = useState({}); 
-    const [matrix, setMatrix] = useState({}); 
+    const [groupedPermissions, setGroupedPermissions] = useState({});
+    const [matrix, setMatrix] = useState({});
     const [loading, setLoading] = useState(true);
 
     // HÀM QUAN TRỌNG: Sửa lỗi ReferenceError bằng cách định nghĩa bên trong Component
     const togglePermission = (roleId, permName) => {
         setMatrix(prev => {
             const current = prev[roleId] || [];
-            const newPerms = current.includes(permName) 
-                ? current.filter(c => c !== permName) 
+            const newPerms = current.includes(permName)
+                ? current.filter(c => c !== permName)
                 : [...current, permName];
             return { ...prev, [roleId]: newPerms };
         });
@@ -22,14 +22,14 @@ const FunctionalMatrixTab = () => {
     const fetchData = async () => {
         try {
             const [rolesRes, permsRes] = await Promise.all([
-                axios.get('/api/security/roles?per_page=100'),
-                axios.get('/api/security/permissions/list') 
+                axios.get('/api/v2/security/roles?per_page=100'),
+                axios.get('/api/v2/security/permissions/list')
             ]);
 
-            const roleData = rolesRes.data.data.filter(r => r.name !== 'Super Admin');
+            const roleData = (rolesRes.data?.data || (Array.isArray(rolesRes.data) ? rolesRes.data : [])).filter(r => r.name !== 'Super Admin');
             setRoles(roleData);
-            
-            const perms = permsRes.data || [];
+
+            const perms = Array.isArray(permsRes.data) ? permsRes.data : [];
             const groups = {};
             perms.forEach(p => {
                 const moduleName = p.name?.split('.')[0]?.toUpperCase() || 'SYSTEM';
@@ -37,7 +37,7 @@ const FunctionalMatrixTab = () => {
                 groups[moduleName].push(p);
             });
             setGroupedPermissions(groups);
-            
+
             const currentMatrix = {};
             roleData.forEach(r => {
                 currentMatrix[r.id] = r.permissions?.map(p => p.name) || [];
@@ -51,7 +51,7 @@ const FunctionalMatrixTab = () => {
 
     const handleSaveMatrix = async (roleId) => {
         try {
-            await axios.post(`/api/security/roles/${roleId}/sync-permissions`, { permissions: matrix[roleId] });
+            await axios.post(`/api/v2/security/roles/${roleId}/sync-permissions`, { permissions: matrix[roleId] });
             toast.success("Đã lưu mã quyền thành công!");
         } catch (e) { toast.error("Lưu thất bại"); }
     };
@@ -87,8 +87,8 @@ const FunctionalMatrixTab = () => {
                                         </td>
                                         {roles.map(role => (
                                             <td key={role.id} className="p-4 text-center">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     className="w-6 h-6 cursor-pointer accent-blue-600 rounded-lg transition-transform hover:scale-125"
                                                     checked={matrix[role.id]?.includes(perm.name) || false}
                                                     onChange={() => togglePermission(role.id, perm.name)}

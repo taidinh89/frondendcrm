@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Đổi lại URL nếu cần (API Backend của bạn)
-const API_URL = '/api/security/departments';
-const USER_API_URL = '/api/security/users';
+const API_URL = '/api/v2/security/departments';
+const USER_API_URL = '/api/v2/security/users';
 
 const departmentService = {
   // 1. Lấy cây phòng ban (Tree)
@@ -40,12 +40,12 @@ const departmentService = {
       return response.data;
     } catch (error) { throw error; }
   },
-  
+
   // 5. Tìm kiếm nhân sự (để thêm vào phòng)
   searchUsers: async (keyword) => {
     try {
       const response = await axios.get(`${USER_API_URL}`, { params: { search: keyword } });
-      return response.data.data; 
+      return response.data.data;
     } catch (error) { throw error; }
   },
   updateMember: async (deptId, userId, data) => {
@@ -59,11 +59,11 @@ const departmentService = {
   // 6. Gán nhân sự vào phòng (Sync)
   addUserToDepartment: async (userId, deptIds) => {
     try {
-        // Backend UserController có hàm syncDepartments
-        const response = await axios.put(`${USER_API_URL}/${userId}/departments`, {
-            departments: deptIds
-        });
-        return response.data;
+      // Backend UserController có hàm syncDepartments
+      const response = await axios.put(`${USER_API_URL}/${userId}/departments`, {
+        departments: deptIds
+      });
+      return response.data;
     } catch (error) { throw error; }
   }
 };

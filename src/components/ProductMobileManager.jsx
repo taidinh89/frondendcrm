@@ -3,6 +3,7 @@ import { productApi } from '../api/admin/productApi';
 import { Icon, Button, Modal } from './ui';
 import ProductMobileDetail from './ProductMobileDetail';
 import ProductMobileDetailV2 from './ProductMobileDetailV2';
+import ProductMobileDetailV3 from './ProductMobileDetailV3'; // [NEW]
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -257,10 +258,13 @@ const ProductMobileManager = () => {
                     <Icon name="plus" className="w-5 h-5" />
                 </button>
                 <button
-                    onClick={() => setDetailVersion(v => v === 'v1' ? 'v2' : 'v1')}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${detailVersion === 'v2' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100'}`}
+                    onClick={() => setDetailVersion(v => v === 'v1' ? 'v2' : v === 'v2' ? 'v3' : 'v1')}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${detailVersion === 'v2' ? 'bg-indigo-600 text-white border-indigo-600' :
+                        detailVersion === 'v3' ? 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-200' :
+                            'bg-white text-slate-400 border-slate-100'
+                        }`}
                 >
-                    {detailVersion === 'v1' ? 'V1' : 'V2'}
+                    {detailVersion === 'v1' ? 'V1' : detailVersion === 'v2' ? 'V2' : 'V3 (NEW)'}
                 </button>
             </div>
 
@@ -695,8 +699,18 @@ const ProductMobileManager = () => {
                         dictionary={meta}
                         onSwitchVersion={() => setDetailVersion('v2')}
                     />
-                ) : (
+                ) : detailVersion === 'v2' ? (
                     <ProductMobileDetailV2
+                        isOpen={isDetailOpen}
+                        onClose={() => setIsDetailOpen(false)}
+                        product={selectedProduct}
+                        mode={detailMode}
+                        onRefresh={() => fetchProducts(true)}
+                        dictionary={meta}
+                        onSwitchVersion={() => setDetailVersion('v3')}
+                    />
+                ) : (
+                    <ProductMobileDetailV3
                         isOpen={isDetailOpen}
                         onClose={() => setIsDetailOpen(false)}
                         product={selectedProduct}

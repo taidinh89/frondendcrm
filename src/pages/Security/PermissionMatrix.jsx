@@ -7,12 +7,12 @@ import { toast } from 'react-toastify';
 const HealthBar = ({ stats }) => {
     if (!stats) return null;
     const total = stats.total_routes || 1;
-    
+
     // Tính phần trăm thực tế
     const activePercent = Math.round((stats.secured / total) * 100);
     const maintPercent = Math.round((stats.maintenance / total) * 100);
     // Phần còn lại là rủi ro
-    const riskPercent = 100 - activePercent - maintPercent; 
+    const riskPercent = 100 - activePercent - maintPercent;
 
     return (
         <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-6">
@@ -38,28 +38,28 @@ const HealthBar = ({ stats }) => {
                     </div>
                 </div>
             </div>
-            
+
             {/* Progress Bar 3 Màu */}
             <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden flex shadow-inner">
                 {/* Khúc Xanh: Active */}
-                <div 
-                    style={{ width: `${activePercent}%` }} 
+                <div
+                    style={{ width: `${activePercent}%` }}
                     className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-1000 relative"
                 >
-                   {activePercent > 10 && <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white font-bold">ACTIVE</span>}
+                    {activePercent > 10 && <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white font-bold">ACTIVE</span>}
                 </div>
-                
+
                 {/* Khúc Vàng: Maintenance */}
-                <div 
-                    style={{ width: `${maintPercent}%` }} 
+                <div
+                    style={{ width: `${maintPercent}%` }}
                     className="h-full bg-yellow-400 transition-all duration-1000 relative"
                 >
                     {maintPercent > 10 && <span className="absolute inset-0 flex items-center justify-center text-[8px] text-yellow-800 font-bold">MAINT</span>}
                 </div>
 
                 {/* Khúc Đỏ: Unprotected */}
-                <div 
-                    style={{ flex: 1 }} 
+                <div
+                    style={{ flex: 1 }}
                     className="h-full bg-red-500 stripe-pattern transition-all duration-1000 relative"
                 >
                     {riskPercent > 10 && <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white font-bold">RISK</span>}
@@ -76,10 +76,10 @@ const HealthBar = ({ stats }) => {
 // --- SUB-COMPONENT: MODAL CHỈNH SỬA ---
 const EditModal = ({ permission, onClose, onSave }) => {
     const [form, setForm] = useState({ label: '', description: '', module: '' });
-    
+
     useEffect(() => {
-        if(permission) setForm({ 
-            label: permission.label || '', 
+        if (permission) setForm({
+            label: permission.label || '',
             description: permission.description || '',
             module: permission.group || ''
         });
@@ -96,13 +96,13 @@ const EditModal = ({ permission, onClose, onSave }) => {
             <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-zoom-in">
                 <h3 className="text-lg font-black text-gray-800 mb-1">Thiết lập API</h3>
                 <code className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded border border-blue-100 block w-max mb-6">{permission.name}</code>
-                
+
                 <div className="space-y-4">
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 block mb-1">Tên hiển thị (Tiếng Việt)</label>
-                        <input 
-                            value={form.label} 
-                            onChange={e => setForm({...form, label: e.target.value})}
+                        <input
+                            value={form.label}
+                            onChange={e => setForm({ ...form, label: e.target.value })}
                             className="w-full border rounded-xl px-4 py-2 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
                             placeholder="VD: Xem danh sách User"
                             autoFocus
@@ -110,17 +110,17 @@ const EditModal = ({ permission, onClose, onSave }) => {
                     </div>
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 block mb-1">Nhóm (Module)</label>
-                        <input 
-                            value={form.module} 
-                            onChange={e => setForm({...form, module: e.target.value})}
+                        <input
+                            value={form.module}
+                            onChange={e => setForm({ ...form, module: e.target.value })}
                             className="w-full border rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 block mb-1">Mô tả kỹ thuật</label>
-                        <textarea 
-                            value={form.description} 
-                            onChange={e => setForm({...form, description: e.target.value})}
+                        <textarea
+                            value={form.description}
+                            onChange={e => setForm({ ...form, description: e.target.value })}
                             className="w-full border rounded-xl px-4 py-2 text-sm text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none h-24 resize-none"
                             placeholder="API này dùng để làm gì..."
                         />
@@ -145,13 +145,13 @@ const PermissionMatrix = ({ setAppTitle }) => {
     const [expandedGroups, setExpandedGroups] = useState({}); // Quản lý đóng/mở group
 
     useEffect(() => {
-        if(setAppTitle) setAppTitle('Security Matrix v5.0');
+        if (setAppTitle) setAppTitle('Security Matrix v5.0');
         loadData();
     }, [setAppTitle]);
 
     const loadData = async () => {
         try {
-            const res = await axios.get('/api/security/permissions/matrix'); // Gọi API index
+            const res = await axios.get('/api/v2/security/permissions/matrix'); // Gọi API index
             setData(res.data);
             // Mặc định mở tất cả group
             const groups = {};
@@ -167,7 +167,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
     // Toggle Status (API Call)
     const handleToggleStatus = async (perm) => {
         const newStatus = perm.status === 'active' ? 'maintenance' : 'active';
-        
+
         // Optimistic Update
         const newData = { ...data };
         Object.keys(newData.matrix).forEach(group => {
@@ -176,7 +176,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
         setData(newData);
 
         try {
-            await axios.put(`/api/security/permissions/${perm.id}/status`, { status: newStatus });
+            await axios.put(`/api/v2/security/permissions/${perm.id}/status`, { status: newStatus });
             toast.success(`Đã chuyển trạng thái: ${newStatus.toUpperCase()}`);
         } catch (e) {
             toast.error("Lỗi cập nhật trạng thái");
@@ -187,7 +187,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
     // Save Edit (API Call)
     const handleSaveEdit = async (id, formData) => {
         try {
-            await axios.put(`/api/security/permissions/${id}`, formData);
+            await axios.put(`/api/v2/security/permissions/${id}`, formData);
             toast.success("Đã cập nhật thông tin API");
             setEditingPerm(null);
             loadData();
@@ -206,7 +206,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
     return (
         <div className="p-6 bg-[#f8fafc] min-h-screen font-sans">
             <div className="max-w-[1400px] mx-auto">
-                
+
                 {/* 1. HEALTH BAR */}
                 <HealthBar stats={data.overview} />
 
@@ -216,7 +216,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
                         Ma trận Kiểm soát <span className="text-blue-600">v5.0</span>
                     </h1>
                     <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex gap-2 w-full md:w-auto">
-                        <input 
+                        <input
                             className="px-4 py-2 bg-transparent outline-none font-medium w-full md:w-80"
                             placeholder="🔍 Tìm kiếm API, Tên hoặc Module..."
                             value={filter}
@@ -230,8 +230,8 @@ const PermissionMatrix = ({ setAppTitle }) => {
                 <div className="space-y-6">
                     {Object.keys(data.matrix).map(group => {
                         // Logic lọc (Filter)
-                        const permissions = data.matrix[group].filter(p => 
-                            p.name.toLowerCase().includes(filter.toLowerCase()) || 
+                        const permissions = data.matrix[group].filter(p =>
+                            p.name.toLowerCase().includes(filter.toLowerCase()) ||
                             p.label.toLowerCase().includes(filter.toLowerCase()) ||
                             group.toLowerCase().includes(filter.toLowerCase())
                         );
@@ -241,7 +241,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
                         return (
                             <div key={group} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden transition-all">
                                 {/* Group Header */}
-                                <div 
+                                <div
                                     onClick={() => toggleGroup(group)}
                                     className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors"
                                 >
@@ -262,7 +262,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
                                     <div className="divide-y divide-gray-50">
                                         {permissions.map(perm => (
                                             <div key={perm.name} className="p-4 hover:bg-blue-50/30 transition flex flex-col md:flex-row items-center gap-4 group">
-                                                
+
                                                 {/* Cột 1: Thông tin chính */}
                                                 <div className="flex-1 w-full">
                                                     <div className="flex items-center gap-2 mb-1">
@@ -279,9 +279,9 @@ const PermissionMatrix = ({ setAppTitle }) => {
 
                                                 {/* Cột 2: Hành động */}
                                                 <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                                                    
+
                                                     {/* Nút Sửa */}
-                                                    <button 
+                                                    <button
                                                         onClick={() => setEditingPerm(perm)}
                                                         className="text-gray-400 hover:text-blue-600 bg-white border border-transparent hover:border-gray-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 opacity-0 group-hover:opacity-100"
                                                     >
@@ -293,7 +293,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
                                                         <span className={`text-[9px] font-black uppercase ${perm.status === 'active' ? 'text-green-500' : 'text-yellow-500'}`}>
                                                             {perm.status === 'active' ? 'Active' : 'Maint'}
                                                         </span>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleToggleStatus(perm)}
                                                             className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none shadow-inner ${perm.status === 'active' ? 'bg-green-500' : 'bg-gray-200'}`}
                                                         >
@@ -312,10 +312,10 @@ const PermissionMatrix = ({ setAppTitle }) => {
             </div>
 
             {/* Modal */}
-            <EditModal 
-                permission={editingPerm} 
-                onClose={() => setEditingPerm(null)} 
-                onSave={handleSaveEdit} 
+            <EditModal
+                permission={editingPerm}
+                onClose={() => setEditingPerm(null)}
+                onSave={handleSaveEdit}
             />
         </div>
     );

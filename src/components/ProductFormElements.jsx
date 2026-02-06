@@ -18,7 +18,7 @@ export const SectionHeader = ({ title, icon, color = "blue" }) => {
     );
 };
 
-export const FormField = ({ label, name, value, onChange, type = "text", placeholder, options, multiple = false, isBrand = false, onManage }) => {
+export const FormField = ({ label, name, value, onChange, type = "text", placeholder, options, multiple = false, isBrand = false, onManage, isDirty = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const ref = useRef(null);
@@ -46,7 +46,9 @@ export const FormField = ({ label, name, value, onChange, type = "text", placeho
     return (
         <div className="space-y-1.5 w-full group relative" ref={ref}>
             <div className="flex items-center justify-between px-1">
-                <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.1em] group-focus-within:text-indigo-600 transition-colors">{label}</label>
+                <label className={`text-[9px] font-black uppercase tracking-[0.1em] transition-colors ${isDirty ? 'text-orange-600' : 'text-gray-500 group-focus-within:text-indigo-600'}`}>
+                    {label} {isDirty && <span className="ml-1 text-orange-500 animate-pulse">●</span>}
+                </label>
                 {type === 'select' && onManage && (
                     <button type="button" onClick={onManage} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline transition-all uppercase">Quản lý</button>
                 )}
@@ -56,7 +58,8 @@ export const FormField = ({ label, name, value, onChange, type = "text", placeho
                 <div className="relative">
                     <div
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`w-full min-h-[64px] px-5 py-3 bg-gray-50/50 border-2 rounded-[1.75rem] flex items-center justify-between transition-all cursor-pointer ${isOpen ? 'border-indigo-500 ring-4 ring-indigo-50 bg-white' : 'border-gray-100 hover:bg-white hover:border-indigo-100 shadow-sm'}`}
+                        className={`w-full min-h-[64px] px-5 py-3 bg-gray-50/50 border-2 rounded-[1.75rem] flex items-center justify-between transition-all cursor-pointer 
+                            ${isOpen ? 'border-indigo-500 ring-4 ring-indigo-50 bg-white' : (isDirty ? 'border-orange-300 bg-orange-50/20' : 'border-gray-100 hover:bg-white hover:border-indigo-100 shadow-sm')}`}
                     >
                         <div className="flex flex-wrap gap-2 overflow-hidden flex-1 mr-2">
                             {multiple ? (
@@ -171,7 +174,8 @@ export const FormField = ({ label, name, value, onChange, type = "text", placeho
                 </div>
             ) : type === 'textarea' ? (
                 <textarea
-                    className="w-full p-4 bg-white border-2 border-gray-100 rounded-2xl text-sm font-bold text-gray-800 placeholder:text-gray-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none min-h-[160px] resize-y shadow-sm"
+                    className={`w-full p-4 bg-white border-2 rounded-2xl text-sm font-bold text-gray-800 placeholder:text-gray-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none min-h-[160px] resize-y shadow-sm
+                        ${isDirty ? 'border-orange-300 bg-orange-50/10' : 'border-gray-100'}`}
                     placeholder={placeholder}
                     value={value || ''}
                     onChange={e => onChange(e.target.value)}
@@ -179,7 +183,8 @@ export const FormField = ({ label, name, value, onChange, type = "text", placeho
             ) : (
                 <input
                     type={type}
-                    className="w-full p-4 bg-white border-2 border-gray-100 rounded-2xl text-sm font-bold text-gray-900 placeholder:text-gray-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none shadow-sm"
+                    className={`w-full p-4 bg-white border-2 rounded-2xl text-sm font-bold text-gray-900 placeholder:text-gray-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none shadow-sm
+                        ${isDirty ? 'border-orange-300 bg-orange-50/10' : 'border-gray-100'}`}
                     placeholder={placeholder}
                     value={value || ''}
                     onChange={e => onChange(e.target.value)}
@@ -189,7 +194,7 @@ export const FormField = ({ label, name, value, onChange, type = "text", placeho
     );
 };
 
-export const ToggleField = ({ label, checked, onChange, color = "indigo" }) => {
+export const ToggleField = ({ label, checked, onChange, color = "indigo", isDirty = false }) => {
     const colors = {
         indigo: "peer-checked:bg-indigo-600",
         green: "peer-checked:bg-green-600",
@@ -199,8 +204,10 @@ export const ToggleField = ({ label, checked, onChange, color = "indigo" }) => {
         purple: "peer-checked:bg-purple-600"
     };
     return (
-        <label className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-white border-2 border-transparent hover:border-gray-100 transition-all">
-            <span className="text-xs font-black text-gray-600 uppercase tracking-widest">{label}</span>
+        <label className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer hover:bg-white border-2 transition-all ${isDirty ? 'bg-orange-50/40 border-orange-200' : 'bg-gray-50 border-transparent hover:border-gray-100'}`}>
+            <span className={`text-xs font-black uppercase tracking-widest ${isDirty ? 'text-orange-700' : 'text-gray-600'}`}>
+                {label} {isDirty && <span className="ml-1 text-orange-500">●</span>}
+            </span>
             <div className="relative inline-flex items-center">
                 <input type="checkbox" className="sr-only peer" checked={checked} onChange={e => onChange(e.target.checked)} />
                 <div className={`w-12 h-6 bg-gray-300 rounded-full peer ${colors[color] || colors.indigo} peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-sm`}></div>

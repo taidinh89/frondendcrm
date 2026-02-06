@@ -9,26 +9,52 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'edit'
-    const [isCompact, setIsCompact] = useState(true); // Default to 'Compact' list as requested
+    const [isCompact, setIsCompact] = useState(true);
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [totalItems, setTotalItems] = useState(0);
 
     // Edit Mode State
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedBrandObj, setSelectedBrandObj] = useState(null);
 
-    // Initial Load
+    // Search Debounce Effect
     useEffect(() => {
-        if (isOpen) {
-            fetchBrands();
-        }
-    }, [isOpen]);
+        const timer = setTimeout(() => {
+            if (isOpen) {
+                setPage(1);
+                fetchBrands(1, true);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
-    const fetchBrands = async () => {
+    const fetchBrands = async (targetPage = 1, isNewSearch = false) => {
         setIsLoading(true);
         try {
-            // Fetch all for selection (optimize param ?all=1 if backed supports)
-            const res = await metaApi.getBrands({ all: 1, search: search || undefined });
-            setBrands(res.data.data || res.data || []);
+            const res = await metaApi.getBrandsV2({
+                page: targetPage,
+                search: search || undefined,
+                mode: 'simple',
+                per_page: 48 // Use a reasonable number for grid
+            });
+
+            const newData = res.data.data || res.data || [];
+            const pagination = res.data.pagination || {};
+
+            if (isNewSearch) {
+                setBrands(newData);
+            } else {
+                setBrands(prev => [...prev, ...newData]);
+            }
+
+            setTotalItems(pagination.total_items || 0);
+            setHasMore(pagination.current_page < pagination.total_pages);
+            setPage(pagination.current_page);
         } catch (error) {
             toast.error("Không thể tải danh sách thương hiệu");
         } finally {
@@ -36,12 +62,33 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
         }
     };
 
-    // Filter locally if API doesn't search on 'all' mode or for quick feedback
-    const filteredBrands = useMemo(() => {
-        if (!search) return brands;
-        const s = search.toLowerCase();
-        return brands.filter(b => (b.name || '').toLowerCase().includes(s));
-    }, [brands, search]);
+    // Effect to maintain selectedBrandObj
+    useEffect(() => {
+        if (!selectedId) {
+            setSelectedBrandObj(null);
+            return;
+        }
+
+        // 1. Try to find in current list
+        const found = brands.find(b => String(b.id) === String(selectedId));
+        if (found) {
+            setSelectedBrandObj(found);
+        } else if (!selectedBrandObj || String(selectedBrandObj.id) !== String(selectedId)) {
+            // 2. Fetch from API if not found and not already loaded
+            metaApi.getBrandDetailV2(selectedId).then(res => {
+                setSelectedBrandObj(res.data.data || res.data);
+            }).catch(() => { });
+        }
+    }, [selectedId, brands, isOpen]);
+
+    const handleLoadMore = () => {
+        if (!isLoading && hasMore) {
+            fetchBrands(page + 1);
+        }
+    };
+
+    // We use brands directly as it's now filtered via server-side search
+    const filteredBrands = brands;
 
     const handleSelect = (brand) => {
         if (onSelect) {
@@ -65,13 +112,13 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
         try {
             let res;
             if (editingItem.id) {
-                // UPDATE
-                res = await metaApi.updateBrand(editingItem.id, formData);
+                // UPDATE V2
+                res = await metaApi.updateBrandV2(editingItem.id, formData);
                 setBrands(prev => prev.map(b => b.id === editingItem.id ? { ...b, ...formData } : b));
                 toast.success("Cập nhật thành công");
             } else {
-                // CREATE
-                res = await metaApi.createBrand(formData);
+                // CREATE V2
+                res = await metaApi.createBrandV2(formData);
                 const newBrand = res.data.data || res.data;
                 setBrands(prev => [newBrand, ...prev]);
                 toast.success("Tạo mới thành công");
@@ -96,7 +143,7 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
         if (!window.confirm(`Bạn có chắc muốn xóa thương hiệu "${editingItem.name}"?`)) return;
         setIsSaving(true);
         try {
-            await metaApi.deleteBrand(editingItem.id);
+            await metaApi.deleteBrandV2(editingItem.id);
             toast.success("Đã xóa thương hiệu");
             setBrands(prev => prev.filter(b => b.id !== editingItem.id));
             if (String(selectedId) === String(editingItem.id) && onSelect) onSelect(null);
@@ -166,6 +213,12 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
                                     <Icon name="image" className="w-4 h-4" /> Ảnh
                                 </button>
                             </div>
+                            <button
+                                onClick={handleCreate}
+                                className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-orange-100 hover:scale-105 transition-all"
+                            >
+                                <Icon name="plus" className="w-4 h-4" /> Thêm Mới
+                            </button>
                         </div>
 
                         {/* Content List */}
@@ -174,31 +227,54 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
                                 <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>
                             ) : (
                                 <div className="space-y-6">
-                                    {/* SELECTED ON TOP */}
-                                    {filteredBrands.some(b => String(b.id) === String(selectedId)) && (
-                                        <div className="mb-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
-                                            <div className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                <Icon name="check" className="w-3 h-3" /> Đã chọn
+                                    {/* SELECTED ON TOP (Always show if exists) */}
+                                    {selectedBrandObj && (
+                                        <div className="mb-6 bg-indigo-50/50 p-4 rounded-[2rem] border-2 border-indigo-100 shadow-sm sticky top-0 z-[5]">
+                                            <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 flex justify-between items-center">
+                                                <span className="flex items-center gap-2">
+                                                    <Icon name="check-circle" className="w-3.5 h-3.5" /> Thương hiệu đang chọn
+                                                </span>
+                                                <button
+                                                    onClick={() => handleSelect(null)}
+                                                    className="text-rose-500 hover:text-rose-700 bg-white px-3 py-1 rounded-lg border border-rose-100 transition-all text-[9px] font-black"
+                                                >
+                                                    GỠ BỎ
+                                                </button>
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {filteredBrands.filter(b => String(b.id) === String(selectedId)).map(brand => (
-                                                    <div
-                                                        key={'sel-' + brand.id}
-                                                        onClick={() => handleSelect(brand)}
-                                                        className="flex items-center gap-4 p-3 bg-white rounded-xl border border-orange-200 shadow-sm cursor-pointer"
-                                                    >
-                                                        <div className="w-12 h-12 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1">
-                                                            {brand.image ? <img src={brand.image} className="w-full h-full object-contain" /> : <Icon name="award" className="w-6 h-6 text-gray-300" />}
+                                            <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-indigo-200">
+                                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center p-2 shadow-inner border border-slate-50">
+                                                    {selectedBrandObj.image ? (
+                                                        <img src={selectedBrandObj.image} className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <Icon name="award" className="w-8 h-8 text-slate-200" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-base font-black text-slate-900 truncate uppercase">{selectedBrandObj.name}</div>
+                                                    <div className="flex gap-4 mt-1">
+                                                        <div className="text-[10px] text-indigo-500 font-black uppercase tracking-widest flex items-center gap-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> SELECTED
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="text-sm font-black text-gray-900 truncate">{brand.name}</div>
-                                                            <div className="text-[10px] text-green-600 font-bold uppercase">Active</div>
-                                                        </div>
-                                                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-200">
-                                                            <Icon name="check" className="w-3 h-3 text-white" />
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                            ID: {selectedBrandObj.id}
                                                         </div>
                                                     </div>
-                                                ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(selectedBrandObj)}
+                                                        className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                                                        title="Chỉnh sửa thương hiệu này"
+                                                    >
+                                                        <Icon name="sliders" className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={onClose}
+                                                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:-translate-y-0.5 transition-all"
+                                                    >
+                                                        Giữ nguyên
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -286,6 +362,29 @@ const BrandSelectionModal = ({ isOpen, onClose, onSelect, selectedId }) => {
                                                     </div>
                                                 );
                                             })}
+                                        </div>
+                                    )}
+                                    {/* Load More Button */}
+                                    {hasMore && (
+                                        <div className="flex justify-center pt-8 pb-12">
+                                            <button
+                                                onClick={handleLoadMore}
+                                                disabled={isLoading}
+                                                className="px-10 py-4 bg-white border-2 border-orange-200 text-orange-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all shadow-sm flex items-center gap-3 disabled:opacity-50"
+                                            >
+                                                {isLoading ? (
+                                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                                ) : <Icon name="refresh" className="w-4 h-4" />}
+                                                Xem thêm thương hiệu ({totalItems - brands.length} còn lại)
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {!isLoading && filteredBrands.length === 0 && (
+                                        <div className="py-20 text-center flex flex-col items-center gap-4 opacity-40">
+                                            <Icon name="search" className="w-16 h-16" />
+                                            <p className="font-black uppercase tracking-[0.2em] text-xs">Không tìm thấy thương hiệu nào</p>
+                                            <button onClick={handleCreate} className="mt-2 text-orange-600 font-bold border-b border-orange-200">Bấm vào đây để tạo mới</button>
                                         </div>
                                     )}
                                 </div>

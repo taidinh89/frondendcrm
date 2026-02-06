@@ -1,6 +1,4 @@
-// src/utils/excelExporter.js
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+
 
 /**
  * Xuất Excel chuyên nghiệp với Style (Màu sắc, Border, Format số)
@@ -9,6 +7,12 @@ import { saveAs } from 'file-saver';
  */
 export const exportToExcelWithStyles = async (sheets, fileName) => {
     if (!sheets || sheets.length === 0) return;
+
+    // Tải động thư viện
+    const [ExcelJS, { saveAs }] = await Promise.all([
+        import('exceljs'),
+        import('file-saver')
+    ]);
 
     // 1. Khởi tạo Workbook
     const workbook = new ExcelJS.Workbook();
@@ -25,16 +29,16 @@ export const exportToExcelWithStyles = async (sheets, fileName) => {
         // --- A. TẠO CỘT (COLUMNS) ---
         // Lấy keys từ dòng đầu tiên để làm header
         const headers = Object.keys(data[0]);
-        
+
         worksheet.columns = headers.map(key => {
             // Tính độ rộng cột dựa trên độ dài dữ liệu (Auto fit đơn giản)
             const maxLength = Math.max(
-                key.length, 
+                key.length,
                 ...data.map(row => (row[key] ? String(row[key]).length : 0))
             );
-            return { 
-                header: key, 
-                key: key, 
+            return {
+                header: key,
+                key: key,
                 width: Math.min(Math.max(maxLength + 2, 12), 60) // Min 12, Max 60
             };
         });
@@ -45,7 +49,7 @@ export const exportToExcelWithStyles = async (sheets, fileName) => {
         });
 
         // --- C. STYLING (TÔ MÀU & KẺ KHUNG) ---
-        
+
         // C.1 Style cho Header (Dòng 1)
         const headerRow = worksheet.getRow(1);
         headerRow.eachCell((cell) => {
@@ -53,7 +57,7 @@ export const exportToExcelWithStyles = async (sheets, fileName) => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FF1D4ED8' } 
+                fgColor: { argb: 'FF1D4ED8' }
             };
             // Chữ Trắng, In đậm
             cell.font = {
@@ -88,18 +92,18 @@ export const exportToExcelWithStyles = async (sheets, fileName) => {
 
                 // Format số & Màu sắc logic
                 const val = cell.value;
-                
+
                 // Nếu là số (Tiền tệ)
                 if (typeof val === 'number') {
                     cell.numFmt = '#,##0'; // Format 1,000,000
-                    
+
                     // Logic màu: Âm thì Đỏ, Dương thì Đen (hoặc Xanh nếu muốn)
                     if (val < 0) {
                         cell.font = { color: { argb: 'FFFF0000' } }; // Đỏ
                     }
                 }
             });
-            
+
             // Zebra Striping (Dòng chẵn lẻ cho dễ nhìn) - Optional
             if (rowNumber % 2 === 0) {
                 // Tô nền xám cực nhạt cho dòng chẵn

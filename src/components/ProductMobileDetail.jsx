@@ -1493,6 +1493,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (!idOrName) return toast.error("Không có thông tin ảnh");
         const tid = toast.loading("Đang thiết lập ảnh chính...");
         try {
+            // [V1 FIX] Backend mong đợi MediaUsage ID (usage_id)
             await productApi.setMainImage(product.id, idOrName);
             toast.success("Đã đổi ảnh chính đồng bộ sang Web QVC!", { id: tid });
             fetchDetail(product.id);
@@ -1503,12 +1504,36 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
     const handleDeleteImage = async (img) => {
         if (!window.confirm("Xóa ảnh này viễn vĩnh khỏi hệ thống?")) return;
+
+        console.log(`🗑️ [V1 DEBUG] Bấm xóa ảnh ID: ${img.id}, UsageID: ${img.usage_id}, Name: ${img.name || img.image_name}`);
+
         try {
-            if (img.id) await productApi.deleteImage(product.id, img.id);
-            else await productApi.deleteOldImageByName(product.id, img.name);
-            toast.success("Đã xóa");
+            // Ưu tiên xóa bằng usage_id (vì backend mong đợi usage_id)
+            if (img.usage_id) {
+                await productApi.deleteImage(product.id, img.usage_id);
+            } else if (img.id && !img.is_temp) {
+                // Fallback nếu chỉ có id (file id)
+                await productApi.deleteImage(product.id, img.id);
+            } else if (img.name || img.image_name) {
+                const nameToDelete = img.name || img.image_name;
+                await productApi.deleteOldImageByName(product.id, nameToDelete);
+            }
+
+            toast.success("Đã xóa khỏi hệ thống");
+
+            // Xóa local trong state
+            setFullImages(prev => prev.filter(f => {
+                if (img.usage_id && f.usage_id) return f.usage_id !== img.usage_id;
+                if (img.id) return f.id !== img.id;
+                return (f.name || f.image_name) !== (img.name || img.image_name);
+            }));
+
+            // Fetch lại để đồng bộ
             fetchDetail(product.id);
-        } catch (e) { toast.error("Lỗi xóa"); }
+        } catch (e) {
+            console.error("Delete Error:", e);
+            toast.error("Lỗi xóa: " + (e.response?.data?.message || e.message));
+        }
     };
 
     const handlePushToQvc = async (mediaId) => {
@@ -1535,42 +1560,63 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     };
 
     const handleSave = async (shouldClose = true) => {
-        setIsSaving(true);
-        console.log("[DEBUG] Saving Product. Mode:", currentMode);
-        console.log("FormData:", formData);
-        console.log("Temp Uploaded IDs:", tempUploadedIds);
+        // --- [BẮT ĐẦU CODE DEBUG V1] ---
+        console.group("🛠️ [V1 VIEW] BẤM NÚT LƯU");
 
+        // 1. Kiểm tra danh sách ảnh đang hiển thị trên màn hình (Visual)
+        console.log("👀 Ảnh đang thấy (fullImages):", fullImages);
+
+        // 2. Kiểm tra xem code có lấy được ID ra không?
+        // (Đây là logic quan trọng nhất: Map từ Object ảnh sang mảng ID)
+        const debugMediaIds = fullImages?.map(img => img.id).filter(id => id);
+        console.log("🔢 ID Ảnh trích xuất được (media_ids):", debugMediaIds);
+
+        // 3. Kiểm tra danh mục
+        console.log("📂 Danh mục (catId):", formData.catId);
+
+        console.groupEnd();
+        // --- [KẾT THÚC CODE DEBUG V1] ---
+
+        const currentMediaIds = (fullImages || []).map(img => img.id).filter(id => id);
+
+        const catIdArray = Array.isArray(formData.catId) ? formData.catId : [];
+        const catIdString = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
+
+        // Tạo payload mới nhất
+        const finalData = {
+            ...formData,
+            proSummary: escapeHtml(formData.proSummary || ''),
+            product_cat: catIdString,
+            product_cat_web: catIdString,
+            isOn: formData.isOn ? 1 : 0,
+            is_hot: formData.is_hot ? 1 : 0,
+            is_new: formData.is_new ? 1 : 0,
+            is_best_sell: formData.is_best_sell ? 1 : 0,
+            is_sale_off: formData.is_sale_off ? 1 : 0,
+            is_student_support: formData.is_student_support ? 1 : 0,
+            is_installment_0: formData.is_installment_0 ? 1 : 0,
+            media_ids: currentMediaIds, // <--- QUAN TRỌNG: Gửi cái này thì Backend mới link ảnh dc
+            catId: catIdArray.length > 0 ? catIdArray[0] : formData.catId, // Gửi item đầu tiên làm đại diện nếu backend cần số
+            marketing_flags: [
+                formData.is_hot ? 'hot' : null,
+                formData.is_new ? 'new' : null,
+                formData.is_best_sell ? 'best' : null,
+                formData.is_sale_off ? 'sale' : null
+            ].filter(Boolean)
+        };
+
+        console.log("📸 Danh sách ảnh (Visual):", fullImages);
+        console.log("🔢 Danh sách ID gửi đi (media_ids):", finalData.media_ids);
+        console.log("📦 Full Payload:", finalData);
+        console.groupEnd();
+        // --- [DEBUG V1] KẾT THÚC ---
+
+        setIsSaving(true);
         const tid = toast.loading("Đang lưu dữ liệu...");
 
         try {
-            const catIdArray = Array.isArray(formData.catId) ? formData.catId : [];
-            const catIdString = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
-
-            const payload = {
-                ...formData,
-                proSummary: escapeHtml(formData.proSummary || ''),
-                product_cat: catIdString,
-                product_cat_web: catIdString,
-                isOn: formData.isOn ? 1 : 0,
-                is_hot: formData.is_hot ? 1 : 0,
-                is_new: formData.is_new ? 1 : 0,
-                is_best_sell: formData.is_best_sell ? 1 : 0,
-                is_sale_off: formData.is_sale_off ? 1 : 0,
-                is_student_support: formData.is_student_support ? 1 : 0,
-                is_installment_0: formData.is_installment_0 ? 1 : 0,
-                media_ids: Array.isArray(tempUploadedIds) ? tempUploadedIds : [],
-                marketing_flags: [
-                    formData.is_hot ? 'hot' : null,
-                    formData.is_new ? 'new' : null,
-                    formData.is_best_sell ? 'best' : null,
-                    formData.is_sale_off ? 'sale' : null
-                ].filter(Boolean)
-            };
-
-            console.log("[DEBUG] Payload Spec:", payload);
-
             if (currentMode === 'create') {
-                const res = await productApi.create(payload);
+                const res = await productApi.create(finalData);
                 toast.success("Tạo mới thành công!", { id: tid });
                 setTempUploadedIds([]);
                 onRefresh && onRefresh();
@@ -1592,7 +1638,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     return;
                 }
             } else {
-                const res = await productApi.update(currentId || product?.id, payload);
+                const res = await productApi.update(currentId || product?.id, finalData);
                 console.log("[DEBUG] Update Response:", res.data);
                 toast.success("Cập nhật thành công!", { id: tid });
                 setTempUploadedIds([]);
@@ -1605,8 +1651,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
             if (shouldClose) onClose();
         } catch (e) {
-            console.error("[DEBUG] Save Error:", e);
-            toast.error("Lỗi: " + (e.response?.data?.message || e.message), { id: tid });
+            console.error("Save Error:", e);
+            toast.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -1743,7 +1789,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
         // CHUẨN HÓA URL (Hỗ trợ đa định dạng: đầy đủ domain, relative, storage, media...)
         const result = list.map(img => {
-            let src = img.internalPath || img.url || img.relative_path || img.displayUrl || '';
+            // [FIX] Ưu tiên lấy URL đầy đủ từ API trước để tránh resolve sai ở client
+            let src = img.url || img.internalPath || img.relative_path || img.displayUrl || '';
             let displayUrl = src;
             let resolveMethod = "Original Source";
 
@@ -1758,37 +1805,35 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     displayUrl = `https:${src}`;
                     resolveMethod = "Protocol-less (Added https:)";
                 }
-                // 3. Nếu là đường dẫn storage Local
+                // 3. Nếu là đường dẫn storage Local (Relative /storage/...)
                 else if (src.startsWith('/storage')) {
-                    displayUrl = window.location.origin + src;
+                    const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
+                    displayUrl = crmHost + src;
                     resolveMethod = "Local Storage Path";
                 }
-                // 4. Nếu là đường dẫn media của QVC (thường không có ID CRM) HOẶC là internalPath upload
-                else if (src.startsWith('/media') || src.startsWith('uploads/') || (!img.id && !src.startsWith('/'))) {
-                    const cleanPath = src.startsWith('/') ? src : `/${src}`;
-                    displayUrl = window.location.origin + cleanPath;
-                    resolveMethod = "Internal Media/Upload Path";
+                // 4. Nếu là đường dẫn media/upload mà thiếu /storage/ (Legacy hoặc internalPath)
+                else if (src.startsWith('uploads/') || src.startsWith('media/')) {
+                    const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
+                    displayUrl = `${crmHost}/storage/${src}`;
+                    resolveMethod = "Fix Missing Storage Prefix";
                 }
-                // 5. Trường hợp khác nếu là relative path mà có ID (thường là uploads/...)
-                else if (!src.startsWith('/') && img.id) {
-                    displayUrl = `${window.location.origin}/storage/${src}`;
-                    resolveMethod = "CRM Relative Path (Storage)";
+                // 5. Nếu là đường dẫn media của QVC (thường không có ID CRM)
+                else if (src.startsWith('/media')) {
+                    displayUrl = `https://qvc.vn${src}`;
+                    resolveMethod = "Legacy QVC Path";
                 }
-                // 6. Fix lỗi URL bị double slash hoặc thoát ký tự
-                displayUrl = displayUrl.replace(/\\/g, '/').replace(/\/+/g, '/');
-                // Khôi phục http:// hoặc https:// nếu bị replace mất slash
-                if (displayUrl.startsWith('http:/') && !displayUrl.startsWith('http://')) displayUrl = displayUrl.replace('http:/', 'http://');
-                if (displayUrl.startsWith('https:/') && !displayUrl.startsWith('https://')) displayUrl = displayUrl.replace('https:/', 'https://');
+
+                // 6. Fix lỗi URL bị double slash hoặc thoát ký tự (trừ protocol)
+                const protocol = displayUrl.startsWith('https://') ? 'https://' : (displayUrl.startsWith('http://') ? 'http://' : '');
+                if (protocol) {
+                    const rest = displayUrl.substring(protocol.length).replace(/\\/g, '/').replace(/\/+/g, '/');
+                    displayUrl = protocol + rest;
+                }
             }
 
             return { ...img, displayUrl, resolveMethod };
         });
 
-        // console.log("[DEBUG_DETAIL] Unified Image Processing:", result.map(i => ({
-        //     isMain: i.is_main,
-        //     method: i.resolveMethod,
-        //     final: i.displayUrl
-        // })));
         return result;
     }, [fullImages, mediaFilter, formData.media, formData.proThum]);
 
@@ -1797,8 +1842,9 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (showAllStandardImages) {
             list = unifiedImages;
         } else {
-            // Hiển thị ảnh đã sync QVC HOẶC ảnh vừa mới upload (is_temp)
-            list = unifiedImages.filter(img => img.onQVC || img.is_temp);
+            // [FIX] V1 trước đây lọc gắt (chỉ hiện onQVC), khiến user tưởng mất ảnh khi vừa upload
+            // Giờ ta cho hiện hết giống V2 để tránh gây hiểu lầm, onQVC sẽ chỉ dùng để hiện Badge trạng thái
+            list = unifiedImages;
         }
         // console.log("[DEBUG] Standard Tab Images Count:", list.length, "showAll:", showAllStandardImages);
         return list;
@@ -2308,7 +2354,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 )}
 
                                 {unifiedImages.map((img, idx) => (
-                                    <div key={idx} className={`relative aspect-square bg-white rounded-[3rem] border-4 overflow-hidden shadow-xl group hover:scale-[1.02] transition-all ${img.is_main ? 'border-indigo-600 ring-8 ring-indigo-50' : 'border-white'}`}>
+                                    <div key={img.id || img.image_name || img.name || idx} className={`relative aspect-square bg-white rounded-[3rem] border-4 overflow-hidden shadow-xl group hover:scale-[1.02] transition-all ${img.is_main ? 'border-indigo-600 ring-8 ring-indigo-50' : 'border-white'}`}>
                                         {/* Dùng displayUrl đã được fix domain */}
                                         <img src={img.displayUrl} className="w-full h-full object-contain p-4 transition-transform group-hover:scale-110" alt="" />
 
@@ -2334,7 +2380,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         <div className="absolute inset-0 bg-indigo-950/80 backdrop-blur-md opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-4 transition-all duration-300 px-6">
                                             {!img.is_main && (
                                                 <button
-                                                    onClick={() => handleSetMain(img.id || img.name || img.image_name)}
+                                                    onClick={() => handleSetMain(img.usage_id || img.id || img.name || img.image_name)}
                                                     className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-2xl active:scale-90 transition-all"
                                                     title="Đặt làm ảnh bìa (Đồng bộ QVC)"
                                                 >
@@ -2722,7 +2768,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         {/* Lưới ảnh */}
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 relative z-10">
                                             {standardImages.map((img, idx) => (
-                                                <div key={idx} className={`group relative aspect-square rounded-[1.5rem] overflow-hidden bg-white border-2 transition-all duration-300 shadow-sm hover:shadow-md ${img.is_main ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-100 hover:border-indigo-200'}`}>
+                                                <div key={img.id || img.image_name || img.name || idx} className={`group relative aspect-square rounded-[1.5rem] overflow-hidden bg-white border-2 transition-all duration-300 shadow-sm hover:shadow-md ${img.is_main ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-100 hover:border-indigo-200'}`}>
                                                     <img src={img.displayUrl} alt="" className="w-full h-full object-contain p-3 transition-transform group-hover:scale-105" />
 
                                                     {/* Badge Ảnh đại diện */}
@@ -2738,7 +2784,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                             <button
                                                                 type="button"
                                                                 className="mx-4 w-[80%] py-2 bg-white text-indigo-600 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-600 hover:text-white transition-all shadow-xl font-black text-[9px] uppercase tracking-widest active:scale-95"
-                                                                onClick={() => handleSetMain(img.id || img.name)}
+                                                                onClick={() => handleSetMain(img.usage_id || img.id || img.name)}
                                                             >
                                                                 <Icon name="heart" className="w-4 h-4" />
                                                                 <span>Đặt làm chính</span>
@@ -3197,24 +3243,24 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     title={mediaManagerMode === 'editor' ? "CHÈN ẢNH VÀO BÀI VIẾT" : "QUẢN LÝ THƯ VIỆN ẢNH"}
                     onClose={() => setIsMediaManagerOpen(false)}
                     multiple={true}
-                    onSelect={(items) => {
-                        const newFiles = Array.isArray(items) ? items : [items];
+                    onSelect={(selectedItems) => {
+                        const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
+                        console.log("📸 [V1 DEBUG] Đã chọn ảnh từ thư viện:", items);
 
                         if (mediaManagerMode === 'editor') {
                             if (mediaLibraryCallback) {
-                                mediaLibraryCallback(newFiles);
+                                mediaLibraryCallback(items);
                                 setMediaLibraryCallback(null);
                                 setIsMediaManagerOpen(false);
                                 return;
                             }
 
-                            // LOGIC CHÈN VÀO EDITOR CŨ (FALLBACK)
-                            const htmlToInsert = newFiles.map(f => {
+                            const htmlToInsert = items.map(f => {
                                 const url = f.url || f.displayUrl || f.preview_url;
                                 return `<p><img src="${url}" /></p>`;
                             }).join('');
 
-                            const field = standardContentSubTab; // 'description' or 'spec'
+                            const field = standardContentSubTab;
                             if (field === 'summary') {
                                 toast.error("Không thể chèn ảnh vào Môt tả ngắn (Chỉ văn bản)");
                                 return;
@@ -3224,32 +3270,36 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 ...p,
                                 [field]: (p[field] || '') + htmlToInsert
                             }));
-                            toast.success(`Đã chèn ${newFiles.length} ảnh vào nội dung!`);
+                            toast.success(`Đã chèn ${items.length} ảnh vào nội dung!`);
                             setIsMediaManagerOpen(false);
                             return;
                         }
 
                         // LOGIC THÊM VÀO THƯ VIỆN ẢNH (GALLERY)
-                        // 1. Thêm ID vào danh sách chờ gán (để backend sync khi bấm SAVE)
-                        setTempUploadedIds(prev => [...prev, ...newFiles.map(f => f.id)]);
+                        const newImages = items.map(i => ({
+                            id: i.id,
+                            url: i.path ? i.path : (i.url || i.displayUrl || i.preview_url),
+                            displayUrl: i.path ? i.path : (i.url || i.displayUrl || i.preview_url),
+                            is_main: false,
+                            is_temp: true,
+                            name: i.original_name
+                        }));
 
-                        // 2. Cập nhật UI list ảnh ngay lập tức
                         setFullImages(prev => {
-                            // Tránh trùng lặp nếu user chọn đi chọn lại 1 ảnh
                             const existingIds = prev.map(img => img.id);
-                            const filteredNew = newFiles
-                                .filter(f => !existingIds.includes(f.id))
-                                .map(f => ({
-                                    id: f.id,
-                                    url: f.url || f.displayUrl || f.preview_url,
-                                    displayUrl: f.url || f.displayUrl || f.preview_url,
-                                    is_temp: true, // Mark to show save is needed
-                                    name: f.original_name
-                                }));
+                            const filteredNew = newImages.filter(img => !existingIds.includes(img.id));
                             return [...prev, ...filteredNew];
                         });
 
-                        toast.success(`Đã lấy ${newFiles.length} file từ kho!`);
+                        // Cập nhật luôn vào formData để chắc ăn
+                        const newIds = items.map(i => i.id);
+                        setFormData(prev => ({
+                            ...prev,
+                            media_ids: [...new Set([...(prev.media_ids || []), ...newIds])]
+                        }));
+
+                        toast.success(`Đã lấy ${items.length} file từ kho!`);
+                        setIsMediaManagerOpen(false);
                     }}
                 />
 

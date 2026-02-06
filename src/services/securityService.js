@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Đảm bảo bạn đã cấu hình base URL trong axios instance của dự án
 // Nếu chưa, hãy thay 'axios' bằng instance đã cấu hình (ví dụ: apiConfig)
-const API_URL = '/api/security'; 
+const API_URL = '/api/v2/security';
 
 const securityService = {
   // 1. Lấy dữ liệu Ma trận & Sức khỏe hệ thống (Dashboard + Matrix)

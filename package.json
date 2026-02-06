@@ -14,7 +14,14 @@
     "watch:dev": "vite build --mode dev --watch"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/lang-javascript": "^6.2.4",
     "@tanstack/react-virtual": "^3.13.12",
+    "@uiw/codemirror-theme-vscode": "^4.25.4",
+    "@uiw/react-codemirror": "^4.25.4",
+    "antd": "^6.2.2",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
@@ -23,6 +30,7 @@
     "html-to-image": "^1.11.13",
     "lodash": "^4.17.21",
     "lucide-react": "^0.557.0",
+    "moment": "^2.30.1",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.1.1",

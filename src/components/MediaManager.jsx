@@ -43,6 +43,14 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     const [isCreatingCol, setIsCreatingCol] = useState(false);
     const [newColName, setNewColName] = useState('');
     const [uploading, setUploading] = useState(false);
+    const failedPageRef = useRef(null); // Track failed pages to prevent loop
+    const paginationRef = useRef(null); // Keep latest pagination for observer without re-triggering effect
+
+    // Sync ref when pagination changes
+    useEffect(() => {
+        paginationRef.current = pagination;
+    }, [pagination]);
+
 
     // --- STATE MEDIA STUDIO ---
     const [isStudioOpen, setIsStudioOpen] = useState(false);
@@ -52,24 +60,42 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     const [showStudio, setShowStudio] = useState(false);
 
 
+    const isFetchingRef = useRef(false);
+
     // --- 1. LOAD DATA ---
     const fetchFiles = useCallback(async (page = 1, append = false) => {
+        // Safe lock to prevent concurrent requests
+        if (isFetchingRef.current) return;
+
+        // Prevent retrying the same failed page in infinite scroll loop
+        if (append && failedPageRef.current === page) return;
+
+        isFetchingRef.current = true;
         if (append) setLoadingMore(true);
         else setLoading(true);
 
         try {
             const res = await axios.get('/api/v1/admin/media-library', { params: { ...filters, page } });
-            if (append) {
-                setFiles(prev => [...prev, ...res.data.data]);
-            } else {
-                setFiles(res.data.data);
-            }
+            const newFiles = res.data.data || [];
+
+            // Safe update
+            setFiles(prev => append ? [...prev, ...newFiles] : newFiles);
             setPagination(res.data);
-        } catch (e) {
-            toast.error("Lỗi tải dữ liệu media");
+
+            if (newFiles.length === 0 && append) {
+                // No more data found on this page, mark as last to stop observer
+                setPagination(prev => ({ ...prev, current_page: prev.last_page }));
+            }
+        } catch (err) {
+            console.error("Fetch failed:", err);
+            if (append) failedPageRef.current = page;
         } finally {
-            setLoading(false);
-            setLoadingMore(false);
+            // Small delay before unlocking to prevent rapid-fire triggers
+            setTimeout(() => {
+                setLoading(false);
+                setLoadingMore(false);
+                isFetchingRef.current = false;
+            }, 300);
         }
     }, [filters]);
 
@@ -97,24 +123,31 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     useEffect(() => {
         const observer = new IntersectionObserver(
             entries => {
-                // Thêm rootMargin để load sớm hơn khi user cuộn gần tới đáy
-                if (entries[0].isIntersecting && pagination && pagination.current_page < pagination.last_page && !loading && !loadingMore) {
-                    fetchFiles(pagination.current_page + 1, true);
+                const entry = entries[0];
+                const pag = paginationRef.current;
+
+                // Only trigger if intersecting AND not already fetching AND there are more pages
+                if (entry.isIntersecting && !isFetchingRef.current && pag) {
+                    if (pag.current_page < pag.last_page) {
+                        console.log(`[MediaManager] Triggering load more: ${pag.current_page + 1}`);
+                        fetchFiles(pag.current_page + 1, true);
+                    }
                 }
             },
-            { threshold: 0.1, rootMargin: '200px' }
+            { threshold: 0, rootMargin: '20px' } // Tiny margin to be extremely safe
         );
 
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
         }
 
         return () => {
-            if (observerTarget.current) {
-                observer.unobserve(observerTarget.current);
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
             }
         };
-    }, [pagination, loading, loadingMore, fetchFiles]);
+    }, [fetchFiles]); // Only re-run if fetchFiles changes (which depends on filters)
 
     // --- 2. HANDLERS BỘ SƯU TẬP ---
     const handleCreateCollection = async () => {
@@ -218,6 +251,8 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
 
     const handleDeleteFile = async (id) => {
         if (!window.confirm("Xóa vĩnh viễn file này?")) return;
+        console.log("🖱️ [MEDIA_MANAGER] Bấm xóa file ID:", id);
+        console.log("Danh sách file hiện tại:", files.map(f => f.id));
         try {
             await mediaApi.deleteMedia(id);
             toast.success("Đã xóa");
@@ -261,6 +296,7 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
     const resetFilters = () => {
         setFilters(initialFilters);
         setSelectedIds([]);
+        failedPageRef.current = null;
     };
 
     const getGridClass = () => {
@@ -488,7 +524,12 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
                             <button
                                 onClick={() => {
                                     const selectedItems = files.filter(f => selectedIds.includes(f.id));
-                                    onSelect && onSelect(multiple ? selectedItems : selectedItems[0]);
+                                    if (onSelect) {
+                                        // Case handling: 
+                                        // 1. Array expected (multiple=true)
+                                        // 2. Single item expected (multiple=false)
+                                        onSelect(multiple ? selectedItems : (selectedItems[0] || null));
+                                    }
                                 }}
                                 disabled={selectedIds.length === 0}
                                 className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 whitespace-nowrap"
@@ -671,160 +712,166 @@ const MediaManager = ({ onSelect, multiple = false, type = 'all', isStandalone =
             </div>
 
             {/* === CỘT 3: INSPECTOR === */}
-            {activeItem && (
-                <div className="w-80 bg-slate-50 flex flex-col p-6 overflow-y-auto animate-slideLeft shadow-inner">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="font-black text-slate-900 uppercase tracking-widest text-[10px]">Cấu hình tệp tin</h3>
-                        <button onClick={() => setActiveItem(null)} className="text-slate-400 hover:text-slate-600"><Icon name="x" className="w-4 h-4" /></button>
-                    </div>
+            {
+                activeItem && (
+                    <div className="w-80 bg-slate-50 flex flex-col p-6 overflow-y-auto animate-slideLeft shadow-inner">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="font-black text-slate-900 uppercase tracking-widest text-[10px]">Cấu hình tệp tin</h3>
+                            <button onClick={() => setActiveItem(null)} className="text-slate-400 hover:text-slate-600"><Icon name="x" className="w-4 h-4" /></button>
+                        </div>
 
-                    <div className="aspect-square bg-white rounded-[2rem] border-4 border-white shadow-xl p-2 mb-6 overflow-hidden relative group">
-                        {activeItem.is_image ? <img src={activeItem.preview_url} className="w-full h-full object-contain rounded-[1.5rem]" /> : <div className="w-full h-full flex flex-col items-center justify-center gap-4"><Icon name="file-text" className="w-16 h-16 text-slate-200" /><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeItem.mime_type}</span></div>}
+                        <div className="aspect-square bg-white rounded-[2rem] border-4 border-white shadow-xl p-2 mb-6 overflow-hidden relative group">
+                            {activeItem.is_image ? <img src={activeItem.preview_url} className="w-full h-full object-contain rounded-[1.5rem]" /> : <div className="w-full h-full flex flex-col items-center justify-center gap-4"><Icon name="file-text" className="w-16 h-16 text-slate-200" /><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeItem.mime_type}</span></div>}
 
-                        {/* Overlay Actions on Inspector Image */}
-                        {activeItem.is_image && (
-                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-[1.5rem]">
+                            {/* Overlay Actions on Inspector Image */}
+                            {activeItem.is_image && (
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-[1.5rem]">
+                                    <button
+                                        onClick={() => setLargePreviewItem(activeItem)}
+                                        className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
+                                        title="Xem full kích thước"
+                                    >
+                                        <Icon name="maximize" className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDownload(activeItem.preview_url, activeItem.original_name)}
+                                        className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
+                                        title="Tải xuống"
+                                    >
+                                        <Icon name="download" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* THEO DÕI NGƯỜI TẠO */}
+                            {activeItem.creator && (
+                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-[10px]">{activeItem.creator.name.charAt(0)}</div>
+                                    <div>
+                                        <p className="text-[7px] font-black text-slate-400 uppercase">Người tải/chế ảnh:</p>
+                                        <p className="text-[10px] font-black text-slate-700">{activeItem.creator.name}</p>
+                                        <p className="text-[8px] font-bold text-slate-400 italic">{activeItem.creator.time}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
+                                <label className="block text-[8px] font-black text-indigo-400 uppercase tracking-widest">Gán vào bộ sưu tập</label>
+                                <select className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 text-[10px] font-bold" onChange={(e) => { if (e.target.value) handleAddToCollection(e.target.value, [activeItem.id]); e.target.value = ""; }}>
+                                    <option value="">-- Chọn bộ sưu tập --</option>
+                                    {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[8px] font-black text-slate-400 uppercase tracking-tighter">Đặt lại tên file</label>
+                                <input className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-3 outline-none font-bold text-xs" value={activeItem.original_name} onChange={e => setActiveItem({ ...activeItem, original_name: e.target.value })} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[8px] font-black text-slate-400 uppercase">Alt Text (SEO)</label>
+                                <input className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-3 outline-none font-medium text-xs" value={activeItem.alt_text_default || ''} onChange={e => setActiveItem({ ...activeItem, alt_text_default: e.target.value })} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[8px] font-black text-slate-400 uppercase">Ghi chú nội bộ (Comment)</label>
+                                <textarea className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-4 outline-none font-medium text-xs resize-none" rows={3} placeholder="Ghi chú về file này..." value={activeItem.internal_notes || ''} onChange={e => setActiveItem({ ...activeItem, internal_notes: e.target.value })} />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Button onClick={handleUpdateMeta} variant="primary" className="rounded-2xl py-6 font-black uppercase text-[10px]">Lưu Thông Tin</Button>
+                                <button onClick={() => handleDeleteFile(activeItem.id)} className="py-3 bg-white text-red-500 rounded-2xl font-black uppercase text-[10px] border-2 border-red-50 hover:bg-red-500 hover:text-white transition-all shadow-sm">Xóa vĩnh viễn</button>
+                            </div>
+
+                            {/* --- BUTTON MỞ STUDIO CHẾ ẢNH --- */}
+                            <div className="pt-4 border-t border-dashed">
+                                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-2">Công cụ nâng cao</label>
                                 <button
-                                    onClick={() => setLargePreviewItem(activeItem)}
-                                    className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
-                                    title="Xem full kích thước"
+                                    onClick={() => setShowStudio(true)}
+                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-200 hover:scale-105 transition-transform flex items-center justify-center gap-2 text-[10px]"
                                 >
-                                    <Icon name="maximize" className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDownload(activeItem.preview_url, activeItem.original_name)}
-                                    className="p-3 bg-white/90 text-slate-800 rounded-xl hover:scale-110 shadow-lg backdrop-blur"
-                                    title="Tải xuống"
-                                >
-                                    <Icon name="download" className="w-4 h-4" />
+                                    <Icon name="wand" className="w-4 h-4" /> Media Studio (Chế ảnh)
                                 </button>
                             </div>
-                        )}
-                    </div>
 
-                    <div className="space-y-6">
-                        {/* THEO DÕI NGƯỜI TẠO */}
-                        {activeItem.creator && (
-                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-[10px]">{activeItem.creator.name.charAt(0)}</div>
-                                <div>
-                                    <p className="text-[7px] font-black text-slate-400 uppercase">Người tải/chế ảnh:</p>
-                                    <p className="text-[10px] font-black text-slate-700">{activeItem.creator.name}</p>
-                                    <p className="text-[8px] font-bold text-slate-400 italic">{activeItem.creator.time}</p>
+                            <div className="pt-8 border-t border-slate-200">
+                                <h4 className="font-black text-[9px] uppercase text-slate-400 mb-4">Sử dụng tại ({activeItem.usage_count})</h4>
+                                <div className="space-y-3">
+                                    {activeItem.used_in?.map((usage, idx) => (
+                                        <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-100 space-y-3 group/usage hover:border-indigo-100 transition-all shadow-sm">
+                                            <div className="min-w-0"><p className="text-[10px] font-black text-slate-700 truncate">{usage.name}</p><p className="text-[7px] font-bold text-slate-400 uppercase italic">ID: #{usage.id} • {usage.type}</p></div>
+                                            <div className="flex gap-2"><a href={usage.link} target="_blank" rel="noreferrer" className="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-1.5"><Icon name="external-link" className="w-3 h-3" /> Xem CRM</a>{usage.web_link && <a href={usage.web_link} target="_blank" rel="noreferrer" className="flex-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-1.5"><Icon name="globe" className="w-3 h-3" /> Xem Web</a>}</div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        )}
-
-                        <div className="space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
-                            <label className="block text-[8px] font-black text-indigo-400 uppercase tracking-widest">Gán vào bộ sưu tập</label>
-                            <select className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 text-[10px] font-bold" onChange={(e) => { if (e.target.value) handleAddToCollection(e.target.value, [activeItem.id]); e.target.value = ""; }}>
-                                <option value="">-- Chọn bộ sưu tập --</option>
-                                {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-[8px] font-black text-slate-400 uppercase tracking-tighter">Đặt lại tên file</label>
-                            <input className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-3 outline-none font-bold text-xs" value={activeItem.original_name} onChange={e => setActiveItem({ ...activeItem, original_name: e.target.value })} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-[8px] font-black text-slate-400 uppercase">Alt Text (SEO)</label>
-                            <input className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-3 outline-none font-medium text-xs" value={activeItem.alt_text_default || ''} onChange={e => setActiveItem({ ...activeItem, alt_text_default: e.target.value })} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-[8px] font-black text-slate-400 uppercase">Ghi chú nội bộ (Comment)</label>
-                            <textarea className="w-full bg-white border-2 border-transparent focus:border-indigo-100 rounded-2xl px-5 py-4 outline-none font-medium text-xs resize-none" rows={3} placeholder="Ghi chú về file này..." value={activeItem.internal_notes || ''} onChange={e => setActiveItem({ ...activeItem, internal_notes: e.target.value })} />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <Button onClick={handleUpdateMeta} variant="primary" className="rounded-2xl py-6 font-black uppercase text-[10px]">Lưu Thông Tin</Button>
-                            <button onClick={() => handleDeleteFile(activeItem.id)} className="py-3 bg-white text-red-500 rounded-2xl font-black uppercase text-[10px] border-2 border-red-50 hover:bg-red-500 hover:text-white transition-all shadow-sm">Xóa vĩnh viễn</button>
-                        </div>
-
-                        {/* --- BUTTON MỞ STUDIO CHẾ ẢNH --- */}
-                        <div className="pt-4 border-t border-dashed">
-                            <label className="block text-[9px] font-bold text-slate-400 uppercase mb-2">Công cụ nâng cao</label>
-                            <button
-                                onClick={() => setShowStudio(true)}
-                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-200 hover:scale-105 transition-transform flex items-center justify-center gap-2 text-[10px]"
-                            >
-                                <Icon name="wand" className="w-4 h-4" /> Media Studio (Chế ảnh)
-                            </button>
-                        </div>
-
-                        <div className="pt-8 border-t border-slate-200">
-                            <h4 className="font-black text-[9px] uppercase text-slate-400 mb-4">Sử dụng tại ({activeItem.usage_count})</h4>
-                            <div className="space-y-3">
-                                {activeItem.used_in?.map((usage, idx) => (
-                                    <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-100 space-y-3 group/usage hover:border-indigo-100 transition-all shadow-sm">
-                                        <div className="min-w-0"><p className="text-[10px] font-black text-slate-700 truncate">{usage.name}</p><p className="text-[7px] font-bold text-slate-400 uppercase italic">ID: #{usage.id} • {usage.type}</p></div>
-                                        <div className="flex gap-2"><a href={usage.link} target="_blank" rel="noreferrer" className="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-1.5"><Icon name="external-link" className="w-3 h-3" /> Xem CRM</a>{usage.web_link && <a href={usage.web_link} target="_blank" rel="noreferrer" className="flex-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-1.5"><Icon name="globe" className="w-3 h-3" /> Xem Web</a>}</div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             {/* --- MODAL CON: STUDIO --- */}
-            {showStudio && activeItem && (
-                <MediaStudioModal
-                    isOpen={true}
-                    sourceFile={activeItem}
-                    onClose={() => setShowStudio(false)}
-                    files={files}
-                    onSuccess={(newFile) => {
-                        // Khi chế ảnh xong:
-                        // 1. Thêm ảnh mới vào danh sách đang hiển thị
-                        setFiles(prev => [newFile, ...prev]);
-                        // 2. Chọn luôn ảnh mới đó để User dùng ngay
-                        setActiveItem(newFile);
-                        if (multiple) setSelectedIds(prev => [...prev, newFile.id]);
-                        else setSelectedIds([newFile.id]);
-                    }}
-                />
-            )}
+            {
+                showStudio && activeItem && (
+                    <MediaStudioModal
+                        isOpen={true}
+                        sourceFile={activeItem}
+                        onClose={() => setShowStudio(false)}
+                        files={files}
+                        onSuccess={(newFile) => {
+                            // Khi chế ảnh xong:
+                            // 1. Thêm ảnh mới vào danh sách đang hiển thị
+                            setFiles(prev => [newFile, ...prev]);
+                            // 2. Chọn luôn ảnh mới đó để User dùng ngay
+                            setActiveItem(newFile);
+                            if (multiple) setSelectedIds(prev => [...prev, newFile.id]);
+                            else setSelectedIds([newFile.id]);
+                        }}
+                    />
+                )
+            }
 
             {/* --- MODAL CON: LARGE IMAGE PREVIEW --- */}
-            {largePreviewItem && (
-                <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-2xl flex flex-col animate-fadeIn">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-8 py-6">
-                        <div className="text-white/80">
-                            <h3 className="text-lg font-bold">{largePreviewItem.original_name}</h3>
-                            <p className="text-xs uppercase tracking-widest opacity-60">{largePreviewItem.mime_type} • {largePreviewItem.size_kb} KB</p>
+            {
+                largePreviewItem && (
+                    <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-2xl flex flex-col animate-fadeIn">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-8 py-6">
+                            <div className="text-white/80">
+                                <h3 className="text-lg font-bold">{largePreviewItem.original_name}</h3>
+                                <p className="text-xs uppercase tracking-widest opacity-60">{largePreviewItem.mime_type} • {largePreviewItem.size_kb} KB</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => handleDownload(largePreviewItem.preview_url, largePreviewItem.original_name)}
+                                    className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                                    title="Tải xuống"
+                                >
+                                    <Icon name="download" className="w-6 h-6" />
+                                </button>
+                                <button
+                                    onClick={() => setLargePreviewItem(null)}
+                                    className="p-3 bg-white/10 hover:bg-red-500 text-white rounded-full transition-all"
+                                    title="Đóng"
+                                >
+                                    <Icon name="x" className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => handleDownload(largePreviewItem.preview_url, largePreviewItem.original_name)}
-                                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
-                                title="Tải xuống"
-                            >
-                                <Icon name="download" className="w-6 h-6" />
-                            </button>
-                            <button
-                                onClick={() => setLargePreviewItem(null)}
-                                className="p-3 bg-white/10 hover:bg-red-500 text-white rounded-full transition-all"
-                                title="Đóng"
-                            >
-                                <Icon name="x" className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
 
-                    {/* Main Image Area */}
-                    <div className="flex-1 flex items-center justify-center p-10 overflow-hidden">
-                        <img
-                            src={largePreviewItem.preview_url}
-                            className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-2xl rounded-lg"
-                            alt="Large View"
-                        />
+                        {/* Main Image Area */}
+                        <div className="flex-1 flex items-center justify-center p-10 overflow-hidden">
+                            <img
+                                src={largePreviewItem.preview_url}
+                                className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-2xl rounded-lg"
+                                alt="Large View"
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

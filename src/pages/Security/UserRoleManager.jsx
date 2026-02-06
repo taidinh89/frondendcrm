@@ -64,13 +64,19 @@ const UserRoleManager = () => {
         setLoading(true);
         try {
             const [uRes, rRes, dRes] = await Promise.all([
-                axios.get('/api/security/users?per_page=1000'),
-                axios.get('/api/security/roles?per_page=100'),
-                axios.get('/api/security/departments?per_page=100')
+                axios.get('/api/v2/security/users?per_page=1000'),
+                axios.get('/api/v2/security/roles?per_page=100'),
+                axios.get('/api/v2/security/departments?per_page=100')
             ]);
 
             // Helper lấy data an toàn
-            const getData = (res) => res.data.data || res.data || [];
+            const getData = (res) => {
+                if (!res) return [];
+                if (res.data && Array.isArray(res.data.data)) return res.data.data;
+                if (Array.isArray(res.data)) return res.data;
+                if (res.data && Array.isArray(res.data)) return res.data;
+                return [];
+            };
 
             setUsers(getData(uRes));
             setRoles(getData(rRes).filter(r => r.name !== 'Super Admin')); // Ẩn Super Admin để tránh xóa nhầm
@@ -137,7 +143,7 @@ const UserRoleManager = () => {
         try {
             const newStatus = !user.is_active;
             setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
-            await axios.put(`/api/security/users/${user.id}`, { is_active: newStatus });
+            await axios.put(`/api/v2/security/users/${user.id}`, { is_active: newStatus });
             toast.success(newStatus ? `Đã mở khóa ${user.name}` : `Đã khóa ${user.name}`);
         } catch (e) { toast.error("Lỗi thao tác"); fetchData(); }
     };
@@ -152,7 +158,7 @@ const UserRoleManager = () => {
 
         try {
             setUsers(users.filter(u => u.id !== user.id));
-            await axios.delete(`/api/security/users/${user.id}`);
+            await axios.delete(`/api/v2/security/users/${user.id}`);
             toast.success("Đã xóa nhân sự.");
         } catch (e) { toast.error("Không thể xóa."); fetchData(); }
     };
@@ -218,20 +224,20 @@ const UserRoleManager = () => {
 
             if (targetId) {
                 // Update
-                await axios.put(`/api/security/users/${targetId}`, payload);
+                await axios.put(`/api/v2/security/users/${targetId}`, payload);
             } else {
                 // Create
                 if (!editPassword) {
                     toast.error("Vui lòng nhập mật khẩu cho nhân sự mới!");
                     return;
                 }
-                const res = await axios.post('/api/security/users', payload);
+                const res = await axios.post('/api/v2/security/users', payload);
                 targetId = res.data.data.id;
             }
 
             const deptPayload = {};
             selectedDepts.filter(d => d.id).forEach(d => { deptPayload[d.id] = { position: d.position, access_level: d.access_level }; });
-            await axios.put(`/api/security/users/${targetId}/departments`, { departments: deptPayload });
+            await axios.put(`/api/v2/security/users/${targetId}/departments`, { departments: deptPayload });
 
             toast.success(editingUser.id ? "Cập nhật thành công!" : "Tạo mới thành công!");
             setEditingUser(null);

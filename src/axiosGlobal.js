@@ -23,7 +23,7 @@ const logger = (type, message, data = '') => {
 // 2. DANH SÁCH ĐEN (BLACKLIST) - LUÔN GỌI SERVER
 // =============================================================================
 const BLACKLIST_URLS = [
-    '/sanctum/csrf-cookie', 
+    '/sanctum/csrf-cookie',
     '/login',
     '/logout',
     '/user',
@@ -38,7 +38,7 @@ const getOriginalAdapter = () => {
     if (typeof axios.defaults.adapter === 'function') {
         return axios.defaults.adapter;
     }
-    
+
     // Cách 2: Axios mới v1+ (adapter là mảng/chuỗi -> dùng hàm getAdapter lấy function)
     if (typeof axios.getAdapter === 'function') {
         return axios.getAdapter(axios.defaults.adapter);
@@ -55,8 +55,8 @@ const originalAdapter = getOriginalAdapter();
 // =============================================================================
 // 4. KHO LƯU TRỮ & XỬ LÝ KEY THÔNG MINH
 // =============================================================================
-const cacheStorage = new Map();   
-const pendingStorage = new Map(); 
+const cacheStorage = new Map();
+const pendingStorage = new Map();
 
 // Hàm sắp xếp params để đảm bảo key luôn giống nhau dù thứ tự params đảo lộn
 // Giúp fix lỗi trang Phòng ban bị gọi lặp do params lộn xộn
@@ -116,14 +116,14 @@ const smartAdapter = async (config) => {
 
         // C. NETWORK CALL (Gọi thật)
         logger('network', `🌐 CALL SERVER: ${config.url}`);
-        
+
         const requestPromise = originalAdapter(config)
             .then(response => {
                 try {
                     // Clone data an toàn để tránh lỗi reference
                     let dataToCache = response.data;
-                    try { dataToCache = JSON.parse(JSON.stringify(response.data)); } catch(e) {}
-                    
+                    try { dataToCache = JSON.parse(JSON.stringify(response.data)); } catch (e) { }
+
                     cacheStorage.set(key, { data: dataToCache, timestamp: Date.now() });
                 } catch (e) {
                     console.error("[SmartAPI] Cache Error:", e);
@@ -155,6 +155,7 @@ const smartAdapter = async (config) => {
 // 6. ÁP DỤNG
 // =============================================================================
 axios.defaults.withCredentials = true;
+axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.adapter = smartAdapter;
 
 export default axios;

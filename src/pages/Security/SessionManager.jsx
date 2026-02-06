@@ -19,7 +19,7 @@ const SessionManager = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/security/sessions', { params: { search } });
+            const res = await axios.get('/api/v2/security/sessions', { params: { search } });
             setUsers(res.data.data); // Paginated response
         } catch (error) {
             toast.error("Không thể tải danh sách người dùng.");
@@ -39,7 +39,7 @@ const SessionManager = () => {
         setUserSessions([]);
 
         try {
-            const res = await axios.get(`/api/security/sessions/user/${user.id}`);
+            const res = await axios.get(`/api/v2/security/sessions/user/${user.id}`);
             setUserSessions(res.data.sessions);
         } catch (error) {
             toast.error("Lỗi khi tải chi tiết phiên đăng nhập.");
@@ -57,7 +57,7 @@ const SessionManager = () => {
     const handleRevokeSession = async (sessionId) => {
         if (!window.confirm("Bạn muốn buộc thiết bị này đăng xuất?")) return;
         try {
-            await axios.delete(`/api/security/sessions/${sessionId}`);
+            await axios.delete(`/api/v2/security/sessions/${sessionId}`);
             toast.success("Đã thu hồi phiên thành công.");
             // Reload list sessions
             handleViewDetails(selectedUser);
@@ -71,7 +71,7 @@ const SessionManager = () => {
     const handleRevokeUser = async (userId, userName) => {
         if (!window.confirm(`CẢNH BÁO: Bạn có chắc muốn ĐĂNG XUẤT TOÀN BỘ phiên của ${userName}?`)) return;
         try {
-            await axios.delete(`/api/security/sessions/user/${userId}`);
+            await axios.delete(`/api/v2/security/sessions/user/${userId}`);
             toast.success(`Đã đăng xuất ${userName} khỏi tất cả thiết bị.`);
             fetchUsers();
             if (selectedUser?.id === userId) handleCloseModal();

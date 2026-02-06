@@ -2,56 +2,58 @@
 import axios from '../../axiosGlobal';
 
 const BASE_URL = '/api/v1/products';
+const V2_URL = '/api/v2/products-new';
 
 export const productApi = {
-    // 1. Lấy chi tiết (Backend đã trả về full_images từ MediaUsage)
+    // 1. Lấy chi tiết (Legacy V1)
     getDetail: (id) => axios.get(`${BASE_URL}/${id}`),
 
-    // 2. Cập nhật thông tin (Tên, Giá, Mô tả, Tags...)
-    update: (id, data) => axios.put(`${BASE_URL}/${id}`, data),
+    // [NEW V2] Standardized Detail (Envelope)
+    getDetailV2: (id) => axios.get(`${V2_URL}/${id}`),
 
-    // 3. --- NHÓM MEDIA (QUẢN LÝ ẢNH CHUYÊN NGHIỆP) ---
+    // 2. Cập nhật thông tin (Tên, Giá, Mô tả, Tags...)
+    update: (id, data) => {
+        console.group(`🚀 [API DEBUG] UPDATE ID: ${id}`);
+        console.log("📦 Payload Gốc:", data);
+        console.groupEnd();
+        return axios.put(`${BASE_URL}/${id}`, data);
+    },
+
+    // 3. --- NHÓM MEDIA ---
     uploadImage: (id, formData) => axios.post(`${BASE_URL}/${id}/media`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-
     setMainImage: (prodId, mediaId) => axios.post(`${BASE_URL}/${prodId}/media/${mediaId}/set-main`),
-
     deleteImage: (prodId, mediaId) => axios.delete(`${BASE_URL}/${prodId}/media/${mediaId}`),
-
-    // [THÊM MỚI]
     deleteOldImageByName: (prodId, imageName) => axios.post(`${BASE_URL}/${prodId}/media/remove-old`, {
         image_name: imageName
     }),
 
-    // 4. Sync thủ công 1 sản phẩm
+    // 4. Các chức năng khác
     syncOne: (id) => axios.post(`${BASE_URL}/${id}/sync`),
-
-    // 5. Thêm mới sản phẩm
-    create: (data) => axios.post(`${BASE_URL}`, data),
-
-    // 6. Lấy danh sách (Library)
-    getLibrary: (params) => axios.get(`${BASE_URL}`, { params }),
-
-    // 7. Xóa sản phẩm bộ (Web + CRM)
-    delete: (id) => axios.delete(`${BASE_URL}/${id}`),
-
-    // 8. Bật/tắt trạng thái hiển thị web
+    createV2: (data) => axios.post(`${V2_URL}`, data),
+    updateV2: (id, data) => axios.put(`${V2_URL}/${id}`, data),
+    getLibrary: (params) => axios.get(`${V2_URL}`, { params }),
+    deleteV2: (id) => axios.delete(`${V2_URL}/${id}`),
     toggleStatus: (id) => axios.post(`${BASE_URL}/${id}/toggle-status`),
 
+    // 5. Media Studio & Smart Features
     smartUpload: (formData) => axios.post('/api/v1/media/smart-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-
     processWordContent: (prodId, data) => axios.post(`${BASE_URL}/${prodId}/media/word-process`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-
     importDocx: (prodId, formData) => axios.post(`${BASE_URL}/${prodId}/media/import-docx`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
 
-    // 9. Lấy danh mục & Thương hiệu
+    // 6. === [MODULE V2] INTERNATIONAL STANDARD ===
+    getCategoriesV2: (params) => axios.get('/api/v2/categories', { params }),
+    getBrandsV2: (params) => axios.get('/api/v2/brands', { params }),
+    getSites: () => axios.get('/api/v2/security/sites'),
+
+    // 7. === [LEGACY V1] DÀNH CHO CÁC TRANG CŨ ===
     getCategories: (params) => axios.get(`${BASE_URL}/categories`, { params }),
-    getBrands: () => axios.get(`${BASE_URL}/brands`),
+    getBrands: (params) => axios.get(`${BASE_URL}/brands`, { params }),
 };

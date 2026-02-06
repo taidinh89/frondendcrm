@@ -8,12 +8,12 @@ import { toast } from 'react-toastify';
 const StatCard = ({ title, count, type, icon, activeFilter, onClick, colorClass }) => {
     const isActive = activeFilter === type;
     return (
-        <div 
+        <div
             onClick={() => onClick(type)}
             className={`
                 relative overflow-hidden rounded-[2rem] p-6 cursor-pointer transition-all duration-300 border
-                ${isActive 
-                    ? `bg-gradient-to-br ${colorClass} text-white shadow-xl scale-105 ring-2 ring-offset-2 ring-blue-300 border-transparent` 
+                ${isActive
+                    ? `bg-gradient-to-br ${colorClass} text-white shadow-xl scale-105 ring-2 ring-offset-2 ring-blue-300 border-transparent`
                     : 'bg-white border-gray-100 hover:bg-gray-50 text-gray-600 hover:shadow-md'
                 }
             `}
@@ -50,8 +50,8 @@ const UserCommanderTab = () => {
 
     // --- STATE GIAO DIỆN ---
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all'); 
-    
+    const [filterType, setFilterType] = useState('all');
+
     // --- STATE EDIT ---
     const [editingUser, setEditingUser] = useState(null);
     const [selectedRoles, setSelectedRoles] = useState([]);
@@ -62,11 +62,11 @@ const UserCommanderTab = () => {
         setLoading(true);
         try {
             const [uRes, rRes, dRes] = await Promise.all([
-                axios.get('/api/security/users?per_page=1000'),
-                axios.get('/api/security/roles?per_page=100'),
-                axios.get('/api/security/departments?per_page=100')
+                axios.get('/api/v2/security/users?per_page=1000'),
+                axios.get('/api/v2/security/roles?per_page=100'),
+                axios.get('/api/v2/security/departments?per_page=100')
             ]);
-            
+
             const safeData = (res) => res.data.data || res.data || [];
             setUsers(safeData(uRes));
             setRoles(safeData(rRes).filter(r => r.name !== 'Super Admin'));
@@ -85,7 +85,7 @@ const UserCommanderTab = () => {
     const checkIsManager = (u) => {
         // Ưu tiên 1: Cột is_admin trong DB
         if (u.is_admin === 1 || u.is_admin === true) return true;
-        
+
         // Ưu tiên 2: Role Super Admin
         if (u.roles?.some(r => r.name === 'Super Admin')) return true;
 
@@ -111,7 +111,7 @@ const UserCommanderTab = () => {
     // 4. LỌC DANH SÁCH
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         let matchesFilter = true;
         if (filterType === 'active') matchesFilter = u.is_active;
         if (filterType === 'locked') matchesFilter = !u.is_active;
@@ -124,13 +124,13 @@ const UserCommanderTab = () => {
     const toggleLockUser = async (e, user) => {
         e.stopPropagation();
         if (user.is_admin) return toast.warning("Không thể khóa System Admin!");
-        
+
         if (!window.confirm(`Bạn có chắc muốn ${user.is_active ? 'KHÓA' : 'MỞ KHÓA'} tài khoản [${user.name}]?`)) return;
 
         try {
             const newStatus = !user.is_active;
             setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
-            await axios.put(`/api/security/users/${user.id}`, { is_active: newStatus });
+            await axios.put(`/api/v2/security/users/${user.id}`, { is_active: newStatus });
             toast.success(newStatus ? `Đã mở khóa ${user.name}` : `Đã khóa ${user.name}`);
         } catch (error) { toast.error("Lỗi cập nhật trạng thái"); fetchData(); }
     };
@@ -138,12 +138,12 @@ const UserCommanderTab = () => {
     const deleteUser = async (e, user) => {
         e.stopPropagation();
         if (user.is_admin) return toast.error("KHÔNG THỂ XÓA SYSTEM ADMIN!");
-        
+
         if (!window.confirm(`CẢNH BÁO: Xóa nhân sự [${user.name}] sẽ xóa toàn bộ dữ liệu liên quan.\nTiếp tục?`)) return;
 
         try {
             setUsers(users.filter(u => u.id !== user.id));
-            await axios.delete(`/api/security/users/${user.id}`);
+            await axios.delete(`/api/v2/security/users/${user.id}`);
             toast.success("Đã xóa nhân sự.");
         } catch (error) { toast.error("Không thể xóa."); fetchData(); }
     };
@@ -161,10 +161,10 @@ const UserCommanderTab = () => {
 
     const handleSaveChanges = async () => {
         try {
-            await axios.put(`/api/security/users/${editingUser.id}`, { name: editingUser.name, roles: selectedRoles });
+            await axios.put(`/api/v2/security/users/${editingUser.id}`, { name: editingUser.name, roles: selectedRoles });
             const deptPayload = {};
             selectedDepts.filter(d => d.id).forEach(d => { deptPayload[d.id] = { position: d.position, access_level: d.access_level }; });
-            await axios.put(`/api/security/users/${editingUser.id}/departments`, { departments: deptPayload });
+            await axios.put(`/api/v2/security/users/${editingUser.id}/departments`, { departments: deptPayload });
             toast.success(`Đã cập nhật hồ sơ: ${editingUser.name}`);
             setEditingUser(null);
             fetchData();
@@ -185,7 +185,7 @@ const UserCommanderTab = () => {
 
             {/* --- TOOLBAR --- */}
             <div className="flex justify-between items-center bg-white p-2 pr-4 rounded-2xl border border-gray-200 shadow-sm">
-                <input 
+                <input
                     className="flex-1 bg-transparent px-6 py-3 outline-none font-bold text-gray-600 placeholder-gray-400"
                     placeholder={`🔍 Tìm kiếm trong ${filteredUsers.length} nhân sự...`}
                     value={searchTerm}
@@ -288,7 +288,7 @@ const UserCommanderTab = () => {
                             </div>
                             <button onClick={() => setEditingUser(null)} className="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 flex items-center justify-center font-bold transition-colors">✕</button>
                         </div>
-                        
+
                         {/* Body Modal */}
                         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-white">
@@ -347,11 +347,11 @@ const SecurityLayersTab = () => {
     // Component quản lý Layer 1, 2, 3 (Giữ nguyên như cũ)
     const [permissions, setPermissions] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    useEffect(() => { axios.get('/api/security/permissions/list').then(res => setPermissions(res.data)).catch(console.error); }, []);
+    useEffect(() => { axios.get('/api/v2/security/permissions/list').then(res => setPermissions(res.data)).catch(console.error); }, []);
     const toggleStatus = async (perm) => {
         const newStatus = perm.status === 'active' ? 'maintenance' : 'active';
         setPermissions(prev => prev.map(p => p.id === perm.id ? { ...p, status: newStatus } : p));
-        try { await axios.put(`/api/security/permissions/${perm.id}/status`, { status: newStatus }); } catch (e) {}
+        try { await axios.put(`/api/v2/security/permissions/${perm.id}/status`, { status: newStatus }); } catch (e) { }
     };
     const filtered = permissions.filter(p => p.name.includes(searchTerm) || p.label?.includes(searchTerm));
 
@@ -381,7 +381,7 @@ const SecurityLayersTab = () => {
 // =================================================================================
 const AuthorizationBackboneManager = ({ setAppTitle }) => {
     const [activeTab, setActiveTab] = useState('users');
-    useEffect(() => { if(setAppTitle) setAppTitle('Backbone Commander v5.0'); }, [setAppTitle]);
+    useEffect(() => { if (setAppTitle) setAppTitle('Backbone Commander v5.0'); }, [setAppTitle]);
 
     return (
         <div className="p-6 bg-slate-50 min-h-screen font-sans text-gray-800">

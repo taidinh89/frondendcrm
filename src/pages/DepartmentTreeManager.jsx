@@ -10,13 +10,13 @@ const TreeNode = ({ node, onEdit, onDelete, onAddChild, onManageUsers }) => {
     return (
         <div className="ml-6 border-l-2 border-dashed border-blue-100 pl-4 my-2">
             <div className="flex items-center gap-3 group">
-                <div 
-                    onClick={() => setIsOpen(!isOpen)} 
+                <div
+                    onClick={() => setIsOpen(!isOpen)}
                     className={`cursor-pointer w-6 h-6 flex items-center justify-center rounded bg-gray-50 text-xs font-bold ${hasChildren ? 'text-blue-600' : 'text-gray-300'}`}
                 >
                     {hasChildren ? (isOpen ? '−' : '+') : '○'}
                 </div>
-                
+
                 <div className="bg-white border border-gray-200 p-3 rounded-2xl shadow-sm hover:border-blue-500 transition-all flex items-center justify-between flex-1 max-w-md">
                     <div>
                         <span className="text-xs font-black text-blue-600 uppercase mr-2">[{node.code}]</span>
@@ -34,12 +34,12 @@ const TreeNode = ({ node, onEdit, onDelete, onAddChild, onManageUsers }) => {
             {isOpen && hasChildren && (
                 <div className="mt-1">
                     {node.children.map(child => (
-                        <TreeNode 
-                            key={child.id} 
-                            node={child} 
-                            onEdit={onEdit} 
-                            onDelete={onDelete} 
-                            onAddChild={onAddChild} 
+                        <TreeNode
+                            key={child.id}
+                            node={child}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onAddChild={onAddChild}
                             onManageUsers={onManageUsers}
                         />
                     ))}
@@ -53,7 +53,7 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
     const [treeData, setTreeData] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // States cho Modal CRUD
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDept, setEditingDept] = useState(null);
@@ -68,11 +68,11 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
         setLoading(true);
         try {
             const [treeRes, userRes] = await Promise.all([
-                axios.get('/api/security/departments/tree'), // Lấy cây
-                axios.get('/api/security/users?per_page=1000')
+                axios.get('/api/v2/security/departments/tree'), // Lấy cây
+                axios.get('/api/v2/security/users?per_page=1000')
             ]);
-            setTreeData(treeRes.data);
-            setAllUsers(userRes.data.data || []);
+            setTreeData(Array.isArray(treeRes.data) ? treeRes.data : []);
+            setAllUsers(userRes.data?.data || (Array.isArray(userRes.data) ? userRes.data : []));
         } catch (e) {
             toast.error('Lỗi tải sơ đồ tổ chức');
         } finally {
@@ -90,10 +90,10 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
         e.preventDefault();
         try {
             if (editingDept && editingDept.id) {
-                await axios.put(`/api/security/departments/${editingDept.id}`, formData);
+                await axios.put(`/api/v2/security/departments/${editingDept.id}`, formData);
                 toast.success('Đã cập nhật phòng ban');
             } else {
-                await axios.post('/api/security/departments', formData);
+                await axios.post('/api/v2/security/departments', formData);
                 toast.success('Đã tạo phòng ban mới');
             }
             setIsModalOpen(false);
@@ -106,7 +106,7 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
     const handleDelete = async (dept) => {
         if (!window.confirm(`Xóa phòng [${dept.name}]?`)) return;
         try {
-            await axios.delete(`/api/security/departments/${dept.id}`);
+            await axios.delete(`/api/v2/security/departments/${dept.id}`);
             toast.success('Đã xóa thành công');
             loadData();
         } catch (e) {
@@ -117,7 +117,7 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
     // XỬ LÝ ĐỒNG BỘ NHÂN SỰ
     const handleSyncUsers = async () => {
         try {
-            await axios.post(`/api/security/departments/${currentDept.id}/sync-users`, {
+            await axios.post(`/api/v2/security/departments/${currentDept.id}/sync-users`, {
                 users: selectedUsers
             });
             toast.success('Đã đồng bộ nhân sự cho phòng ' + currentDept.name);
@@ -137,7 +137,7 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
                     <h2 className="text-3xl font-black text-gray-800 tracking-tighter uppercase">Organizational Backbone</h2>
                     <p className="text-gray-500 text-sm italic">Quản lý cấu trúc phân cấp và nhân sự kiêm nhiệm</p>
                 </div>
-                <button 
+                <button
                     onClick={() => {
                         setEditingDept(null);
                         setFormData({ name: '', code: '', parent_id: null });
@@ -152,16 +152,16 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
             {/* Render Cây */}
             <div className="bg-gray-50/50 p-8 rounded-[3rem] border border-gray-100 shadow-inner">
                 {treeData.length > 0 ? treeData.map(node => (
-                    <TreeNode 
-                        key={node.id} 
-                        node={node} 
-                        onEdit={(d) => { setEditingDept(d); setFormData({name: d.name, code: d.code, parent_id: d.parent_id}); setIsModalOpen(true); }}
+                    <TreeNode
+                        key={node.id}
+                        node={node}
+                        onEdit={(d) => { setEditingDept(d); setFormData({ name: d.name, code: d.code, parent_id: d.parent_id }); setIsModalOpen(true); }}
                         onDelete={handleDelete}
-                        onAddChild={(parent) => { setEditingDept(null); setFormData({name: '', code: '', parent_id: parent.id}); setIsModalOpen(true); }}
-                        onManageUsers={(d) => { 
-                            setCurrentDept(d); 
-                            setSelectedUsers(d.users?.map(u => u.id) || []); 
-                            setIsUserModalOpen(true); 
+                        onAddChild={(parent) => { setEditingDept(null); setFormData({ name: '', code: '', parent_id: parent.id }); setIsModalOpen(true); }}
+                        onManageUsers={(d) => {
+                            setCurrentDept(d);
+                            setSelectedUsers(d.users?.map(u => u.id) || []);
+                            setIsUserModalOpen(true);
                         }}
                     />
                 )) : <div className="text-center py-20 text-gray-400 font-bold">Chưa có dữ liệu phòng ban.</div>}
@@ -174,21 +174,21 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
                         <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">
                             {editingDept ? 'Cập nhật phòng ban' : 'Tạo phòng ban mới'}
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-[10px] font-black text-blue-600 uppercase mb-1">Tên phòng ban</label>
-                                <input 
+                                <input
                                     required value={formData.name}
-                                    onChange={e => setFormData({...formData, name: e.target.value})}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-blue-600 uppercase mb-1">Mã định danh (Code)</label>
-                                <input 
+                                <input
                                     required value={formData.code}
-                                    onChange={e => setFormData({...formData, code: e.target.value})}
+                                    onChange={e => setFormData({ ...formData, code: e.target.value })}
                                     className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold"
                                     placeholder="VD: PHONG_KINH_DOANH"
                                 />
@@ -214,7 +214,7 @@ const DepartmentTreeManager = ({ setAppTitle }) => {
 
                         <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 p-2">
                             {allUsers.map(user => (
-                                <div 
+                                <div
                                     key={user.id}
                                     onClick={() => {
                                         const exists = selectedUsers.includes(user.id);

@@ -7,11 +7,13 @@ export const standardizationApi = {
     // 1. Lấy danh sách đối soát tổng quát (Hỗ trợ Management Hub)
     getList: (params) => axios.get(`${BASE_URL}`, { params }),
 
-    // 2. Tra cứu chi tiết một SKU duy nhất trên tất cả các kênh
-    lookupBySku: (sku) => axios.get(`${BASE_URL}/lookup/${sku}`),
+    // 2. Tra cứu chi tiết một SKU duy nhất (Dùng query ?sku= để chuẩn hơn)
+    lookupBySku: (sku) => axios.get(`${BASE_URL}/lookup/detail`, { params: { sku } }),
+    // lookupBySkuOld: (sku) => axios.get(`${BASE_URL}/lookup/${sku}`),
 
-    // 3. Lấy dữ liệu thô từ hệ thống kênh (Ecount/Misa)
-    getChannelData: (channel, code) => axios.get(`${BASE_URL}/channel/${channel}/${code}`),
+    // 3. Lấy dữ liệu thô từ hệ thống kênh (Dùng query ?code= để chuẩn hơn)
+    getChannelData: (channel, code) => axios.get(`${BASE_URL}/channel/detail/${channel}`, { params: { code } }),
+    // getChannelDataOld: (channel, code) => axios.get(`${BASE_URL}/channel/${channel}/${code}`),
 
     // 4. Tạo sản phẩm Web từ Ecount
     createFromEcount: (ecountCode) => axios.post(`${BASE_URL}/create-from-ecount`, { ecount_code: ecountCode }),

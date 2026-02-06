@@ -27,7 +27,7 @@ const UserScopeManager = () => {
     useEffect(() => {
         const loadRoles = async () => {
             try {
-                const res = await axios.get('/api/security/roles?per_page=100');
+                const res = await axios.get('/api/v2/security/roles?per_page=100');
                 const filteredRoles = res.data.data.filter(r => r.name !== 'Super Admin');
                 setRoles(filteredRoles);
                 if (filteredRoles.length > 0) handleSelectRole(filteredRoles[0]);
@@ -48,7 +48,7 @@ const UserScopeManager = () => {
 
     const handleSave = async () => {
         try {
-            await axios.put(`/api/security/roles/${selectedRole.id}/scopes`, config);
+            await axios.put(`/api/v2/security/roles/${selectedRole.id}/scopes`, config);
             toast.success(`Đã cập nhật phạm vi cho nhóm ${selectedRole.name}`);
             // Cập nhật lại list roles tại chỗ
             setRoles(roles.map(r => r.id === selectedRole.id ? { ...r, ...config } : r));
@@ -93,16 +93,16 @@ const UserScopeManager = () => {
                             {/* PHẦN 1: LỚP 2 - PHẠM VI DỮ LIỆU (DATA SCOPES) */}
                             <div className="mb-8">
                                 <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b pb-2">📦 Lớp 2: Phạm vi Dữ liệu (Dòng dữ liệu)</h3>
-                                
+
                                 <div className="space-y-4">
                                     {/* Chế độ xem tổng quát */}
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium text-gray-700">Chế độ xem mặc định:</span>
-                                        <select 
+                                        <select
                                             className="border rounded p-1 text-sm bg-white"
                                             value={config.data_scopes.view_type || 'own_only'}
                                             onChange={(e) => setConfig({
-                                                ...config, 
+                                                ...config,
                                                 data_scopes: { ...config.data_scopes, view_type: e.target.value }
                                             })}
                                         >
@@ -118,7 +118,7 @@ const UserScopeManager = () => {
                                             {SCOPE_DICTIONARY.map(scope => (
                                                 <div key={scope.key} className="border p-4 rounded-lg bg-white shadow-sm">
                                                     <label className="block font-bold text-gray-700 mb-2">{scope.label}</label>
-                                                    <input 
+                                                    <input
                                                         className="w-full border p-2 rounded text-sm placeholder:text-gray-300"
                                                         placeholder="VD: VCB, MB (cách nhau bằng dấu phẩy)"
                                                         value={config.data_scopes[scope.key]?.join(', ') || ''}
@@ -149,11 +149,11 @@ const UserScopeManager = () => {
                                                 access_policies: { ...config.access_policies, [policy.key]: !config.access_policies[policy.key] }
                                             })}
                                         >
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 className="mt-1 w-4 h-4 text-orange-600"
                                                 checked={config.access_policies[policy.key] || false}
-                                                onChange={() => {}} // Handle by div click
+                                                onChange={() => { }} // Handle by div click
                                             />
                                             <div>
                                                 <div className="font-bold text-gray-800 text-sm">{policy.label}</div>

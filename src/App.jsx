@@ -25,7 +25,6 @@ import { PayableRiskPage } from './pages/PayableRiskPage.jsx';
 import { Customer360Content } from './pages/Customer360Content.jsx';
 import { QuotationForm } from './pages/QuotationForm.jsx';
 import { DictionaryManagementPage } from './pages/DictionaryManagementPage.jsx';
-import ProductMobileManager from './components/ProductMobileManager.jsx';
 import { GlobalSearchModal } from './components/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
 import { SepayCashier } from './pages/Sepay/SepayCashier.jsx';
@@ -43,6 +42,10 @@ import OrgChart from './pages/Security/OrgChart';
 import Definitions from './pages/Security/Definitions';
 import SecurityCommanderCenter from './pages/Security/SecurityCommanderCenter';
 import SessionManager from './pages/Security/SessionManager'; // [NEW]
+import VisualThemeEditor from './pages/Security/VisualThemeEditor'; // [NEW]
+import VisualThemeBuilderV2 from './pages/Security/VisualThemeBuilderV2'; // [NEW V2]
+import SiteManager from './pages/Security/SiteManager'; // [NEW]
+import ThemeVersionManager from './pages/Security/ThemeVersionManager'; // [NEW]
 
 import SystemIntelligenceDashboard from './pages/SystemIntelligenceDashboard.jsx';
 import UnifiedInventoryDashboardV2 from './pages/UnifiedInventoryDashboardV2.jsx';
@@ -61,11 +64,19 @@ import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
 import MediaLibrary from './pages/Admin/MediaLibrary.jsx';
 import MediaStudioPage from './pages/Admin/MediaStudioPage.jsx';
 
+// [NEW] Landing Page Management
+import LandingPageList from './pages/LandingPages/LandingPageList.jsx';
+import LandingPageEditor from './pages/LandingPages/LandingPageEditor.jsx';
+
 import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
 import MonitorServiceManager from './pages/MonitorServiceManager.jsx';
 import { ProductStandardization } from './pages/ProductStandardization.jsx';
 import { ProductMappingManager } from './pages/ProductMappingManager.jsx';
 import { EcountProductManager } from './pages/EcountProductManager.jsx';
+import ProductMobileManagerV3 from './components/ProductMobileManagerV3.jsx'; // [NEW V3 MAIN]
+import ProductMobileDetailV3 from './components/ProductMobileDetailV3.jsx'; // [NEW V3 DETAIL]
+import ProductUnifiedEditor from './pages/ProductUnifiedEditor';
+import ProductMobileManager from './components/ProductMobileManager.jsx'; // [OLD V1/V2]
 
 // [NEW] User & Auth Pages
 import { ProfilePage } from './pages/Profile/ProfilePage.jsx';
@@ -82,6 +93,7 @@ const navItems = [
         icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18',
         component: <DashboardContent />
     },
+    // ... (Keep other generic items) ...
     { id: 'customers', path: '/customers', label: 'Quản lý Khách Hàng', group: 'Kinh doanh', permission: 'customer.view', icon: 'M18 18.72a9.094 9.094 0 00-9 0m9 0a8.966 8.966 0 00-4.5-7.962m-4.5 7.962a8.966 8.966 0 01-4.5-7.962m0 0A5.25 5.25 0 0113.5 10.5m0 0v5.25m0 0v5.25m0 0A5.25 5.25 0 0113.5 10.5M6 6.75A5.25 5.25 0 0111.25 1.5m0 0A5.25 5.25 0 0116.5 6.75m-5.25 0v5.25m-5.25 0A5.25 5.25 0 0111.25 1.5', component: <CustomersContent /> },
     { id: 'customer-360', path: '/customer-360', label: 'Chân dung Khách hàng', group: 'Kinh doanh', permission: 'customer.view', icon: 'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z', component: <Customer360Content /> },
     { id: 'sales-orders', path: '/sales-orders', label: 'Đơn Bán Hàng', group: 'Kinh doanh', permission: 'sales.view', icon: 'M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.517l.288.756a3 3 0 01-.19 3.822L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366a3 3 0 01-1.096-3.822l.288-.756m11.356-1.517l-1.39 2.366a3 3 0 01-4.757 0L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366m11.356-1.517l.288.756a3 3 0 01-.19 3.822L17.5 16.891a3 3 0 01-4.757 0l-1.39-2.366', component: <SalesOrdersContent /> },
@@ -101,11 +113,13 @@ const navItems = [
     },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Web', permission: 'invoice.view', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m4.5-12h-8.25A2.25 2.25 0 009 6.75v10.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25V9.75A2.25 2.25 0 0018.75 7.5H15', component: <InvoicesContent /> },
     { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Web', permission: 'system.sync', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', component: <ProductStandardization /> },
-    { id: 'product-mobile-manager', path: '/product-mobile', label: 'Quản lý SP (Next-Gen V2)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManager /> },
+    // { id: 'product-mobile-manager', path: '/product-mobile', label: 'Quản lý SP web (Cũ)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManager /> },
+    { id: 'product-mobile-manager-v3', path: '/product-mobile-v3', label: 'Quản lý SP web v3 (Mới)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManagerV3 /> }, // [NEW V3 ITEM]
     { id: 'ecount-manager', path: '/ecount-manager', label: 'Kho ECount (Master)', group: 'Web', permission: 'system.sync', icon: 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9', component: <EcountProductManager /> },
-    { id: 'category-nextgen', path: '/categories-nextgen', label: 'Danh mục (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', component: <CategoryManager /> },
-    { id: 'brand-nextgen', path: '/brands-nextgen', label: 'Thương hiệu (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M9 12l2 2 4-4M7.835 4.697a.75.75 0 001.034-.23 6.75 6.75 0 0111.262 0 .75.75 0 001.034.23 8.25 8.25 0 00-13.33 0zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z', component: <BrandManager /> },
-    { id: 'product-mapping-global', path: '/product-mapping/:id', label: 'Cấu hình Mapping', group: 'Web', permission: 'system.sync', icon: 'M12 4.5v15m7.5-7.5h-15', component: <ProductMappingManager /> },
+    { id: 'product-unified-editor', path: '/product-edit/:id', label: 'Editor', group: 'Hidden', permission: 'system.sync', icon: '', component: <ProductUnifiedEditor />, hidden: true },
+    // { id: 'category-nextgen', path: '/categories-nextgen', label: 'Danh mục (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', component: <CategoryManager /> },
+    // { id: 'brand-nextgen', path: '/brands-nextgen', label: 'Thương hiệu (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M9 12l2 2 4-4M7.835 4.697a.75.75 0 001.034-.23 6.75 6.75 0 0111.262 0 .75.75 0 001.034.23 8.25 8.25 0 00-13.33 0zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z', component: <BrandManager /> },
+    // { id: 'product-mapping-global', path: '/product-mapping/:id', label: 'Cấu hình Mapping', group: 'Web', permission: 'system.sync', icon: 'M12 4.5v15m7.5-7.5h-15', component: <ProductMappingManager /> },
 
     // --- NHÓM MEDIA (DƯỚI WEB) ---
     {
@@ -145,12 +159,47 @@ const navItems = [
     { id: 'sepay-cashier', path: '/sepay-cashier', label: 'Thu ngân (QR Code)', group: 'Thanh toán', permission: 'sepay.create', icon: 'M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z', component: <SepayCashier /> },
     { id: 'security-commander', path: '/security/commander', label: 'Trung tâm Chỉ huy (Sếp)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', component: <SecurityCommanderCenter /> },
     { id: 'session-manager', path: '/security/sessions', label: 'Quản lý Phiên đăng nhập', group: 'Hệ thống', permission: 'system.security', icon: 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z', component: <SessionManager /> }, // [NEW]
+    {
+        id: 'visual-builder',
+        path: '/security/visual-builder',
+        label: 'Visual Theme Builder (Màu/HTML)',
+        group: 'Quản lý Website',
+        permission: 'system.security',
+        icon: 'M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043 9.02c.868 0 1.597-.56 1.848-1.32.257-.757.083-1.615-.464-2.203a3.989 3.989 0 00-1.384-2.446m2.771 7.193l.117-.3a.675.675 0 111.233.54l-.117.3c-.424.814-1.258 1.34-2.164 1.34H9.412a2.31 2.31 0 01-1.782-3.693m7.5 1.5l.117-.3c.424-.814 1.258-1.34 2.164-1.34h2.234a2.31 2.31 0 011.782 3.693l-.117.3a1.5 1.5 0 01-2.164.54 1.5 1.5 0 01-1.233-.54l.117-.3z',
+        component: <VisualThemeEditor />
+    },
+    {
+        id: 'visual-builder-v2',
+        path: '/security/visual-builder-v2',
+        label: 'Visual Builder PRO (Siêu việt)',
+        group: 'Quản lý Website',
+        permission: 'system.security',
+        icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z', // Zap Icon
+        component: <VisualThemeBuilderV2 />
+    },
     { id: 'user-role-manager', path: '/security/users', label: 'Quản lý Người dùng', group: 'Hệ thống', permission: 'system.security', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <UserRoleManager /> },
     { id: 'security-dashboard', path: '/security/dashboard', label: 'Bảng điều khiển An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SecurityDashboard /> },
     { id: 'permission-matrix', path: '/security/matrix', label: 'Ma trận Phân quyền', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <PermissionMatrix /> },
     { id: 'role-manager', path: '/security/roles', label: 'Quản lý Vai trò', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <RoleManager /> },
     { id: 'org-chart', path: '/security/org-chart', label: 'Sơ đồ Tổ chức (OrgChart)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <OrgChart /> },
-    { id: 'authorization-backbone', path: '/security/backbone', label: 'Quản trị Đa lớp (Backbone)', group: 'Hệ thống', permission: 'system.security', icon: 'M12 4.5v15m7.5-7.5h-15', component: <AuthorizationBackboneManager /> },
+    {
+        id: 'site-manager',
+        path: '/security/sites',
+        label: 'Danh sách Site & Domain',
+        group: 'Quản lý Website',
+        permission: 'system.security',
+        icon: 'M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253',
+        component: <SiteManager />
+    },
+    {
+        id: 'theme-version-manager',
+        path: '/security/theme-versions',
+        label: 'Quản lý Phiên bản (Clone/Draft)',
+        group: 'Quản lý Website',
+        permission: 'system.security',
+        icon: 'M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zm0 6c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zm0 6c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zM3.75 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5zm0 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5zm0 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5z',
+        component: <ThemeVersionManager />
+    },
     { id: 'definitions', path: '/security/definitions', label: 'Định nghĩa An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <Definitions /> },
     { id: 'department-tree', path: '/department-tree', label: 'Quản lý Phòng ban', group: 'Hệ thống', permission: 'system.security', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', component: <DepartmentTreeManager /> },
     { id: 'dictionary-management', path: '/dictionary', label: 'Quản lý Từ điển', group: 'Hệ thống', permission: 'system.dictionary', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-.75a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 017.5 4.125v.75a3.375 3.375 0 00-3.375 3.375H3.75a1.125 1.125 0 00-1.125 1.125v2.625c0 .621.504 1.125 1.125 1.125h1.5A3.375 3.375 0 007.5 16.5v.75a1.125 1.125 0 001.125 1.125h1.5a3.375 3.375 0 003.375-3.375v-.75a1.125 1.125 0 011.125-1.125h1.5c.621 0 1.125-.504 1.125-1.125zM10.5 12a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0z', component: <DictionaryManagementPage /> },
@@ -201,6 +250,17 @@ const navItems = [
         component: <MobileScreenManager />
     },
     { id: 'mobileapp-builder', path: '/system/mobileapp-builder', label: 'Xây dựng App Mobile', group: 'Hệ thống', permission: 'system.security', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <MobileAppBuilder /> },
+
+    // --- LANDING PAGE MANAGEMENT ---
+    {
+        id: 'landing-pages',
+        path: '/landing-pages',
+        label: 'Quản lý Landing Pages',
+        group: 'Quản lý Website',
+        permission: 'system.security',
+        icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z',
+        component: <LandingPageList />
+    },
 
 ];
 
@@ -373,6 +433,14 @@ const App = () => {
                             <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/product-mapping/:id" element={<ProductMappingManager />} />
+
+                            {/* [NEW] Landing Page Routes */}
+                            <Route path="/landing-pages/create" element={<LandingPageEditor />} />
+                            <Route path="/landing-pages/:id/edit" element={<LandingPageEditor />} />
+
+                            {/* [V3] Product Manager V3 Routes */}
+                            <Route path="/product-mobile-v3/create" element={<ProductMobileDetailV3 />} />
+                            <Route path="/product-mobile-v3/:id" element={<ProductMobileDetailV3 />} />
 
                             {/* [NEW] User Profile Route (Protected) */}
                             <Route

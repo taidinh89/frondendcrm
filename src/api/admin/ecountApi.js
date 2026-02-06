@@ -7,8 +7,8 @@ export const ecountApi = {
     // 1. Danh sách sản phẩm Ecount (Search & Filter)
     getProducts: (params) => axios.get(`${BASE_URL}/products`, { params }),
 
-    // 2. Chi tiết sản phẩm (ID hoặc SKU)
-    showProduct: (identifier) => axios.get(`${BASE_URL}/products/${identifier}`),
+    // 2. Chi tiết sản phẩm (Dùng query param ?id= để server đọc chuẩn hơn, tránh lỗi 404 khi SKU có ký tự /)
+    showProduct: (identifier) => axios.get(`${BASE_URL}/products/detail`, { params: { id: identifier } }),
 
     // 3. Lấy tùy chọn bộ lọc (Brands, Cats, Suppliers)
     getFilterOptions: () => axios.get(`${BASE_URL}/filter-options`),

@@ -96,7 +96,7 @@ export const logTrace = (type, message, data = null) => {
         'INFO': 'background: #3B82F6; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;'
     };
     const style = colors[type] || 'color: grey';
-    // console.log(`%c${type}%c ${message}`, style, '', data || '');
+    console.log(`%c${type}%c ${message}`, style, '', data || '');
 };
 
 export const processHtmlImages = async (htmlContent, proName) => {
@@ -220,6 +220,15 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
 
     const draftKey = useMemo(() => `rte_draft_v2_${getShortProName(proName) || 'general'}_${productId || 'new'}`, [proName, productId]);
     const historyKey = useMemo(() => `rte_history_v2_${getShortProName(proName) || 'general'}_${productId || 'new'}`, [proName, productId]);
+
+    // [NEW] ESC key support for Zen Mode
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape' && isFullScreen) setIsFullScreen(false);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [isFullScreen]);
 
     // Format time helper
     const formatTime = (isoString) => {
@@ -684,62 +693,72 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                 // Tăng cường nhận diện: Nếu HTML có chứa IMG hoặc A hoặc Table/Span style (HTML phức tạp từ web)
                 const hasComplexHtml = html && (html.includes('<img') || html.includes('<a') || html.includes('<table') || html.includes('style='));
 
-                logTrace('PASTE', `Paste Event Detected. hasImage=${hasImageFile}, isWord=${isWord}, hasHtml=${!!html}, hasComplex=${hasComplexHtml}`);
+                logTrace('PASTE', `Paste Event. hasImage=${hasImageFile}, isWord=${isWord}, hasHtml=${!!html}, hasComplex=${hasComplexHtml}`);
 
-                // CHÍNH SÁCH CHẶN: Nếu là Word, có Ảnh, hoặc HTML phức tạp cần dọn dẹp bớt rác
-                if (hasImageFile || isWord || hasComplexHtml) {
-                    if (isProcessingPaste.current) {
-                        logTrace('INFO', 'Paste Blocked: Busy processing previous paste');
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                    }
-
+                // Nếu có file ảnh, ưu tiên xử lý file trước (chống trùng lặp với HTML paste sau đó)
+                if (hasImageFile) {
+                    if (isProcessingPaste.current) return;
                     isProcessingPaste.current = true;
+
                     e.preventDefault();
                     e.stopPropagation();
+
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image/') !== -1) {
+                            const blob = items[i].getAsFile();
+                            if (!blob) continue;
+
+                            setLocalTaskCount(prev => prev + 1);
+                            const tid = toast.loading("Đang dán ảnh...");
+
+                            try {
+                                const baseName = proName || 'img-paste';
+                                const slug = baseName.toLowerCase()
+                                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                    .replace(/[^\w\s-]/g, '')
+                                    .replace(/[\s_-]+/g, '-')
+                                    .replace(/^-+|-+$/g, '');
+
+                                const randomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                                const file = new File([blob], `${slug}-${randomId}.png`, { type: 'image/png' });
+
+                                const formDataUpload = new FormData();
+                                formDataUpload.append('image', file);
+                                formDataUpload.append('temp_context', getShortProName(proName));
+                                formDataUpload.append('source', 'rich_text_paste_v3');
+
+                                const res = await productApi.smartUpload(formDataUpload);
+                                const url = res.data.url || res.data.image_url || res.data.displayUrl;
+
+                                const currentQuill = getQuillEditor();
+                                if (currentQuill) {
+                                    const range = currentQuill.getSelection(true);
+                                    currentQuill.insertEmbed(range.index, 'image', url);
+                                    toast.success("Đã dán ảnh thành công!", { id: tid });
+                                }
+                            } catch (err) {
+                                toast.error("Lỗi: " + err.message, { id: tid });
+                            } finally {
+                                setLocalTaskCount(prev => Math.max(0, prev - 1));
+                                isProcessingPaste.current = false;
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // CHÍNH SÁCH CHẶN: Nếu là Word, hoặc HTML phức tạp cần dọn dẹp bớt rác
+                if (isWord || hasComplexHtml) {
+                    if (isProcessingPaste.current) {
+                        e.preventDefault();
+                        return;
+                    }
+                    isProcessingPaste.current = true;
+                    e.preventDefault();
                 } else {
                     return;
                 }
 
-                // 1. XỬ LÝ FILE ẢNH (Screenshot / Copy Image File)
-                if (hasImageFile && !html) {
-                    for (let i = 0; i < items.length; i++) {
-                        if (items[i].type.indexOf('image/') !== -1) {
-                            const file = items[i].getAsFile();
-                            if (file) {
-                                setLocalTaskCount(prev => prev + 1);
-                                const tid = toast.loading("Đang dán ảnh screenshot...");
-                                logTrace('UPLOAD', `Direct Paste Upload Started: ${file.name}`);
-
-                                try {
-                                    const formDataUpload = new FormData();
-                                    formDataUpload.append('image', file);
-                                    formDataUpload.append('temp_context', getShortProName(proName));
-                                    formDataUpload.append('source', 'rich_text_paste_file');
-
-                                    const res = await productApi.smartUpload(formDataUpload);
-                                    const url = res.data.url || res.data.image_url || res.data.displayUrl;
-
-                                    const currentQuill = getQuillEditor();
-                                    if (currentQuill) {
-                                        const range = currentQuill.getSelection(true);
-                                        currentQuill.insertEmbed(range.index, 'image', url);
-                                        toast.success("Đã dán ảnh thành công!", { id: tid });
-                                        logTrace('SUCCESS', `Paste Upload Complete: ${url}`);
-                                    }
-                                } catch (err) {
-                                    logTrace('ERROR', 'Paste Upload Failed', err);
-                                    toast.error("Lỗi: " + err.message, { id: tid });
-                                } finally {
-                                    setLocalTaskCount(prev => Math.max(0, prev - 1));
-                                    setTimeout(() => { isProcessingPaste.current = false; }, 500);
-                                }
-                                return;
-                            }
-                        }
-                    }
-                }
 
                 // 2. XỬ LÝ HTML (Word, Excel, Website...) -> CHIẾN THUẬT OPTIMISTIC (Bất đồng bộ)
                 if (html || isWord) {
@@ -887,7 +906,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
     }), [proName]);
 
     const content = (
-        <div className={`relative group/editor border-2 transition-all duration-500 ease-in-out bg-white ${isFullScreen ? 'fixed inset-0 z-[3000] rounded-0 flex flex-col overflow-hidden h-screen w-screen' : 'rounded-3xl border-gray-100 shadow-sm hover:border-indigo-100 transition-all'}`}>
+        <div className={`relative group/editor border-2 transition-all duration-500 ease-in-out bg-white ${isFullScreen ? 'fixed inset-0 z-[99999] rounded-0 flex flex-col overflow-hidden h-screen w-screen' : 'rounded-3xl border-gray-100 shadow-sm hover:border-indigo-100 transition-all'}`}>
             {/* TOOLBAR HEADER CUSTOM */}
             <div className={`bg-gray-50/80 backdrop-blur-md border-b px-4 py-2 flex items-center justify-between gap-2 z-[50] ${isFullScreen ? 'flex-shrink-0' : 'sticky top-0'}`}>
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[60%] sm:max-w-none">
@@ -1142,10 +1161,10 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
 
                     <button
                         onClick={() => setIsFullScreen(!isFullScreen)}
-                        className={`p-2 transition-all hover:bg-gray-100 rounded-xl ${isFullScreen ? 'text-indigo-600' : 'text-slate-400'}`}
-                        title={isFullScreen ? "Thu nhỏ" : "Toàn màn hình (Zen Mode)"}
+                        className={`p-2 transition-all rounded-xl ${isFullScreen ? 'bg-rose-500 text-white shadow-lg active:scale-90' : 'text-slate-400 hover:bg-gray-100'}`}
+                        title={isFullScreen ? "Thoát Toàn màn hình (ESC)" : "Toàn màn hình (Zen Mode)"}
                     >
-                        <Icon name={isFullScreen ? 'minimize' : 'maximize'} className="w-4 h-4" />
+                        <Icon name={isFullScreen ? 'x' : 'maximize'} className={isFullScreen ? "w-6 h-6" : "w-4 h-4"} />
                     </button>
                 </div>
             </div>

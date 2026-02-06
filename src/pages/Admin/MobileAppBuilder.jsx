@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useApiData } from '../../hooks/useApiData';
 import MobileScreenManager from './MobileScreenManager';
-import MobileThemeManager from './MobileThemeManager'; 
+import MobileThemeManager from './MobileThemeManager';
 
 // --- 1. COMPONENT THANH DEBUG PHIÊN BẢN (MỚI) ---
 const VersionDebugBar = ({ timestamp, itemCount }) => {
@@ -17,10 +17,10 @@ const VersionDebugBar = ({ timestamp, itemCount }) => {
     }, [timestamp]);
 
     // Format thời gian từ timestamp (UNIX)
-    const timeStr = timestamp 
-        ? new Date(timestamp * 1000).toLocaleTimeString('vi-VN') 
+    const timeStr = timestamp
+        ? new Date(timestamp * 1000).toLocaleTimeString('vi-VN')
         : 'N/A';
-    
+
     const dateStr = timestamp
         ? new Date(timestamp * 1000).toLocaleDateString('vi-VN')
         : '';
@@ -47,7 +47,7 @@ const VersionDebugBar = ({ timestamp, itemCount }) => {
 
 // --- 2. COMPONENT MÔ PHỎNG ĐIỆN THOẠI (SIMULATOR) ---
 const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
-    
+
     // Helper render
     const renderBlock = (block, index) => {
         // A. Block tham chiếu (Dùng Screen Key)
@@ -87,7 +87,7 @@ const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
                 <div className="grid grid-cols-2 gap-2 p-2">
                     {block.data.items_keys.map(key => {
                         const btn = screensMap[key];
-                        if(!btn) return <div key={key} className="bg-gray-100 p-2 text-[10px] rounded border-dashed border">? {key}</div>;
+                        if (!btn) return <div key={key} className="bg-gray-100 p-2 text-[10px] rounded border-dashed border">? {key}</div>;
                         return (
                             <div key={key} className="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center justify-center aspect-[4/3] border border-gray-100 hover:border-blue-300 transition-colors">
                                 {btn.icon_url ? <img src={btn.icon_url} className="w-8 h-8 mb-2 object-contain" alt="" /> : <div className="w-8 h-8 bg-blue-50 rounded-full mb-2 flex items-center justify-center text-xs text-blue-600">Icon</div>}
@@ -99,7 +99,7 @@ const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
                 </div>
             )
         }
-        
+
         return <div className="p-2 bg-gray-100 text-[10px] text-center mb-1 border border-dashed border-gray-300 rounded">Block: {block.type}</div>;
     };
 
@@ -107,10 +107,10 @@ const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
         <div className="relative mx-auto border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[650px] w-[320px] shadow-2xl transition-all duration-300 ring-4 ring-gray-200">
             {/* Tai thỏ */}
             <div className="w-[120px] h-[25px] bg-gray-900 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-10"></div>
-            
+
             {/* Màn hình */}
             <div className="h-full w-full bg-[#F2F2F7] rounded-[2.2rem] overflow-hidden pt-8 relative flex flex-col">
-                
+
                 {/* Status Bar Fake */}
                 <div className="absolute top-2 right-6 text-[10px] font-bold text-black z-20 flex gap-1">
                     <span>5G</span> <span>100%</span>
@@ -132,12 +132,12 @@ const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
                 </div>
 
                 {/* --- THANH DEBUG PHIÊN BẢN (MỚI) --- */}
-                <VersionDebugBar 
-                    timestamp={versionMeta?.updated_at} 
-                    itemCount={layoutJson.length} 
+                <VersionDebugBar
+                    timestamp={versionMeta?.updated_at}
+                    itemCount={layoutJson.length}
                 />
             </div>
-            
+
             {/* Nút Home ảo */}
             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-gray-600 rounded-full opacity-50"></div>
         </div>
@@ -157,7 +157,7 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
 
     // Helper: Xóa
     const remove = (idx) => {
-        if(!window.confirm('Xóa khối này khỏi giao diện?')) return;
+        if (!window.confirm('Xóa khối này khỏi giao diện?')) return;
         setLayout(layout.filter((_, i) => i !== idx));
     };
 
@@ -175,16 +175,16 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
     // Helper: Sửa items trong Menu Lưới
     const toggleMenuItem = (blockIndex, itemKey) => {
         const newLayout = [...layout];
-        const block = { ...newLayout[blockIndex] }; 
+        const block = { ...newLayout[blockIndex] };
         if (!block.data) block.data = { items_keys: [] };
-        
+
         const keys = block.data.items_keys || [];
         if (keys.includes(itemKey)) {
             block.data.items_keys = keys.filter(k => k !== itemKey);
         } else {
             block.data.items_keys = [...keys, itemKey];
         }
-        
+
         newLayout[blockIndex] = block;
         setLayout(newLayout);
     };
@@ -198,8 +198,8 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
                 {layout.map((block, idx) => {
                     const screen = block.screen_key ? screensMap[block.screen_key] : null;
                     const label = screen ? screen.label : (block.type === 'GRID_MENU' ? 'Menu Lưới (Grid)' : block.type);
-                    const color = block.type === 'HEADER_BANNER' ? 'bg-blue-50 border-blue-200' : 
-                                  block.type === 'GRID_MENU' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200';
+                    const color = block.type === 'HEADER_BANNER' ? 'bg-blue-50 border-blue-200' :
+                        block.type === 'GRID_MENU' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200';
 
                     return (
                         <div key={idx} className={`p-3 rounded-lg border ${color} shadow-sm group relative hover:shadow-md transition-all`}>
@@ -224,8 +224,8 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
                                     <div className="text-[10px] font-bold text-gray-500 mb-2">CHỌN NÚT HIỂN THỊ:</div>
                                     <div className="flex flex-wrap gap-2">
                                         {availableScreens.filter(s => s.type === 'GRID_ITEM' || s.type === 'WEBVIEW').map(s => (
-                                            <button 
-                                                key={s.key} 
+                                            <button
+                                                key={s.key}
                                                 onClick={() => toggleMenuItem(idx, s.key)}
                                                 className={`px-2 py-1 text-[10px] rounded border transition-colors flex items-center gap-1 ${block.data?.items_keys?.includes(s.key) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                                             >
@@ -249,13 +249,13 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => addBlock('GRID_MENU')} className="flex items-center gap-2 p-3 border border-purple-200 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 text-xs font-bold text-left transition-all shadow-sm hover:shadow">
-                        <span className="text-xl bg-purple-200 w-6 h-6 rounded flex items-center justify-center">+</span> 
+                        <span className="text-xl bg-purple-200 w-6 h-6 rounded flex items-center justify-center">+</span>
                         Menu Lưới (Grid)
                     </button>
 
                     {availableScreens.filter(s => s.type !== 'GRID_ITEM').map(s => (
                         <button key={s.key} onClick={() => addBlock(s.type, s.key)} className="flex items-center gap-2 p-3 border border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-200 rounded-lg text-gray-700 text-xs text-left truncate transition-all shadow-sm hover:shadow">
-                            <span className="text-xl font-bold text-blue-500 bg-blue-100 w-6 h-6 rounded flex items-center justify-center">+</span> 
+                            <span className="text-xl font-bold text-blue-500 bg-blue-100 w-6 h-6 rounded flex items-center justify-center">+</span>
                             <div className="truncate">
                                 <div className="font-bold">{s.label || s.key}</div>
                                 <div className="text-[9px] text-gray-400">{s.type}</div>
@@ -271,38 +271,38 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
 // --- 4. TRANG QUẢN TRỊ CHÍNH ---
 export default function MobileAppBuilder() {
     const [activeTab, setActiveTab] = useState('LAYOUT');
-    
+
     // API Data
-    const { data: layoutsRaw, refetch: reloadLayouts } = useApiData('/api/security/mobile-layouts');
-    const { data: screensRaw, refetch: reloadScreens } = useApiData('/api/security/mobile-layouts/preview/screens');
-    const { data: appConfigRaw, refetch: reloadConfig } = useApiData('/api/security/app-versions');
-    
+    const { data: layoutsRaw, refetch: reloadLayouts } = useApiData('/api/v2/security/mobile-layouts');
+    const { data: screensRaw, refetch: reloadScreens } = useApiData('/api/v2/security/mobile-layouts/preview/screens');
+    const { data: appConfigRaw, refetch: reloadConfig } = useApiData('/api/v2/security/app-versions');
+
     // Xử lý Data
     const layouts = Array.isArray(layoutsRaw) ? layoutsRaw : (layoutsRaw?.data || []);
-    const screensMap = screensRaw || {}; 
+    const screensMap = screensRaw || {};
     const appConfig = appConfigRaw || {};
 
     // State
     const [selectedLayoutId, setSelectedLayoutId] = useState(null);
-    const [layoutData, setLayoutData] = useState([]); 
+    const [layoutData, setLayoutData] = useState([]);
     const [forceRender, setForceRender] = useState(0);
     const [configForm, setConfigForm] = useState({});
-    
+
     // [MỚI] State lưu version meta để hiện thị lên Simulator
     const [currentVersionMeta, setCurrentVersionMeta] = useState(null);
 
     // Chọn layout mặc định
     useEffect(() => {
-        if(layouts.length > 0 && !selectedLayoutId) {
+        if (layouts.length > 0 && !selectedLayoutId) {
             setSelectedLayoutId(layouts[0].id);
         }
     }, [layouts]);
 
     // Load Data Layout
     useEffect(() => {
-        if(selectedLayoutId && layouts.length > 0) {
+        if (selectedLayoutId && layouts.length > 0) {
             const layout = layouts.find(l => l.id == selectedLayoutId);
-            if(layout) {
+            if (layout) {
                 const parsed = typeof layout.layout_json === 'string' ? JSON.parse(layout.layout_json) : layout.layout_json;
                 setLayoutData(Array.isArray(parsed) ? parsed : []);
                 setCurrentVersionMeta(layout.version_meta); // Lưu version meta
@@ -312,12 +312,12 @@ export default function MobileAppBuilder() {
     }, [selectedLayoutId, layouts]);
 
     useEffect(() => { setForceRender(Date.now()); }, [layoutData]);
-    useEffect(() => { if(appConfig) setConfigForm(appConfig); }, [appConfig]);
+    useEffect(() => { if (appConfig) setConfigForm(appConfig); }, [appConfig]);
 
     const handleSaveLayout = async () => {
         try {
-            await axios.put(`/api/security/mobile-layouts/${selectedLayoutId}`, {
-                layout_json: layoutData, 
+            await axios.put(`/api/v2/security/mobile-layouts/${selectedLayoutId}`, {
+                layout_json: layoutData,
                 is_active: true
             });
             toast.success('Đã lưu & Cập nhật App!');
@@ -327,7 +327,7 @@ export default function MobileAppBuilder() {
 
     const handleSaveConfig = async () => {
         try {
-            await axios.post('/api/security/app-versions', configForm);
+            await axios.post('/api/v2/security/app-versions', configForm);
             toast.success('Đã cập nhật cấu hình!');
             reloadConfig();
         } catch (e) { toast.error('Lỗi lưu cấu hình'); }
@@ -342,7 +342,7 @@ export default function MobileAppBuilder() {
                 </div>
                 <div className="bg-white p-1 rounded-lg shadow border flex">
                     {['SCREEN', 'LAYOUT', 'THEME', 'CONFIG'].map(tab => (
-                        <button key={tab} onClick={() => { setActiveTab(tab); if(tab === 'LAYOUT') reloadScreens(); }}
+                        <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'LAYOUT') reloadScreens(); }}
                             className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
                             {tab === 'SCREEN' ? '1. Linh Kiện' : tab === 'LAYOUT' ? '2. Bố Cục & Preview' : tab === 'THEME' ? '3. Giao diện (Theme)' : '4. Cấu Hình App'}
                         </button>
@@ -362,7 +362,7 @@ export default function MobileAppBuilder() {
                             <div className="flex justify-between mb-4 pb-4 border-b items-center">
                                 <div className="flex items-center gap-2">
                                     <label className="text-xs font-bold text-gray-500">Layout:</label>
-                                    <select className="border p-2 rounded text-sm font-bold bg-gray-50 min-w-[200px] outline-none focus:ring-2 ring-blue-500" 
+                                    <select className="border p-2 rounded text-sm font-bold bg-gray-50 min-w-[200px] outline-none focus:ring-2 ring-blue-500"
                                         value={selectedLayoutId || ''} onChange={e => setSelectedLayoutId(e.target.value)}>
                                         {layouts.map(l => (
                                             <option key={l.id} value={l.id}>{l.name} ({l.role_id ? l.role?.name : 'Mặc định'})</option>
@@ -373,7 +373,7 @@ export default function MobileAppBuilder() {
                                     <span>💾</span> Lưu & Publish
                                 </button>
                             </div>
-                            
+
                             <VisualEditor layout={layoutData} setLayout={setLayoutData} screensMap={screensMap} />
                         </div>
 
@@ -382,10 +382,10 @@ export default function MobileAppBuilder() {
                             <div className="absolute top-4 right-4 text-xs text-gray-400 font-mono">
                                 Live Preview Simulator
                             </div>
-                            <AppSimulator 
-                                layoutJson={layoutData} 
-                                screensMap={screensMap} 
-                                forceKey={forceRender} 
+                            <AppSimulator
+                                layoutJson={layoutData}
+                                screensMap={screensMap}
+                                forceKey={forceRender}
                                 versionMeta={currentVersionMeta} // [MỚI] Truyền version vào để hiển thị
                             />
                         </div>
@@ -403,16 +403,16 @@ export default function MobileAppBuilder() {
                             <div className="grid grid-cols-2 gap-6 mb-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">iOS Min Version</label>
-                                    <input type="text" className="w-full border p-2 rounded" 
-                                        value={configForm.min_ios_version || ''} 
-                                        onChange={e => setConfigForm({...configForm, min_ios_version: e.target.value})} 
+                                    <input type="text" className="w-full border p-2 rounded"
+                                        value={configForm.min_ios_version || ''}
+                                        onChange={e => setConfigForm({ ...configForm, min_ios_version: e.target.value })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Android Min Version</label>
-                                    <input type="text" className="w-full border p-2 rounded" 
-                                        value={configForm.min_android_version || ''} 
-                                        onChange={e => setConfigForm({...configForm, min_android_version: e.target.value})} 
+                                    <input type="text" className="w-full border p-2 rounded"
+                                        value={configForm.min_android_version || ''}
+                                        onChange={e => setConfigForm({ ...configForm, min_android_version: e.target.value })}
                                     />
                                 </div>
                             </div>

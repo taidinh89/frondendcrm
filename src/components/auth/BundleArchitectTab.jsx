@@ -19,18 +19,19 @@ const BundleArchitectTab = () => {
     setLoading(true);
     try {
       const [rRes, pRes, dRes] = await Promise.all([
-        axios.get('/api/security/roles?per_page=100'),
-        axios.get('/api/security/permissions/list'),
-        axios.get('/api/security/definitions') // Lấy chốt chặn động L2, L3
+        axios.get('/api/v2/security/roles?per_page=100'),
+        axios.get('/api/v2/security/permissions/list'),
+        axios.get('/api/v2/security/definitions') // Lấy chốt chặn động L2, L3
       ]);
 
-      const roleData = rRes.data.data.filter(r => r.name !== 'Super Admin');
+      const roleData = (rRes.data?.data || (Array.isArray(rRes.data) ? rRes.data : [])).filter(r => r.name !== 'Super Admin');
       setBundles(roleData);
       setDefinitions(dRes.data || []);
 
       // Nhóm quyền L1 (Functional) theo Module (vd: sales, customer)
       const groups = {};
-      pRes.data.forEach(p => {
+      const perms = Array.isArray(pRes.data) ? pRes.data : [];
+      perms.forEach(p => {
         const mod = p.name?.split('.')[0]?.toUpperCase() || 'HỆ THỐNG';
         if (!groups[mod]) groups[mod] = [];
         groups[mod].push(p);
@@ -55,11 +56,11 @@ const BundleArchitectTab = () => {
   useEffect(() => { fetchData(); }, []);
 
   // 2. CÁC HÀM NGHIỆP VỤ QUẢN TRỊ BÓ QUYỀN (GIỮ NGUYÊN TÍNH NĂNG CỦA BẠN)
-  
+
   const handleCreateNew = async () => {
     if (!newBundleName.trim()) return toast.warning('Vui lòng nhập tên bó quyền');
     try {
-      await axios.post('/api/security/roles', { name: newBundleName.trim() });
+      await axios.post('/api/v2/security/roles', { name: newBundleName.trim() });
       toast.success('Đã tạo bó quyền mới');
       setNewBundleName('');
       fetchData();
@@ -68,7 +69,7 @@ const BundleArchitectTab = () => {
 
   const handleClone = async (id) => {
     try {
-      await axios.post(`/api/security/roles/${id}/clone`); // Route clone từ Backend
+      await axios.post(`/api/v2/security/roles/${id}/clone`); // Route clone từ Backend
       toast.success('Nhân bản thành công');
       fetchData();
     } catch (e) { toast.error('Lỗi nhân bản'); }
@@ -77,7 +78,7 @@ const BundleArchitectTab = () => {
   const handleDeleteRole = async (id) => {
     if (!window.confirm("Cảnh báo: Xóa bó quyền này sẽ ảnh hưởng đến các nhân sự đang sử dụng. Tiếp tục?")) return;
     try {
-      await axios.delete(`/api/security/roles/${id}`);
+      await axios.delete(`/api/v2/security/roles/${id}`);
       toast.success('Đã xóa bó quyền');
       if (selectedBundle?.id === id) setSelectedBundle(null);
       fetchData();
@@ -87,7 +88,7 @@ const BundleArchitectTab = () => {
   // 3. LƯU TỔNG THỂ 3 LỚP (L1 - L2 - L3)
   const handleSaveAll = async () => {
     try {
-      await axios.put(`/api/security/roles/${selectedBundle.id}`, {
+      await axios.put(`/api/v2/security/roles/${selectedBundle.id}`, {
         name: selectedBundle.name,
         permissions: selectedBundle.permissions?.map(p => p.name) || [], // Lớp 1
         data_scopes: selectedBundle.data_scopes || {}, // Lớp 2
@@ -103,16 +104,16 @@ const BundleArchitectTab = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full min-h-[850px] bg-white p-2">
-      
+
       {/* --- SIDEBAR: DANH SÁCH BÓ QUYỀN --- */}
       <div className="w-full lg:w-80 bg-gray-50 rounded-[2.5rem] border border-gray-100 flex flex-col overflow-hidden">
         <div className="p-6 border-b border-gray-200 bg-white/50">
           <h4 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Danh mục Bó quyền</h4>
           <div className="flex gap-2">
-            <input 
-              value={newBundleName} 
+            <input
+              value={newBundleName}
               onChange={e => setNewBundleName(e.target.value)}
-              placeholder="Tên mới..." 
+              placeholder="Tên mới..."
               className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
             <button onClick={handleCreateNew} className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all">➕</button>
@@ -121,7 +122,7 @@ const BundleArchitectTab = () => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {bundles.map(bundle => (
-            <div 
+            <div
               key={bundle.id}
               onClick={() => { setSelectedBundle(bundle); setIsEditingName(false); }}
               className={`group p-4 rounded-2xl cursor-pointer transition-all flex justify-between items-center ${selectedBundle?.id === bundle.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'hover:bg-white border border-transparent'}`}
@@ -139,23 +140,23 @@ const BundleArchitectTab = () => {
       {/* --- PANEL CHÍNH: CẤU HÌNH 3 LỚP BẢO MẬT --- */}
       {selectedBundle && (
         <div className="flex-1 bg-white rounded-[3rem] border border-gray-100 shadow-xl shadow-gray-100/50 p-8 flex flex-col overflow-hidden">
-          
+
           {/* Header: Edit Name & Save */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10 border-b border-gray-50 pb-8">
             <div className="flex-1 w-full">
               {isEditingName ? (
                 <div className="flex gap-2">
-                  <input 
-                    autoFocus 
-                    value={selectedBundle.name} 
+                  <input
+                    autoFocus
+                    value={selectedBundle.name}
                     onChange={e => setSelectedBundle({ ...selectedBundle, name: e.target.value })}
                     className="text-3xl font-black text-gray-800 border-b-4 border-blue-600 outline-none w-full bg-transparent"
                   />
                   <button onClick={() => setIsEditingName(false)} className="text-green-500 text-2xl">✓</button>
                 </div>
               ) : (
-                <h2 
-                  onClick={() => setIsEditingName(true)} 
+                <h2
+                  onClick={() => setIsEditingName(true)}
                   className="text-4xl font-black text-gray-800 tracking-tighter cursor-pointer hover:text-blue-600 transition-colors"
                 >
                   {selectedBundle.name} <span className="text-sm align-middle opacity-30">✏️</span>
@@ -163,8 +164,8 @@ const BundleArchitectTab = () => {
               )}
               <p className="text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest">ID Bó quyền: {selectedBundle.id} • Chế độ: Commander v5.0</p>
             </div>
-            <button 
-              onClick={handleSaveAll} 
+            <button
+              onClick={handleSaveAll}
               className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all"
             >
               Lưu thay đổi hệ thống
@@ -172,7 +173,7 @@ const BundleArchitectTab = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto pr-4 space-y-12 custom-scrollbar">
-            
+
             {/* LỚP 1: MA TRẬN QUYỀN CHỨC NĂNG (Functional Matrix) */}
             <section>
               <h3 className="text-xs font-black text-blue-600 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
@@ -186,12 +187,12 @@ const BundleArchitectTab = () => {
                       {permissions[mod].map(perm => (
                         <label key={perm.id} className="flex items-center gap-3 group cursor-pointer">
                           <div className="relative flex items-center">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={selectedBundle.permissions?.some(bp => bp.id === perm.id)}
                               onChange={() => {
                                 const has = selectedBundle.permissions?.some(bp => bp.id === perm.id);
-                                const newPerms = has 
+                                const newPerms = has
                                   ? selectedBundle.permissions.filter(bp => bp.id !== perm.id)
                                   : [...(selectedBundle.permissions || []), perm];
                                 setSelectedBundle({ ...selectedBundle, permissions: newPerms });
@@ -212,7 +213,7 @@ const BundleArchitectTab = () => {
 
             {/* LỚP 2 & 3: ĐỊNH NGHĨA ĐỘNG TỪ BACKEND */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 pb-10">
-              
+
               {/* Layer 2: Scopes (Vùng dữ liệu) */}
               <section className="bg-blue-50/30 p-8 rounded-[2.5rem] border border-blue-100/50">
                 <h3 className="text-xs font-black text-blue-600 uppercase tracking-[0.3em] mb-8">Layer 2: Phạm vi dữ liệu</h3>
@@ -220,8 +221,8 @@ const BundleArchitectTab = () => {
                   {definitions.filter(d => d.type === 'scope').map(def => (
                     <div key={def.key}>
                       <label className="block text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">{def.label}</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={selectedBundle.data_scopes?.[def.key]?.join(', ') || ''}
                         onChange={e => {
                           const val = e.target.value.split(',').map(x => x.trim()).filter(x => x);
@@ -248,7 +249,7 @@ const BundleArchitectTab = () => {
                   {definitions.filter(d => d.type === 'policy').map(def => (
                     <div key={def.key} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-orange-100/50 shadow-sm group hover:border-orange-300 transition-all">
                       <span className="text-sm font-bold text-gray-700">{def.label}</span>
-                      <button 
+                      <button
                         onClick={() => {
                           const curr = !!selectedBundle.access_policies?.[def.key];
                           setSelectedBundle({

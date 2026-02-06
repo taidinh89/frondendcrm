@@ -12,8 +12,8 @@ const OrgStructureTab = () => {
 
     const fetchTree = async () => {
         try {
-            const res = await axios.get('/api/security/departments/tree');
-            setTreeData(res.data);
+            const res = await axios.get('/api/v2/security/departments/tree');
+            setTreeData(Array.isArray(res.data) ? res.data : []);
         } catch (e) { toast.error("Không thể tải sơ đồ tổ chức"); }
         finally { setLoading(false); }
     };
@@ -23,10 +23,10 @@ const OrgStructureTab = () => {
     const handleSave = async () => {
         try {
             if (modal.type === 'create') {
-                await axios.post('/api/security/departments', formData);
+                await axios.post('/api/v2/security/departments', formData);
                 toast.success("Đã tạo phòng ban mới");
             } else {
-                await axios.put(`/api/security/departments/${modal.data.id}`, formData);
+                await axios.put(`/api/v2/security/departments/${modal.data.id}`, formData);
                 toast.success("Đã cập nhật thông tin");
             }
             setModal({ open: false });
@@ -37,7 +37,7 @@ const OrgStructureTab = () => {
     const handleDelete = async (id) => {
         if (!window.confirm("Xóa phòng ban này có thể ảnh hưởng đến các nhân viên bên trong. Tiếp tục?")) return;
         try {
-            await axios.delete(`/api/security/departments/${id}`);
+            await axios.delete(`/api/v2/security/departments/${id}`);
             toast.success("Đã xóa thành công");
             fetchTree();
         } catch (e) { toast.error("Không thể xóa phòng ban đang có dữ liệu con"); }
@@ -66,7 +66,7 @@ const OrgStructureTab = () => {
                 <h3 className="font-bold text-gray-700">Trục Dọc: Sơ đồ Tổ chức</h3>
                 <Button onClick={() => { setFormData({ name: '', code: '', parent_id: null }); setModal({ open: true, type: 'create', data: null }); }} variant="blue">+ Tạo Phòng Ban Gốc</Button>
             </div>
-            
+
             <div className="bg-gray-50 p-6 rounded-xl border min-h-[400px]">
                 {treeData.map(dept => <TreeNode key={dept.id} node={dept} />)}
             </div>
@@ -79,11 +79,11 @@ const OrgStructureTab = () => {
                             {modal.type === 'create' ? 'Tạo Phòng Ban' : 'Cập nhật Phòng Ban'}
                         </div>
                         <div className="p-6 space-y-4">
-                            <input className="w-full border rounded p-2" placeholder="Tên phòng ban" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                            <input className="w-full border rounded p-2 font-mono" placeholder="Mã (Code)" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                            <input className="w-full border rounded p-2" placeholder="Tên phòng ban" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                            <input className="w-full border rounded p-2 font-mono" placeholder="Mã (Code)" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} />
                         </div>
                         <div className="p-6 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
-                            <button onClick={() => setModal({open: false})}>Hủy</button>
+                            <button onClick={() => setModal({ open: false })}>Hủy</button>
                             <Button onClick={handleSave} variant="blue">Lưu lại</Button>
                         </div>
                     </div>
