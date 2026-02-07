@@ -438,9 +438,9 @@ const App = () => {
                             <Route path="/landing-pages/create" element={<LandingPageEditor />} />
                             <Route path="/landing-pages/:id/edit" element={<LandingPageEditor />} />
 
-                            {/* [V3] Product Manager V3 Routes */}
-                            <Route path="/product-mobile-v3/create" element={<ProductMobileDetailV3 />} />
-                            <Route path="/product-mobile-v3/:id" element={<ProductMobileDetailV3 />} />
+                            {/* [V3] Product Manager V3 Routes - Now unified for V3/V4 support */}
+                            <Route path="/product-mobile-v3/create" element={<ProductUnifiedEditor />} />
+                            <Route path="/product-mobile-v3/:id" element={<ProductUnifiedEditor />} />
 
                             {/* [NEW] User Profile Route (Protected) */}
                             <Route

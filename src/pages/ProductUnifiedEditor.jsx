@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ProductMobileDetailV3 from '../components/ProductMobileDetailV3';
+import ProductMobileDetailLite from '../components/ProductMobileDetailLite';
 import { productApi } from '../api/admin/productApi';
 
 const ProductUnifiedEditor = () => {
@@ -19,6 +20,20 @@ const ProductUnifiedEditor = () => {
     console.log("[DEBUG] Editor received state:", location.state);
 
     const [dictionary, setDictionary] = useState(location.state?.dictionary || null);
+    const [detailVersion, setDetailVersion] = useState(() => {
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+        const saved = localStorage.getItem(storageKey);
+        if (saved) return saved;
+
+        return isMobile ? 'v4' : 'v3';
+    });
+
+    useEffect(() => {
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+        localStorage.setItem(storageKey, detailVersion);
+    }, [detailVersion]);
 
     // Fetch dictionary if missing
     useEffect(() => {
@@ -79,15 +94,37 @@ const ProductUnifiedEditor = () => {
     };
 
     return (
-        <ProductMobileDetailV3
-            isOpen={true}
-            onClose={handleClose}
-            product={initialProduct}
-            mode={mode}
-            dictionary={dictionary}
-            onSuccess={handleSuccess}
-            onRefresh={() => { }} // Optional: Handle refresh if needed
-        />
+        <div key={detailVersion}>
+            {detailVersion === 'v3' ? (
+                <ProductMobileDetailV3
+                    isOpen={true}
+                    onClose={handleClose}
+                    product={initialProduct}
+                    mode={mode}
+                    dictionary={dictionary}
+                    onSuccess={handleSuccess}
+                    onRefresh={() => { }}
+                    onSwitchVersion={() => {
+                        setDetailVersion('v4');
+                        toast.success("Chuyển sang bản Mobile Lite...");
+                    }}
+                />
+            ) : (
+                <ProductMobileDetailLite
+                    isOpen={true}
+                    onClose={handleClose}
+                    product={initialProduct}
+                    mode={mode}
+                    dictionary={dictionary}
+                    onSuccess={handleSuccess}
+                    onRefresh={() => { }}
+                    onSwitchVersion={() => {
+                        setDetailVersion('v3');
+                        toast.success("Quay lại bản V3...");
+                    }}
+                />
+            )}
+        </div>
     );
 };
 

@@ -16,6 +16,13 @@ export default function ProductMobileManagerV3() {
     const [hasMore, setHasMore] = useState(true);
     const [dictionary, setDictionary] = useState({ brands: [], categories: [] });
 
+    // 0. Helpers
+    const resolveUrl = (url) => {
+        if (!url || url.startsWith('http') || url.startsWith('data:')) return url;
+        const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
+        return url.startsWith('/') ? crmHost + url : crmHost + '/' + url;
+    };
+
     // 1. Fetch Data
     const fetchProducts = async (isRefresh = false) => {
         try {
@@ -189,7 +196,7 @@ export default function ProductMobileManagerV3() {
                         {/* Thumb */}
                         <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden relative">
                             <img
-                                src={item.proThum || PLACEHOLDER_NO_IMAGE_SQUARE}
+                                src={resolveUrl(item.proThum) || PLACEHOLDER_NO_IMAGE_SQUARE}
                                 className="w-full h-full object-contain p-1 group-hover:scale-110 transition-transform duration-500"
                                 alt=""
                             />

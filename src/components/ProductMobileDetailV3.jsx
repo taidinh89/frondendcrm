@@ -15,7 +15,22 @@ import RichTextEditor, { cleanHtmlForEditor } from './RichTextEditor';
 import { PLACEHOLDER_NO_IMAGE_SQUARE } from '../constants/placeholders';
 
 // [V3 UPGRADE - MULTI SITE & LINKING]
-const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dictionary, onSuccess }) => {
+// [V3] Initial State constant for resets and comparison
+const INITIAL_FORM_STATE = {
+    proName: '', url: '', productModel: '', tags: '', storeSKU: '',
+    weight: 0, brandId: '', proSummary: '', specialOffer: '',
+    price_web: 0, market_price: 0, quantity_web: 0, warranty_web: '',
+    condition: 'New', isOn: true, hasVAT: 0,
+    is_hot: false, is_new: true, is_best_sell: false,
+    is_sale_off: false, is_student_support: false, is_installment_0: false,
+    ordering_web: 101,
+    catId: [], description: '', spec: '', purchase_price_web: 0,
+    meta_title: '', meta_keyword: '', meta_description: '', accessory: '',
+    media_ids: [], site_code: 'QVC', parent_id: null,
+    request_path: ''
+};
+
+const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dictionary, onSuccess, onSwitchVersion }) => {
     // --- STATE MANAGEMENT ---
     const [currentMode, setCurrentMode] = useState(mode);
     const [activeTabId, setActiveTabId] = useState(null);
@@ -25,18 +40,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     const [isAddSiteOpen, setIsAddSiteOpen] = useState(false);
 
     // Form Data
-    const [formData, setFormData] = useState({
-        proName: '', url: '', productModel: '', tags: '', storeSKU: '',
-        weight: 0, brandId: '', proSummary: '', specialOffer: '',
-        price: 0, market_price: 0, quantity: 0, warranty: '',
-        condition: 'New', isOn: true, hasVAT: 0,
-        is_hot: false, is_new: true, is_best_sell: false,
-        is_sale_off: false, is_student_support: false, is_installment_0: false,
-        order: 101,
-        catId: [], description: '', spec: '', purchase_price_web: 0,
-        meta_title: '', meta_keyword: '', meta_description: '', accessory: '',
-        media_ids: [], site_code: 'QVC', parent_id: null
-    });
+    const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
     const [fullImages, setFullImages] = useState([]);
     const [parentData, setParentData] = useState(null);
@@ -48,6 +52,13 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     const [tempBrand, setTempBrand] = useState(null);
     const isProcessingPaste = useRef(false);
     const [isMouseInMediaZone, setIsMouseInMediaZone] = useState(false);
+    const mouseInMediaZoneRef = useRef(false);
+    const formDataRef = useRef(formData);
+    const parentOriginRef = useRef(parentOrigin);
+
+    useEffect(() => { mouseInMediaZoneRef.current = isMouseInMediaZone; }, [isMouseInMediaZone]);
+    useEffect(() => { formDataRef.current = formData; }, [formData]);
+    useEffect(() => { parentOriginRef.current = parentOrigin; }, [parentOrigin]);
 
     // Modals State
     const [brandManager, setBrandManager] = useState({ open: false });
@@ -94,16 +105,15 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     spec: null,
                     proSummary: null
                 };
-                mapProductToForm(initialForm, 'THIENDUC');
+                mapProductToForm(initialForm, 'THIENDUC', true); // isNew = true
                 setActiveTabId('temp');
             } else {
                 // --- MODE: EDIT HOẶC TẠO MỚI TINH ---
                 if (currentMode === 'edit' && product.id && product.id !== 'temp') {
                     initializeTabs(product.id);
                 } else {
-                    mapProductToForm(product, product.site_code || 'QVC');
+                    mapProductToForm(product, product.site_code || 'QVC', true); // isNew = true
                     setActiveTabId('temp');
-                    setParentData(null);
                 }
             }
         }
@@ -136,7 +146,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
             setTabs(newTabs);
             setActiveTabId(mainProd.id);
-            mapProductToForm(mainProd, 'QVC');
+            mapProductToForm(mainProd, 'QVC', false); // isNew = false (Editing)
             setParentData(null);
         } catch (e) {
             toast.error("Lỗi khởi tạo tabs: " + e.message);
@@ -148,45 +158,52 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     // [NEW] CTRL+V Image Upload Logic (Restricted to Media Zone)
     useEffect(() => {
         const handlePaste = async (e) => {
-            if (!isOpen || !isMouseInMediaZone) return;
-
+            if (!isOpen || !mouseInMediaZoneRef.current) return;
             if (isProcessingPaste.current) return;
 
             const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
             if (!items) return;
 
+            const filesToUpload = [];
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf('image') !== -1) {
                     const blob = items[i].getAsFile();
-                    if (!blob) continue;
-
-                    isProcessingPaste.current = true;
-
-                    try {
-                        const baseName = formData.proName || parentOrigin?.proName || 'img-paste';
-                        const slug = baseName.toLowerCase()
-                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                            .replace(/[^\w\s-]/g, '')
-                            .replace(/[\s_-]+/g, '-')
-                            .replace(/^-+|-+$/g, '');
-
-                        const randomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-                        const fileName = `${slug}-${randomId}.png`;
-
-                        const file = new File([blob], fileName, { type: 'image/png' });
-                        await smartUploadHandler(file);
-                    } finally {
-                        setTimeout(() => {
-                            isProcessingPaste.current = false;
-                        }, 1000);
-                    }
+                    if (blob) filesToUpload.push(blob);
                 }
+            }
+
+            if (filesToUpload.length === 0) return;
+
+            // Prevent browser default paste if we found images and are in the zone
+            e.preventDefault();
+
+            isProcessingPaste.current = true;
+            try {
+                for (const blob of filesToUpload) {
+                    const currentForm = formDataRef.current;
+                    const baseName = currentForm.proName || parentOriginRef.current?.proName || 'img-paste';
+                    const slug = baseName.toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+
+                    const randomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                    const fileName = `${slug}-${randomId}.png`;
+                    const file = new File([blob], fileName, { type: 'image/png' });
+                    await smartUploadHandler(file);
+                }
+            } finally {
+                // Short delay to prevent accidental double-paste
+                setTimeout(() => { isProcessingPaste.current = false; }, 500);
             }
         };
 
-        window.addEventListener('paste', handlePaste);
+        if (isOpen) {
+            window.addEventListener('paste', handlePaste);
+        }
         return () => window.removeEventListener('paste', handlePaste);
-    }, [isOpen, formData.proName, parentOrigin]);
+    }, [isOpen]);
 
     const handleSwitchTab = async (tabId) => {
         if (tabId === activeTabId) return;
@@ -199,7 +216,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             const prodData = res.data.data || res.data;
 
             setActiveTabId(tabId);
-            mapProductToForm(prodData, tab.site_code);
+            mapProductToForm(prodData, tab.site_code, false); // isNew = false (Switching to existing tab)
 
             if (!tab.is_root) {
                 const rootTab = tabs.find(t => t.is_root);
@@ -228,22 +245,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     };
 
     const resetForm = () => {
-        setFormData({
-            proName: '', url: '', productModel: '', tags: '', storeSKU: '',
-            weight: 0, brandId: '', proSummary: '', specialOffer: '',
-            price: 0, market_price: 0, quantity: 0, warranty: '',
-            condition: 'New', isOn: true, hasVAT: 0,
-            is_hot: false, is_new: true, is_best_sell: false,
-            is_sale_off: false, is_student_support: false, is_installment_0: false,
-            order: 0,
-            catId: [], description: '', spec: '', purchase_price_web: 0,
-            meta_title: '', meta_keyword: '', meta_description: '', accessory: '',
-            media_ids: [], site_code: 'QVC', parent_id: null
-        });
+        setFormData(INITIAL_FORM_STATE);
         setFullImages([]);
     };
 
-    const mapProductToForm = (d, forceSiteCode = null) => {
+    const mapProductToForm = (d, forceSiteCode = null, forceIsNew = false) => {
         // [V3] Normalize Media objects to use media_file_id as the primary ID
         const images = (d.media || d.full_images || []).map(m => ({
             ...m,
@@ -269,8 +275,9 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             market_price: parseFloat(d.market_price || 0),
             purchase_price_web: parseFloat(d.purchase_price_web || 0),
             hasVAT: d.hasVAT || 0,
-            quantity: parseInt(d.quantity_web || d.quantity || 0),
-            warranty: d.warranty_web || d.warranty || '',
+            price_web: parseFloat(d.price_web || d.price || 0),
+            quantity_web: parseInt(d.quantity_web || d.quantity || 0),
+            warranty_web: d.warranty_web || d.warranty || '',
             condition: d.condition || 'New',
             isOn: d.isOn == 1 || d.is_on == 1,
             is_hot: !!(d.marketing_flags?.is_hot || d.is_hot),
@@ -279,7 +286,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             is_sale_off: !!(d.marketing_flags?.is_sale_off || d.is_sale_off),
             is_student_support: !!(d.marketing_flags?.is_student_support || d.is_student_support),
             is_installment_0: !!(d.marketing_flags?.is_installment_0 || d.is_installment_0),
-            order: d.ordering_web || d.ordering || 101,
+            ordering_web: d.ordering_web || d.ordering || 101,
             catId: d.product_cat_web ? String(d.product_cat_web).split(',').filter(Boolean) : (d.categories_list || []),
             description: d.description || d.details?.description || '',
             spec: d.spec || d.details?.spec || '',
@@ -293,7 +300,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
         };
 
         setFormData(dataToSave);
-        setBaseData(JSON.parse(JSON.stringify(dataToSave))); // Deep clone for clean comparison
+        if (forceIsNew) {
+            setBaseData(JSON.parse(JSON.stringify(INITIAL_FORM_STATE)));
+        } else {
+            setBaseData(JSON.parse(JSON.stringify(dataToSave))); // Deep clone for clean comparison
+        }
     };
 
     // --- SAVE & LINKING ---
@@ -394,10 +405,12 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     }, [formData, baseData]);
 
     const preparePayloadForSubmit = (form, parent, mode) => {
+        // [MODIFIED] Determine if we are updating or creating
+        const isEditing = activeTabId !== 'temp' && mode !== 'create_child';
         const isChildSite = (mode === 'create_child') || (form.parent_id && form.site_code !== 'QVC') || (mode === 'create' && form.site_code !== 'QVC' && parent);
 
-        // 1. [DIRTY CHECK] Chỉ lấy những trường đã thay đổi so với lúc load (baseData)
-        const dirtyPayload = {};
+        // 1. [DIRTY CHECK] Chỉ lấy những trường đã thay đổi (nếu là Edit)
+        const payload = {};
         Object.keys(form).forEach(f => {
             const currentVal = form[f];
             const baseVal = baseData ? baseData[f] : undefined;
@@ -411,9 +424,10 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 isDirty = String(currentVal || '').trim() !== String(baseVal || '').trim();
             }
 
-            // Luôn gửi site_code và parent_id để định tuyến
-            if (isDirty || f === 'site_code' || f === 'parent_id') {
-                dirtyPayload[f] = currentVal;
+            // [FIX] Nếu là TẠO MỚI (isEditing = false) -> Luôn gửi dữ liệu
+            // Nếu là EDIT -> Chỉ gửi dữ liệu đã thay đổi
+            if (!isEditing || isDirty || f === 'site_code' || f === 'parent_id') {
+                payload[f] = currentVal;
             }
         });
 
@@ -436,7 +450,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 }
 
                 if (isSameAsParent) {
-                    dirtyPayload[field] = null; // Backend sẽ reset về null để kế thừa
+                    payload[field] = null; // Backend sẽ reset về null để kế thừa
                 }
             });
 
@@ -444,38 +458,41 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             const currentMedia = (form.media_ids || []).filter(id => id).sort().join(',');
             const parentMediaIds = (parent.media || []).map(m => m.master_file?.id || m.media_file_id || m.id).filter(id => id).sort().join(',');
             if (currentMedia === parentMediaIds) {
-                dirtyPayload.media_ids = [];
+                payload.media_ids = [];
             }
         }
 
-        // 3. CHUẨN HÓA KỸ THUẬT (Chỉ chạy trên những trường có trong dirtyPayload)
+        // 3. CHUẨN HÓA KỸ THUẬT (Chỉ chạy trên những trường có trong payload)
 
         // Category
-        if (dirtyPayload.catId !== undefined) {
-            const catIdArray = Array.isArray(dirtyPayload.catId) ? dirtyPayload.catId : [];
-            dirtyPayload.product_cat_web = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
-            delete dirtyPayload.catId;
+        if (payload.catId !== undefined) {
+            const catIdArray = Array.isArray(payload.catId) ? payload.catId : [];
+            payload.product_cat_web = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
+            delete payload.catId;
         }
+
+        // [IMPORTANT] Ensure price_web and quantity_web are sent correctly
+        // They were already renamed in formData, so payload[f] = currentVal already handled it.
 
         // Booleans -> Integers
         const boolFields = ['isOn', 'is_hot', 'is_new', 'is_best_sell', 'is_sale_off', 'is_student_support', 'is_installment_0'];
         boolFields.forEach(f => {
-            if (dirtyPayload[f] !== undefined) {
-                dirtyPayload[f] = dirtyPayload[f] ? 1 : 0;
+            if (payload[f] !== undefined) {
+                payload[f] = payload[f] ? 1 : 0;
             }
         });
 
         // Media Clean
-        if (dirtyPayload.media_ids) {
-            dirtyPayload.media_ids = dirtyPayload.media_ids.filter(id => id);
+        if (payload.media_ids) {
+            payload.media_ids = payload.media_ids.filter(id => id);
         }
 
         // Parent ID Safety
-        if (isChildSite && !dirtyPayload.parent_id && (parent?.id || form.parent_id)) {
-            dirtyPayload.parent_id = parent?.id || form.parent_id;
+        if (isChildSite && !payload.parent_id && (parent?.id || form.parent_id)) {
+            payload.parent_id = parent?.id || form.parent_id;
         }
 
-        return dirtyPayload;
+        return payload;
     };
 
     const handleCreateForSite = async (targetSiteCode) => {
@@ -559,15 +576,23 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             fd.append('source', 'mobile_v3_tabbed');
 
             const res = await productApi.smartUpload(fd);
-            const newImg = res.data.data || res.data; // Handle envelope
+            const newImg = res.data.data || res.data;
             const url = newImg.url || newImg.displayUrl || newImg.preview_url;
-            const fileId = newImg.id;
+            const fileId = newImg.id || newImg.master_file_id || (newImg.data && newImg.data.id);
+
+            if (!fileId) throw new Error("Không lấy được ID ảnh từ server");
 
             setFullImages(prev => [...prev, { ...newImg, id: fileId, displayUrl: url, is_temp: true }]);
-            setFormData(prev => ({ ...prev, media_ids: [...(prev.media_ids || []), fileId] }));
-            toast.success("Đã tải lên! (Bấm Xác Nhận để lưu)", { id: tid });
+            setFormData(prev => ({
+                ...prev,
+                media_ids: [...new Set([...(prev.media_ids || []), fileId])] // Prevent duplicate IDs
+            }));
+
+            toast.success("Đã tải lên!", { id: tid });
+            return { id: fileId, url };
         } catch (e) {
-            toast.error("Lỗi upload", { id: tid });
+            toast.error("Lỗi upload: " + e.message, { id: tid });
+            return null;
         }
     };
 
@@ -738,6 +763,20 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     <Icon name="eye" className="w-3.5 h-3.5" /> Xem Nội Bộ
                                 </a>
                             </div>
+                        )}
+
+                        {typeof onSwitchVersion === 'function' && (
+                            <button
+                                onClick={() => {
+                                    toast.success("Đang chuyển...");
+                                    onSwitchVersion();
+                                }}
+                                className="flex flex-col items-center justify-center p-3 bg-white text-emerald-600 rounded-2xl hover:bg-emerald-50 transition-all shadow-sm border border-emerald-100 active:scale-90"
+                                title="Chuyển sang bản Mobile Lite"
+                            >
+                                <Icon name="zap" className="w-5 h-5 mb-0.5" />
+                                <span className="text-[8px] font-black uppercase">Lite</span>
+                            </button>
                         )}
 
                         <button
@@ -945,7 +984,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                             <FormField label="Mã SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} isDirty={isFieldDirty('storeSKU')} />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField label="Model / NSX" value={formData.productModel} onChange={v => setFormData({ ...formData, productModel: v })} isDirty={isFieldDirty('productModel')} />
-                                                <FormField label="Bảo hành" value={formData.warranty} onChange={v => setFormData({ ...formData, warranty: v })} isDirty={isFieldDirty('warranty')} placeholder="VD: 12 Tháng" />
+                                                <FormField label="Bảo hành" value={formData.warranty_web} onChange={v => setFormData({ ...formData, warranty_web: v })} isDirty={isFieldDirty('warranty_web')} placeholder="VD: 12 Tháng" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField label="Trọng lượng (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} isDirty={isFieldDirty('weight')} />
@@ -971,11 +1010,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                         <div className="w-24 shrink-0 relative">
                                                             <input
                                                                 type="number"
-                                                                value={formData.order}
-                                                                onChange={e => setFormData({ ...formData, order: e.target.value })}
-                                                                className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 font-black outline-none transition-all text-center ${isFieldDirty('order') ? 'border-orange-400 text-orange-600 bg-orange-50' : 'border-slate-100 text-indigo-600 focus:border-indigo-500'}`}
+                                                                value={formData.ordering_web}
+                                                                onChange={e => setFormData({ ...formData, ordering_web: e.target.value })}
+                                                                className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 font-black outline-none transition-all text-center ${isFieldDirty('ordering_web') ? 'border-orange-400 text-orange-600 bg-orange-50' : 'border-slate-100 text-indigo-600 focus:border-indigo-500'}`}
                                                             />
-                                                            {isFieldDirty('order') && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white animate-pulse"></div>}
+                                                            {isFieldDirty('ordering_web') && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white animate-pulse"></div>}
                                                         </div>
                                                         <div className="flex-1 text-[9px] font-bold text-slate-400 leading-tight bg-slate-50/50 p-2 rounded-xl border border-slate-100/50">
                                                             <Icon name="info" className="w-3 h-3 inline mr-1 mb-0.5" />
@@ -1008,7 +1047,20 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                 </button>
                                                 <label className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all cursor-pointer shadow-sm">
                                                     Upload
-                                                    <input type="file" className="hidden" onChange={e => e.target.files[0] && smartUploadHandler(e.target.files[0])} />
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        className="hidden"
+                                                        onChange={async (e) => {
+                                                            const files = Array.from(e.target.files);
+                                                            if (files.length > 0) {
+                                                                for (const f of files) {
+                                                                    await smartUploadHandler(f);
+                                                                }
+                                                            }
+                                                            e.target.value = null; // Reset to allow re-selecting same file
+                                                        }}
+                                                    />
                                                 </label>
                                             </div>
                                         </div>
@@ -1042,25 +1094,25 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                 {/* COL 3: PRICE & CONTENT */}
                                 <div className="xl:col-span-4 space-y-6">
                                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative">
-                                        {renderSyncStatus('price')}
+                                        {renderSyncStatus('price_web')}
                                         <SectionHeader title="Giá & Kho" icon="dollar-sign" color="red" />
                                         <div className="mt-8 grid grid-cols-2 gap-8">
                                             <div className="col-span-2 md:col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Giá bán lẻ</label>
                                                 <div className="relative group">
-                                                    <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                                        className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('price') ? 'text-orange-600 border-orange-400' : 'text-red-600 border-slate-100 focus:border-red-500'}`} />
+                                                    <input type="number" value={formData.price_web} onChange={e => setFormData({ ...formData, price_web: e.target.value })}
+                                                        className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('price_web') ? 'text-orange-600 border-orange-400' : 'text-red-600 border-slate-100 focus:border-red-500'}`} />
                                                     <span className="absolute right-1 bottom-3 text-xs font-black text-red-400 group-focus-within:text-red-600 transition-colors">VNĐ</span>
-                                                    {isFieldDirty('price') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
+                                                    {isFieldDirty('price_web') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
                                                 </div>
                                             </div>
                                             <div className="col-span-2 md:col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Tồn kho</label>
                                                 <div className="relative group">
-                                                    <input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-                                                        className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('quantity') ? 'text-orange-600 border-orange-400' : 'text-slate-800 border-slate-100 focus:border-indigo-500'}`} />
+                                                    <input type="number" value={formData.quantity_web} onChange={e => setFormData({ ...formData, quantity_web: e.target.value })}
+                                                        className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('quantity_web') ? 'text-orange-600 border-orange-400' : 'text-slate-800 border-slate-100 focus:border-indigo-500'}`} />
                                                     <span className="absolute right-1 bottom-3 text-xs font-black text-slate-300 group-focus-within:text-indigo-600 transition-colors">PCS</span>
-                                                    {isFieldDirty('quantity') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
+                                                    {isFieldDirty('quantity_web') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
                                                 </div>
                                             </div>
                                         </div>
@@ -1139,9 +1191,9 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         onClick={() => handleSave(true)}
                         disabled={isSaving}
                         className={`px-12 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 shadow-2xl
-                            ${getDirtyFieldsCount > 0 ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1' : 'bg-slate-200 text-slate-500 shadow-none hover:bg-slate-300'}`}
+                            ${(getDirtyFieldsCount > 0 || activeTabId === 'temp') ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1' : 'bg-slate-200 text-slate-500 shadow-none hover:bg-slate-300'}`}
                     >
-                        {isSaving ? 'ĐANG LƯU HỆ THỐNG...' : (getDirtyFieldsCount > 0 ? `XÁC NHẬN LƯU ${getDirtyFieldsCount} THAY ĐỔI` : 'XÁC NHẬN & ĐÓNG')}
+                        {isSaving ? 'ĐANG LƯU HỆ THỐNG...' : (activeTabId === 'temp' ? `XÁC NHẬN TẠO SẢN PHẨM (${getDirtyFieldsCount} TRƯỜNG MỚI)` : (getDirtyFieldsCount > 0 ? `XÁC NHẬN LƯU ${getDirtyFieldsCount} THAY ĐỔI` : 'XÁC NHẬN & ĐÓNG'))}
                     </button>
                 </div>
             </div>

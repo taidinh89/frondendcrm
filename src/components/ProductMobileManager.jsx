@@ -4,6 +4,7 @@ import { Icon, Button, Modal } from './ui';
 import ProductMobileDetail from './ProductMobileDetail';
 import ProductMobileDetailV2 from './ProductMobileDetailV2';
 import ProductMobileDetailV3 from './ProductMobileDetailV3'; // [NEW]
+import ProductMobileDetailLite from './ProductMobileDetailLite'; // [V4]
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -101,11 +102,34 @@ const ProductMobileManager = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [detailMode, setDetailMode] = useState('view');
-    const [detailVersion, setDetailVersion] = useState(localStorage.getItem('pm_local_version') || 'v1');
+    const [detailVersion, setDetailVersion] = useState(() => {
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+        const saved = localStorage.getItem(storageKey);
+        if (saved) return saved;
+
+        return isMobile ? 'v4' : 'v3';
+    });
 
     useEffect(() => {
-        localStorage.setItem('pm_local_version', detailVersion);
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+        localStorage.setItem(storageKey, detailVersion);
     }, [detailVersion]);
+
+    // Handle Resize to suggest or auto-switch if needed
+    useEffect(() => {
+        const handleResize = () => {
+            const isMobile = window.innerWidth < 768;
+            const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+            const currentSaved = localStorage.getItem(storageKey);
+            if (isMobile && !currentSaved) {
+                setDetailVersion('v4');
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Nạp Meta
     useEffect(() => {
@@ -258,13 +282,14 @@ const ProductMobileManager = () => {
                     <Icon name="plus" className="w-5 h-5" />
                 </button>
                 <button
-                    onClick={() => setDetailVersion(v => v === 'v1' ? 'v2' : v === 'v2' ? 'v3' : 'v1')}
+                    onClick={() => setDetailVersion(v => v === 'v1' ? 'v2' : v === 'v2' ? 'v3' : v === 'v3' ? 'v4' : 'v1')}
                     className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${detailVersion === 'v2' ? 'bg-indigo-600 text-white border-indigo-600' :
                         detailVersion === 'v3' ? 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-200' :
-                            'bg-white text-slate-400 border-slate-100'
+                            detailVersion === 'v4' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200' :
+                                'bg-white text-slate-400 border-slate-100'
                         }`}
                 >
-                    {detailVersion === 'v1' ? 'V1' : detailVersion === 'v2' ? 'V2' : 'V3 (NEW)'}
+                    {detailVersion === 'v1' ? 'V1' : detailVersion === 'v2' ? 'V2' : detailVersion === 'v3' ? 'V3' : 'V4 (LITE)'}
                 </button>
             </div>
 
@@ -687,39 +712,63 @@ const ProductMobileManager = () => {
                 </div>
             )}
 
-            {/* DETAIL MODAL */}
+            {/* DETAIL MODAL RENDERING SYSTEM */}
             {isDetailOpen && (
-                detailVersion === 'v1' ? (
-                    <ProductMobileDetail
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        product={selectedProduct}
-                        mode={detailMode}
-                        onRefresh={() => fetchProducts(true)}
-                        dictionary={meta}
-                        onSwitchVersion={() => setDetailVersion('v2')}
-                    />
-                ) : detailVersion === 'v2' ? (
-                    <ProductMobileDetailV2
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        product={selectedProduct}
-                        mode={detailMode}
-                        onRefresh={() => fetchProducts(true)}
-                        dictionary={meta}
-                        onSwitchVersion={() => setDetailVersion('v3')}
-                    />
-                ) : (
-                    <ProductMobileDetailV3
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        product={selectedProduct}
-                        mode={detailMode}
-                        onRefresh={() => fetchProducts(true)}
-                        dictionary={meta}
-                        onSwitchVersion={() => setDetailVersion('v1')}
-                    />
-                )
+                <div key={detailVersion}>
+                    {detailVersion === 'v1' && (
+                        <ProductMobileDetail
+                            isOpen={isDetailOpen}
+                            onClose={() => setIsDetailOpen(false)}
+                            product={selectedProduct}
+                            mode={detailMode}
+                            onRefresh={() => fetchProducts(true)}
+                            dictionary={meta}
+                            onSwitchVersion={() => setDetailVersion('v2')}
+                        />
+                    )}
+                    {detailVersion === 'v2' && (
+                        <ProductMobileDetailV2
+                            isOpen={isDetailOpen}
+                            onClose={() => setIsDetailOpen(false)}
+                            product={selectedProduct}
+                            mode={detailMode}
+                            onRefresh={() => fetchProducts(true)}
+                            dictionary={meta}
+                            onSwitchVersion={() => setDetailVersion('v3')}
+                        />
+                    )}
+                    {detailVersion === 'v3' && (
+                        <ProductMobileDetailV3
+                            isOpen={isDetailOpen}
+                            onClose={() => setIsDetailOpen(false)}
+                            product={selectedProduct}
+                            mode={detailMode}
+                            onRefresh={() => fetchProducts(true)}
+                            dictionary={meta}
+                            onSwitchVersion={() => {
+                                console.log("Switching to V4 (Lite)");
+                                setDetailVersion('v4');
+                                toast.success("Chuyển sang bản Mobile Lite...");
+                            }}
+                        />
+                    )}
+                    {detailVersion === 'v4' && (
+                        <ProductMobileDetailLite
+                            isOpen={isDetailOpen}
+                            onClose={() => setIsDetailOpen(false)}
+                            product={selectedProduct}
+                            mode={detailMode}
+                            onRefresh={() => fetchProducts(true)}
+                            dictionary={meta}
+                            onSuccess={() => { setIsDetailOpen(false); fetchProducts(true); }}
+                            onSwitchVersion={() => {
+                                console.log("Switching to V3");
+                                setDetailVersion('v3');
+                                toast.success("Quay lại bản V3...");
+                            }}
+                        />
+                    )}
+                </div>
             )}
         </div>
     );
