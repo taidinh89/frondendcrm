@@ -158,7 +158,7 @@ export const InventoryDetailCard = ({ item, onSelectCode }) => (
 );
 
 /* 2. Dạng Bảng Đối Soát (Standard Table) */
-export const InventoryDenseTable = ({ data, onSelectCode }) => (
+export const InventoryDenseTable = ({ data, onSelectCode, loadMoreRef }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
         <table className="w-full text-[11px] border-collapse">
             <thead className="bg-gray-100 text-gray-600 font-bold uppercase tracking-tighter">
@@ -201,113 +201,150 @@ export const InventoryDenseTable = ({ data, onSelectCode }) => (
                 ))}
             </tbody>
         </table>
+        {/* Sentinel for infinite scroll */}
+        <div ref={loadMoreRef} className="h-10 w-full flex items-center justify-center text-[10px] text-gray-400 font-bold tracking-widest uppercase">
+            Sensing data stream...
+        </div>
     </div>
 );
 
 /* 3. Dạng Bảng Ảo Hóa (Virtualized Table - Superior Mode) */
-export const InventoryVirtualizedTable = ({ data, onSelectCode, parentRef }) => {
+export const InventoryVirtualizedTable = ({ data, onSelectCode, parentRef, loadMoreRef }) => {
     const rowVirtualizer = useVirtualizer({
-        count: data.length,
+        count: Array.isArray(data) ? data.length : 0,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 50,
         overscan: 10
     });
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="relative overflow-x-auto overflow-y-hidden">
-                <table className="w-full text-xs border-collapse">
-                    <thead className="bg-gray-100 text-gray-600 font-black uppercase tracking-widest sticky top-0 z-10 border-b border-gray-200">
-                        <tr>
-                            <th className="text-left py-4 px-4 w-32 min-w-[128px]">Mã Sản Phẩm</th>
-                            <th className="text-left py-4 px-4">Tên Sản Phẩm</th>
-                            <th className="text-left py-4 px-4 w-48 min-w-[192px]">Hãng / Nhóm</th>
-                            <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Ecount</th>
-                            <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Misa</th>
-                            <th className="text-right py-4 px-4 w-28 min-w-[112px]">Chênh lệch</th>
-                            <th className="text-center py-4 px-4 w-24 min-w-[96px]">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                            const item = data[virtualRow.index];
-                            return (
-                                <tr
-                                    key={virtualRow.key}
-                                    className="hover:bg-blue-50/30 transition-colors border-b border-gray-100 last:border-0 absolute w-full"
-                                    style={{
-                                        height: `${virtualRow.size}px`,
-                                        transform: `translateY(${virtualRow.start}px)`,
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    }}
-                                >
-                                    <td className="py-2 px-4 w-32 min-w-[128px] overflow-hidden">
-                                        <button
-                                            onClick={() => onSelectCode?.(item)}
-                                            className="font-mono font-bold text-blue-600 hover:underline truncate w-full text-left"
-                                        >
-                                            {item.ecount_code || item.primary_code}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 px-4 flex-1 truncate font-medium text-gray-800">
-                                        {item.product_name || item.ecount?.product?.prod_des}
-                                    </td>
-                                    <td className="py-2 px-4 w-48 min-w-[192px] overflow-hidden whitespace-nowrap">
-                                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600 mr-2 max-w-[80px] truncate inline-block align-middle">{item.brand_name}</span>
-                                        <span className="text-[10px] max-w-[80px] truncate inline-block align-middle text-gray-400 italic">{item.category_name}</span>
-                                    </td>
-                                    <td className="py-2 px-4 w-28 min-w-[112px] text-right font-black text-blue-600">
-                                        {formatQty(item.ecount?.total_quantity)}
-                                    </td>
-                                    <td className="py-2 px-4 w-28 min-w-[112px] text-right font-black text-green-600 font-mono">
-                                        {formatQty(item.misa?.total_quantity)}
-                                    </td>
-                                    <td className={`py-2 px-4 w-28 min-w-[112px] text-right font-black ${item.reconciliation?.diff === 0 ? 'text-gray-300' : (item.reconciliation?.diff > 0 ? 'text-blue-500' : 'text-red-500')}`}>
-                                        {formatQty(item.reconciliation?.diff)}
-                                    </td>
-                                    <td className="py-2 px-4 w-24 min-w-[96px] text-center">
-                                        <div className={`w-3 h-3 rounded-full mx-auto shadow-sm ${item.reconciliation?.diff === 0 ? 'bg-green-400' : (item.reconciliation?.diff > 0 ? 'bg-blue-400 animate-pulse' : 'bg-red-400 animate-pulse')}`}></div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full uppercase-tracker">
+            <div className="flex-1 overflow-auto" ref={parentRef}>
+                <div style={{ width: '100%', position: 'relative' }}>
+                    <table className="w-full text-xs border-collapse">
+                        <thead className="bg-gray-100 text-gray-600 font-black uppercase tracking-widest sticky top-0 z-10 border-b border-gray-200">
+                            <tr>
+                                <th className="text-left py-4 px-4 w-32 min-w-[128px]">Mã Sản Phẩm</th>
+                                <th className="text-left py-4 px-4">Tên Sản Phẩm</th>
+                                <th className="text-left py-4 px-4 w-48 min-w-[192px]">Hãng / Nhóm</th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Ecount</th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Misa</th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Chênh lệch</th>
+                                <th className="text-center py-4 px-4 w-24 min-w-[96px]">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody style={{ height: `${rowVirtualizer.getTotalSize() + 100}px`, position: 'relative' }}>
+                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const item = data[virtualRow.index];
+                                if (!item) return null;
+                                return (
+                                    <tr
+                                        key={virtualRow.key}
+                                        className="hover:bg-blue-50/30 transition-colors border-b border-gray-100 absolute w-full flex items-center"
+                                        style={{
+                                            height: `${virtualRow.size}px`,
+                                            top: `${virtualRow.start}px`,
+                                        }}
+                                    >
+                                        <td className="py-2 px-4 w-32 min-w-[128px] overflow-hidden">
+                                            <button
+                                                onClick={() => onSelectCode?.(item)}
+                                                className="font-mono font-bold text-blue-600 hover:underline truncate w-full text-left"
+                                            >
+                                                {item.ecount_code || item.primary_code}
+                                            </button>
+                                        </td>
+                                        <td className="py-2 px-4 flex-1 truncate font-medium text-gray-800 uppercase tracking-tighter">
+                                            {item.product_name || item.ecount?.product?.prod_des}
+                                        </td>
+                                        <td className="py-2 px-4 w-48 min-w-[192px] overflow-hidden whitespace-nowrap">
+                                            <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600 mr-2 max-w-[80px] truncate inline-block align-middle">{item.brand_name}</span>
+                                            <span className="text-[10px] max-w-[80px] truncate inline-block align-middle text-gray-400 italic">{item.category_name}</span>
+                                        </td>
+                                        <td className="py-2 px-4 w-28 min-w-[112px] text-right font-black text-blue-600 font-mono">
+                                            {formatQty(item.ecount?.total_quantity)}
+                                        </td>
+                                        <td className="py-2 px-4 w-28 min-w-[112px] text-right font-black text-green-600 font-mono">
+                                            {formatQty(item.misa?.total_quantity)}
+                                        </td>
+                                        <td className={`py-2 px-4 w-28 min-w-[112px] text-right font-black font-mono ${item.reconciliation?.diff === 0 ? 'text-gray-300' : (item.reconciliation?.diff > 0 ? 'text-blue-500' : 'text-red-500')}`}>
+                                            {formatQty(item.reconciliation?.diff)}
+                                        </td>
+                                        <td className="py-2 px-4 w-24 min-w-[96px] text-center">
+                                            <div className={`w-3 h-3 rounded-full mx-auto shadow-sm ${item.reconciliation?.diff === 0 ? 'bg-green-400' : (item.reconciliation?.diff > 0 ? 'bg-blue-400 animate-pulse' : 'bg-red-400 animate-pulse')}`}></div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+
+                            {/* Sentinel for Infinite Scroll - ABSOLUTE at the bottom */}
+                            <div
+                                ref={loadMoreRef}
+                                style={{
+                                    position: 'absolute',
+                                    top: `${rowVirtualizer.getTotalSize()}px`,
+                                    width: '100%',
+                                    height: '150px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#94a3b8',
+                                    fontSize: '10px',
+                                    fontWeight: '900',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.2em',
+                                    backgroundColor: '#f8fafc',
+                                    borderTop: '1px solid #e2e8f0'
+                                }}
+                            >
+                                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-slate-100 shadow-sm">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                                    Scanning for more units...
+                                </div>
+                            </div>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
 };
 
 /* 4. Dạng Danh sách Xem Nhanh */
-export const InventoryCompactList = ({ data, onSelectCode }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {data.map((item, idx) => (
-            <div
-                key={idx}
-                className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 transition-all flex items-center justify-between gap-4 cursor-pointer group"
-                onClick={() => onSelectCode?.(item)}
-            >
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-bold text-blue-600 group-hover:underline">{item.ecount_code || item.primary_code}</span>
-                        <div className={`w-2 h-2 rounded-full ${item.reconciliation?.diff === 0 ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+export const InventoryCompactList = ({ data, onSelectCode, loadMoreRef }) => (
+    <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {data.map((item, idx) => (
+                <div
+                    key={idx}
+                    className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 transition-all flex items-center justify-between gap-4 cursor-pointer group"
+                    onClick={() => onSelectCode?.(item)}
+                >
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono text-xs font-bold text-blue-600 group-hover:underline">{item.ecount_code || item.primary_code}</span>
+                            <div className={`w-2 h-2 rounded-full ${item.reconciliation?.diff === 0 ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+                        </div>
+                        <div className="text-[11px] font-bold text-gray-800 truncate uppercase tracking-tighter">{item.product_name || item.ecount?.product?.prod_des}</div>
                     </div>
-                    <div className="text-[11px] font-bold text-gray-800 truncate">{item.product_name || item.ecount?.product?.prod_des}</div>
-                </div>
-                <div className="flex-shrink-0 flex items-center gap-3">
-                    <div className="text-right">
-                        <div className="text-[9px] text-gray-400 font-bold uppercase leading-none mb-1">Diff</div>
-                        <div className={`text-sm font-black ${item.reconciliation?.diff === 0 ? 'text-gray-300' : (item.reconciliation?.diff > 0 ? 'text-blue-500' : 'text-red-500')}`}>
-                            {formatQty(item.reconciliation?.diff)}
+                    <div className="flex-shrink-0 flex items-center gap-3">
+                        <div className="text-right">
+                            <div className="text-[9px] text-gray-400 font-bold uppercase leading-none mb-1">Diff</div>
+                            <div className={`text-sm font-black ${item.reconciliation?.diff === 0 ? 'text-gray-300' : (item.reconciliation?.diff > 0 ? 'text-blue-500' : 'text-red-500')}`}>
+                                {formatQty(item.reconciliation?.diff)}
+                            </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                            <UI.Icon path="M8.25 4.5l7.5 7.5-7.5 7.5" className="w-4 h-4" />
                         </div>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                        <UI.Icon path="M8.25 4.5l7.5 7.5-7.5 7.5" className="w-4 h-4" />
-                    </div>
                 </div>
-            </div>
-        ))}
+            ))}
+        </div>
+        {/* Sentinel for infinite scroll */}
+        <div ref={loadMoreRef} className="h-20 w-full flex items-center justify-center text-[10px] text-gray-400 font-bold tracking-[0.3em] uppercase opacity-50">
+            Fetching next sequence...
+        </div>
     </div>
 );
 
@@ -371,35 +408,52 @@ export const ProductDetailModal = ({ item, isOpen, onClose }) => {
 
                     {activeTab === 'ecount' && (
                         <div className="space-y-6">
+                            {/* Master Profile (Ecount) */}
                             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h3 className="text-sm font-black text-blue-900 mb-4 uppercase italic flex items-center gap-2">
                                     <UI.Icon path="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className="w-5 h-5 text-blue-500" />
                                     Master Profile (Ecount)
                                 </h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <DetailField label="Mã Hàng (Ecount)" value={item.ecount?.product?.prod_cd} isMono />
-                                    <DetailField label="Tên Hàng" value={item.ecount?.product?.prod_des} />
-                                    <DetailField label="Đơn vị tính" value={item.ecount?.product?.unit} />
-                                    <DetailField label="Hãng (Mã)" value={item.ecount?.product?.class_cd} isMono />
-                                    <DetailField label="Hãng (Tên)" value={item.brand_name} isHighlight />
-                                    <DetailField label="Nhóm (Mã)" value={item.ecount?.product?.class_cd2} isMono />
-                                    <DetailField label="Nhóm (Tên)" value={item.category_name} isHighlight />
-                                    <DetailField label="Nhà cung cấp" value={item.ecount?.product?.cust} />
-                                    <DetailField label="Mã Misa liên kết" value={item.ecount?.product?.cont3} isMono />
-                                    <DetailField label="Barcode" value={item.ecount?.product?.bar_code} isMono />
-                                    <DetailField label="Thời gian bảo hành" value={item.ecount?.product?.cont2} />
-                                    <DetailField label="Phòng/Bộ phận" value={item.ecount?.product?.cont4} />
-                                </div>
-                                <div className="mt-6 pt-6 border-t border-gray-100">
-                                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-tighter mb-2">Cont1 Link (QVC/Product)</label>
-                                    {item.ecount?.cont1_link ? (
-                                        <a href={item.ecount.cont1_link.startsWith('http') ? item.ecount.cont1_link : `https://${item.ecount.cont1_link}`} target="_blank" rel="noreferrer" className="text-blue-600 font-bold hover:underline flex items-center gap-2">
-                                            <UI.Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" className="w-4 h-4" />
-                                            {item.ecount.cont1_link}
-                                        </a>
-                                    ) : <span className="text-gray-300 italic">Chưa cấu hình Link</span>}
-                                </div>
+                                {(() => {
+                                    let raw = {};
+                                    try { raw = JSON.parse(item.ecount?.product?.raw_response || '{}'); } catch (e) { }
+                                    return (
+                                        <>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                <DetailField label="Mã Hàng (Ecount)" value={item.ecount?.product?.prod_cd} isMono />
+                                                <DetailField label="Tên Hàng" value={item.ecount?.product?.prod_des} />
+                                                <DetailField label="Đơn vị tính" value={item.ecount?.product?.unit} />
+                                                <DetailField label="Hãng (Mã)" value={item.ecount?.product?.class_cd} isMono />
+                                                <DetailField label="Hãng (Tên)" value={item.brand_name} isHighlight />
+                                                <DetailField label="Nhóm (Mã)" value={item.ecount?.product?.class_cd2} isMono />
+                                                <DetailField label="Nhóm (Tên)" value={item.category_name} isHighlight />
+                                                <DetailField label="Nhà cung cấp" value={item.ecount?.product?.cust} />
+                                                <DetailField label="Mã Misa liên kết" value={item.ecount?.product?.cont3} isMono />
+                                                <DetailField label="Barcode" value={item.ecount?.product?.bar_code} isMono />
+                                                <DetailField label="Thời gian bảo hành" value={item.ecount?.product?.cont2} />
+                                                <DetailField label="Phòng/Bộ phận" value={item.ecount?.product?.cont4} />
+
+                                                {/* Extended Fields from Raw */}
+                                                <DetailField label="Thuế suất (E)" value={`${raw.TAX || 0}%`} isHighlight />
+                                                <DetailField label="Dùng VAT" value={raw.VAT_YN === 'Y' ? 'Có' : 'Không'} />
+                                                <DetailField label="Tồn an toàn" value={formatQty(raw.SAFE_QTY)} className="text-blue-600 font-bold" />
+                                                <DetailField label="Tồn tối thiểu" value={formatQty(raw.MIN_QTY)} className="text-rose-600 font-bold" />
+                                            </div>
+                                            <div className="mt-6 pt-6 border-t border-gray-100">
+                                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-tighter mb-2">Cont1 Link (QVC/Product)</label>
+                                                {item.ecount?.cont1_link ? (
+                                                    <a href={item.ecount.cont1_link.startsWith('http') ? item.ecount.cont1_link : `https://${item.ecount.cont1_link}`} target="_blank" rel="noreferrer" className="text-blue-600 font-bold hover:underline flex items-center gap-2">
+                                                        <UI.Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" className="w-4 h-4" />
+                                                        {item.ecount.cont1_link}
+                                                    </a>
+                                                ) : <span className="text-gray-300 italic">Chưa cấu hình Link</span>}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
+
+                            {/* Pricing Policy (Ecount) */}
                             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h3 className="text-sm font-black text-blue-900 mb-4 uppercase italic flex items-center gap-2">
                                     <UI.Icon path="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75m0 1.5v.75m0 1.5v.75m0 1.5V15m1.5-1.5h.75m1.5 0h.75m1.5 0h.75m1.5 0H15m-1.5-1.5V12m0-1.5v-.75m0-1.5v-.75m0-1.5V4.5m-1.5 1.5h-.75m-1.5 0h-.75m-1.5 0h-.75m-1.5 0H3.75m10.5 0h.75m1.5 0h.75m1.5 0h.75m1.5 0h2.25m-15 10.5h.75m1.5 0h.75m1.5 0h.75m1.5 0H15" className="w-5 h-5 text-blue-500" />
@@ -410,6 +464,39 @@ export const ProductDetailModal = ({ item, isOpen, onClose }) => {
                                     <DetailField label="Giá Lẻ (Niêm yết)" value={formatPrice(item.ecount?.product?.out_price)} isHighlight />
                                     <DetailField label="Giá Sỉ 1" value={formatPrice(item.ecount?.product?.out_price1)} />
                                     <DetailField label="Giá Sỉ 2" value={formatPrice(item.ecount?.product?.out_price2)} />
+                                    {item.ecount?.product?.out_price3 > 0 && <DetailField label="Giá Sỉ 3" value={formatPrice(item.ecount?.product?.out_price3)} />}
+                                </div>
+                            </div>
+
+                            {/* Inventory Distribution (Ecount) */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h3 className="text-sm font-black text-blue-900 mb-4 uppercase italic flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <UI.Icon path="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" className="w-5 h-5" />
+                                        Inventory Distribution (Ecount)
+                                    </span>
+                                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black">TOTAL: {formatQty(item.ecount?.total_quantity)}</span>
+                                </h3>
+                                <div className="overflow-hidden border border-gray-100 rounded-xl mt-4">
+                                    <table className="w-full text-xs border-collapse">
+                                        <thead className="bg-slate-50/80">
+                                            <tr>
+                                                <th className="text-left p-3 border-b border-gray-100 uppercase tracking-widest text-[10px] text-slate-400 font-black">Hệ thống kho Ecount</th>
+                                                <th className="text-right p-3 border-b border-gray-100 uppercase tracking-widest text-[10px] text-slate-400 font-black">Số dư thực tế</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {item.ecount?.stock?.map((s, j) => (
+                                                <tr key={j} className="hover:bg-blue-50/20 transition-colors">
+                                                    <td className="p-3 border-b border-gray-100 font-medium text-slate-700">{s.wh_des} ({s.wh_cd})</td>
+                                                    <td className="p-3 border-b border-gray-100 text-right font-black text-blue-600 tabular-nums">{formatQty(s.bal_qty)}</td>
+                                                </tr>
+                                            ))}
+                                            {(!item.ecount?.stock || item.ecount.stock.length === 0) && (
+                                                <tr><td colSpan="2" className="p-10 text-center text-slate-300 italic font-medium">Hiện không có tồn kho tại bất kỳ chi nhánh nào</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -427,12 +514,32 @@ export const ProductDetailModal = ({ item, isOpen, onClose }) => {
                                         <DetailField label="Mã Misa" value={link.item.inventory_item_code} isMono />
                                         <DetailField label="Tên Misa" value={link.item.inventory_item_name} />
                                         <DetailField label="Đơn vị" value={link.item.unit_name} />
-                                        <DetailField label="VAT Rate" value={`${link.item.fixed_vat_rate || 0}%`} isHighlight />
-                                        <DetailField label="Giá bán 1" value={formatPrice(link.item.sale_price_1)} />
-                                        <DetailField label="Giá bán 2" value={formatPrice(link.item.sale_price_2)} />
-                                        <DetailField label="Giá mua gần nhất" value={formatPrice(link.item.purchase_price)} />
+                                        <DetailField label="VAT Rate" value={`${link.item.tax_rate || 0}%`} isHighlight />
+
+                                        <DetailField label="Giá bán 1" value={formatPrice(link.item.sale_price1)} />
+                                        <DetailField label="Giá bán 2" value={formatPrice(link.item.sale_price2)} />
+                                        <DetailField label="Giá mua gần nhất" value={formatPrice(link.item.unit_price)} isHighlight />
                                         <DetailField label="Tồn tổng cộng" value={formatQty(link.total_stock)} isHighlight />
                                     </div>
+
+                                    {/* Additional Misa Details */}
+                                    {(() => {
+                                        let extra = {};
+                                        try { extra = JSON.parse(link.item.raw_data || '{}'); } catch (e) { }
+                                        return (
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 pt-6 border-t border-gray-50">
+                                                <DetailField label="Nhóm vật tư" value={extra.inventory_item_category_name_list || '-'} />
+                                                <DetailField label="TK Kho" value={link.item.inventory_account} isMono />
+                                                <DetailField label="TK Doanh thu" value={link.item.sale_account} isMono />
+                                                <DetailField label="TK Giá vốn" value={link.item.cogs_account} isMono />
+
+                                                <DetailField label="Người tạo" value={link.item.created_by} />
+                                                <DetailField label="Ngày tạo" value={link.item.created_date} />
+                                                <DetailField label="Người sửa" value={link.item.modified_by} />
+                                                <DetailField label="Ngày sửa" value={link.item.modified_date} />
+                                            </div>
+                                        );
+                                    })()}
                                     <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-3 px-2 border-l-2 border-green-500">Inventory Distribution (Misa)</h4>
                                     <div className="overflow-hidden border border-gray-100 rounded-xl">
                                         <table className="w-full text-xs border-collapse">
@@ -468,24 +575,47 @@ export const ProductDetailModal = ({ item, isOpen, onClose }) => {
 
                     {activeTab === 'raw' && (
                         <div className="space-y-6">
+                            {/* Ecount Section */}
                             {item.ecount?.raw && (
-                                <div className="bg-slate-900 rounded-2xl p-6 overflow-hidden border border-slate-800 shadow-xl">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-black text-blue-400 uppercase italic">Raw Ecount Record</h3>
-                                        <button className="text-[10px] bg-slate-800 text-slate-400 px-3 py-1 rounded-full font-bold">RAW JSON</button>
+                                <div className="space-y-4">
+                                    <div className="bg-[#0f172a] rounded-2xl p-6 overflow-hidden border border-slate-800 shadow-xl">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">System Ecount Record (DB)</h3>
+                                            <span className="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-black">DATABASE</span>
+                                        </div>
+                                        <pre className="text-[11px] text-blue-300 font-mono overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-slate-700">
+                                            {JSON.stringify(item.ecount.raw, null, 2)}
+                                        </pre>
                                     </div>
-                                    <pre className="text-[11px] text-green-400 font-mono overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-slate-700">
-                                        {JSON.stringify(item.ecount.raw, null, 2)}
-                                    </pre>
+
+                                    {(() => {
+                                        try {
+                                            const rawResp = JSON.parse(item.ecount?.raw?.raw_response || '{}');
+                                            if (Object.keys(rawResp).length === 0) return null;
+                                            return (
+                                                <div className="bg-[#1e1b4b] rounded-2xl p-6 overflow-hidden border border-indigo-900 shadow-xl">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Ecount API Response (Original)</h3>
+                                                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20 font-black">API_RAW</span>
+                                                    </div>
+                                                    <pre className="text-[11px] text-indigo-300 font-mono overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-slate-700">
+                                                        {JSON.stringify(rawResp, null, 2)}
+                                                    </pre>
+                                                </div>
+                                            );
+                                        } catch (e) { return null; }
+                                    })()}
                                 </div>
                             )}
+
+                            {/* Misa Section */}
                             {item.misa?.links?.map((l, i) => (
-                                <div key={i} className="bg-slate-900 rounded-2xl p-6 overflow-hidden border border-slate-800 shadow-xl">
+                                <div key={i} className="bg-[#064e3b] rounded-2xl p-6 overflow-hidden border border-emerald-900 shadow-xl">
                                     <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-black text-green-400 uppercase italic">Raw Misa Record: {l.item.inventory_item_code}</h3>
-                                        <button className="text-[10px] bg-slate-800 text-slate-400 px-3 py-1 rounded-full font-bold">RAW JSON</button>
+                                        <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Misa Raw Data: {l.item.inventory_item_code}</h3>
+                                        <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-black">MISA_API</span>
                                     </div>
-                                    <pre className="text-[11px] text-green-400 font-mono overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-slate-700">
+                                    <pre className="text-[11px] text-emerald-300 font-mono overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-slate-700">
                                         {JSON.stringify(l.raw, null, 2)}
                                     </pre>
                                 </div>
@@ -519,21 +649,37 @@ export const InventoryLegacyTable = ({
     sortDirection,
     onSort,
     onSelectCode,
-    parentRef
+    parentRef,
+    loadMoreRef
 }) => {
-    // 1. Define fixed widths for columns
-    const COL_WIDTHS = {
+    // 1. Column Widths State to allow Resizing
+    const [colWidths, setColWidths] = useState({
         source: 80,
         sku: 140,
         name_ecount: 350,
         name_misa: 350,
-        status: 100,
+        status: 80,
         total_ecount: 100,
         total_vat: 100,
         diff: 100,
-        warehouse: 140,
+        tax: 80,
+        warehouse: 120,
         price: 110
+    });
+
+    const handleResize = (id, newWidth) => {
+        setColWidths(prev => ({ ...prev, [id]: Math.max(40, newWidth) }));
     };
+
+    // Calculate dynamic offsets for sticky columns
+    const offsets = useMemo(() => {
+        const source = 0;
+        const sku = colWidths.source;
+        const name_ecount = colWidths.source + colWidths.sku;
+        const name_misa = colWidths.source + colWidths.sku + colWidths.name_ecount;
+        const tax = colWidths.source + colWidths.sku + colWidths.name_ecount + colWidths.name_misa;
+        return { source, sku, name_ecount, name_misa, tax };
+    }, [colWidths]);
 
     // 2. Determine dynamic warehouses from the first 50 items (optimization)
     const warehouseColumns = useMemo(() => {
@@ -553,12 +699,12 @@ export const InventoryLegacyTable = ({
 
     // 3. Calculate total width
     const totalWidth = useMemo(() => {
-        let width = COL_WIDTHS.source + COL_WIDTHS.sku + COL_WIDTHS.name_ecount + COL_WIDTHS.name_misa +
-            COL_WIDTHS.status + COL_WIDTHS.total_ecount + COL_WIDTHS.total_vat + COL_WIDTHS.diff +
-            (COL_WIDTHS.price * 2);
-        width += warehouseColumns.length * COL_WIDTHS.warehouse;
+        let width = colWidths.source + colWidths.sku + colWidths.name_ecount + colWidths.name_misa +
+            colWidths.status + colWidths.total_ecount + colWidths.total_vat + colWidths.diff +
+            (colWidths.price * 2);
+        width += warehouseColumns.length * colWidths.warehouse;
         return width;
-    }, [warehouseColumns]);
+    }, [warehouseColumns, colWidths]);
 
     const rowVirtualizer = useVirtualizer({
         count: Array.isArray(data) ? data.length : 0,
@@ -580,16 +726,51 @@ export const InventoryLegacyTable = ({
         return <div className="flex justify-center items-center h-64 text-gray-400">Empty Dataset</div>;
     }
 
-    const HeaderCell = ({ width, children, className = "", onClick, sortKey }) => (
-        <div
-            style={{ width }}
-            className={`px-4 py-3 font-black text-[10px] uppercase tracking-wider text-slate-500 flex items-center shrink-0 border-r border-slate-200/60 bg-slate-50/80 ${className}`}
-            onClick={onClick}
-        >
-            {children}
-            {sortKey && <SortIcon direction={sortBy === sortKey ? sortDirection : null} />}
-        </div>
-    );
+    const HeaderCell = ({ width, children, className = "", onClick, sortKey, id, isSticky, left = 0 }) => {
+        const onMouseDown = (e) => {
+            if (!id) return;
+            e.preventDefault();
+            const startX = e.pageX;
+            const startWidth = width;
+
+            const onMouseMove = (moveEvent) => {
+                const currentWidth = startWidth + (moveEvent.pageX - startX);
+                handleResize(id, currentWidth);
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+
+        return (
+            <div
+                style={{
+                    width,
+                    left: isSticky ? left : undefined,
+                    position: isSticky ? 'sticky' : 'relative',
+                    zIndex: isSticky ? 50 : undefined
+                }}
+                className={`px-4 py-3 flex items-center shrink-0 border-r border-slate-200 h-full relative group/h cell-header bg-slate-50/50 ${className}`}
+                onClick={onClick}
+            >
+                <span className="truncate uppercase tracking-wider text-[11px] font-black text-slate-500">{children}</span>
+                {sortKey && <SortIcon direction={sortBy === sortKey ? sortDirection : null} />}
+
+                {/* Resizer Handle */}
+                {id && (
+                    <div
+                        onMouseDown={onMouseDown}
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400/50 transition-colors z-10"
+                    />
+                )}
+            </div>
+        );
+    };
 
     const DataCell = ({ width, children, className = "", isSticky, left = 0 }) => (
         <div
@@ -606,37 +787,39 @@ export const InventoryLegacyTable = ({
     );
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="flex-1 flex flex-col min-h-0 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm h-[calc(100vh-280px)]">
             {/* Scroll Container */}
             <div className="flex-1 overflow-auto bg-slate-50/30" ref={parentRef}>
                 <div style={{ width: totalWidth, minWidth: '100%', position: 'relative' }}>
 
                     {/* Header: Separate from rows to stay static vertically if needed, but here we want it sticky */}
                     <div className="flex sticky top-0 z-30 bg-white border-b border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                        <HeaderCell width={COL_WIDTHS.source} className="sticky left-0 z-40">Nguồn</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.sku} className="sticky left-[80px] z-40">Mã SKU</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.name_ecount} className="sticky left-[220px] z-40" onClick={() => onSort('product_name')} sortKey="product_name">Tên Ecount</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.name_misa}>Tên Misa</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.status} className="justify-center">Trạng thái</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.total_ecount} className="justify-end text-blue-600" onClick={() => onSort('total_ecount_quantity')} sortKey="total_ecount_quantity">Tồn Ecount</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.total_vat} className="justify-end text-red-600" onClick={() => onSort('total_misa_quantity')} sortKey="total_misa_quantity">Kho VAT</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.diff} className="justify-end text-purple-600 font-black" onClick={() => onSort('ecount_misa_diff')} sortKey="ecount_misa_diff">Chênh Lệch</HeaderCell>
+                        <HeaderCell id="source" width={colWidths.source} isSticky left={offsets.source} className="z-40">Nguồn</HeaderCell>
+                        <HeaderCell id="sku" width={colWidths.sku} isSticky left={offsets.sku} className="z-40">Mã SKU</HeaderCell>
+                        <HeaderCell id="name_ecount" width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="z-40" onClick={() => onSort('product_name')} sortKey="product_name">Tên Ecount</HeaderCell>
+                        <HeaderCell id="name_misa" width={colWidths.name_misa}>Tên Misa</HeaderCell>
+                        <HeaderCell id="status" width={colWidths.status} className="justify-center">Trạng thái</HeaderCell>
+                        <HeaderCell id="total_ecount" width={colWidths.total_ecount} className="justify-end text-blue-600" onClick={() => onSort('total_ecount_quantity')} sortKey="total_ecount_quantity">Tồn Ecount</HeaderCell>
+                        <HeaderCell id="total_vat" width={colWidths.total_vat} className="justify-end text-red-600" onClick={() => onSort('total_misa_quantity')} sortKey="total_misa_quantity">Kho VAT</HeaderCell>
+                        <HeaderCell id="diff" width={colWidths.diff} className="justify-end text-purple-600 font-black" onClick={() => onSort('ecount_misa_diff')} sortKey="ecount_misa_diff">Chênh Lệch</HeaderCell>
+                        <HeaderCell id="tax" width={colWidths.tax} className="justify-center text-slate-400">Thuế %</HeaderCell>
 
                         {warehouseColumns.map(wh => (
-                            <HeaderCell key={wh.code} width={COL_WIDTHS.warehouse} className="justify-end text-slate-400">{wh.name}</HeaderCell>
+                            <HeaderCell key={wh.code} width={colWidths.warehouse} className="justify-end text-slate-400">{wh.name}</HeaderCell>
                         ))}
 
-                        <HeaderCell width={COL_WIDTHS.price} className="justify-end">Giá Lẻ</HeaderCell>
-                        <HeaderCell width={COL_WIDTHS.price} className="justify-end border-r-0">Giá Sỉ 1</HeaderCell>
+                        <HeaderCell width={colWidths.price} className="justify-end">Giá Lẻ</HeaderCell>
+                        <HeaderCell width={colWidths.price} className="justify-end border-r-0">Giá Sỉ 1</HeaderCell>
                     </div>
 
                     {/* Virtualized Body */}
-                    <div style={{ height: `${rowVirtualizer.getTotalSize() + 400}px`, width: '100%', position: 'relative' }}>
+                    <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
                         {rowVirtualizer.getVirtualItems().map(virtualRow => {
                             const product = data[virtualRow.index];
                             if (!product) return null;
                             const summary = product.inventorySummary || {};
-                            const ecountPrice = product.ecount?.product?.prices || {};
+                            const ecountPrice = product.ecount?.product || {};
+                            const taxRate = product.misa?.links?.[0]?.item?.tax_rate;
 
                             return (
                                 <div
@@ -652,77 +835,83 @@ export const InventoryLegacyTable = ({
                                     onClick={() => onSelectCode?.(product)}
                                     className="flex hover:bg-blue-50/50 transition-colors border-b border-slate-100 bg-white group cursor-pointer"
                                 >
-                                    <DataCell width={COL_WIDTHS.source} isSticky left={0} className="border-r-slate-200">
+                                    <DataCell width={colWidths.source} isSticky left={offsets.source} className="border-r-slate-200">
                                         {product.misa?.links?.length > 0 ? (
                                             <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">Both</span>
                                         ) : (
                                             <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">Ecount</span>
                                         )}
                                     </DataCell>
-                                    <DataCell width={COL_WIDTHS.sku} isSticky left={80} className="border-r-slate-200">
-                                        <div className="flex flex-col text-[10px] items-start w-full">
-                                            {product.misa?.links?.length > 0 && <span className="text-slate-400 truncate w-full">M: {product.misa.links[0].item.inventory_item_code}</span>}
-                                            <span className="font-mono font-black text-slate-800 truncate w-full">E: {product.ecount_code}</span>
+                                    <DataCell width={colWidths.sku} isSticky left={offsets.sku} className="border-r-slate-200">
+                                        <div className="flex flex-col text-[11px] items-start w-full">
+                                            {product.misa?.links?.length > 0 && <span className="text-slate-500 font-bold truncate w-full">M: {product.misa.links[0].item.inventory_item_code}</span>}
+                                            <span className="font-mono font-black text-blue-900 truncate w-full">E: {product.ecount_code}</span>
                                         </div>
                                     </DataCell>
-                                    <DataCell width={COL_WIDTHS.name_ecount} isSticky left={220} className="font-bold text-slate-900 border-r-slate-200 text-xs">
+                                    <DataCell width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="font-bold text-slate-900 border-r-slate-200 text-sm leading-tight">
                                         {product.product_name}
                                     </DataCell>
-                                    <DataCell width={COL_WIDTHS.name_misa} className="text-slate-500 text-[11px] italic">
+                                    <DataCell width={colWidths.name_misa} className="text-slate-600 text-xs italic leading-tight">
                                         {product.misa?.links?.[0]?.item?.inventory_item_name || '-'}
                                     </DataCell>
-                                    <DataCell width={COL_WIDTHS.status} className="justify-center">
+                                    <DataCell width={colWidths.status} className="justify-center">
                                         <div className={`w-2 h-2 rounded-full ${summary.total_ecount_quantity > 0 ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                                     </DataCell>
-                                    <DataCell width={COL_WIDTHS.total_ecount} className="justify-end font-bold text-blue-700 text-sm">{formatQty(summary.total_ecount_quantity)}</DataCell>
-                                    <DataCell width={COL_WIDTHS.total_vat} className="justify-end font-bold text-red-600 text-sm">{formatQty(summary.total_misa_quantity)}</DataCell>
-                                    <DataCell width={COL_WIDTHS.diff} className="justify-end">
-                                        <span className={`font-black text-sm ${summary.ecount_misa_diff > 0 ? 'text-green-600' : summary.ecount_misa_diff < 0 ? 'text-rose-600' : 'text-slate-300'}`}>
+                                    <DataCell width={colWidths.total_ecount} className="justify-end font-black text-blue-800 text-[15px] tabular-nums">{formatQty(summary.total_ecount_quantity)}</DataCell>
+                                    <DataCell width={colWidths.total_vat} className="justify-end font-black text-red-700 text-[15px] tabular-nums">{formatQty(summary.total_misa_quantity)}</DataCell>
+                                    <DataCell width={colWidths.diff} className="justify-end bg-slate-50/30">
+                                        <span className={`font-black text-[15px] tabular-nums ${summary.ecount_misa_diff > 0 ? 'text-emerald-600' : summary.ecount_misa_diff < 0 ? 'text-rose-600' : 'text-slate-300'}`}>
                                             {summary.ecount_misa_diff > 0 ? '+' : ''}{formatQty(summary.ecount_misa_diff)}
                                         </span>
+                                    </DataCell>
+                                    <DataCell width={colWidths.tax} className="justify-center font-black text-blue-600 text-[13px]">
+                                        {taxRate != null ? `${taxRate}%` : '-'}
                                     </DataCell>
 
                                     {warehouseColumns.map(wh => {
                                         const loc = summary.locations?.find(l => l.warehouse_code === wh.code && l.source === 'ecount');
-                                        return <DataCell key={wh.code} width={COL_WIDTHS.warehouse} className="justify-end text-slate-600 font-mono text-xs">{formatQty(loc?.quantity)}</DataCell>;
+                                        return <DataCell key={wh.code} width={colWidths.warehouse} className="justify-end text-slate-700 font-bold text-[13px] tabular-nums">{formatQty(loc?.quantity)}</DataCell>;
                                     })}
 
-                                    <DataCell width={COL_WIDTHS.price} className="justify-end font-bold text-slate-700">{formatQty(ecountPrice.out_price)}</DataCell>
-                                    <DataCell width={COL_WIDTHS.price} className="justify-end font-medium text-slate-400 border-r-0">{formatQty(ecountPrice.out_price1)}</DataCell>
+                                    <DataCell width={colWidths.price} className="justify-end font-black text-slate-800 text-[13px] tabular-nums">{formatPrice(ecountPrice.out_price)}</DataCell>
+                                    <DataCell width={colWidths.price} className="justify-end font-bold text-slate-500 text-[13px] border-r-0 tabular-nums">{formatPrice(ecountPrice.out_price1)}</DataCell>
                                 </div>
                             );
                         })}
-                        {/* Final Space Indicator */}
+                        {/* Final Space Indicator / Sentinel - Placed exactly after the last virtual item */}
                         <div
+                            ref={loadMoreRef}
                             style={{
                                 position: 'absolute',
                                 top: rowVirtualizer.getTotalSize(),
                                 left: 0,
                                 width: '100%',
-                                height: '200px',
+                                height: '100px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#94a3b8',
-                                fontSize: '11px',
-                                fontWeight: '900',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em'
+                                backgroundColor: '#f8fafc',
+                                borderTop: '1px solid #e2e8f0',
+                                zIndex: 10
                             }}
                         >
-                            {/* Visual cue that more could load */}
-                            --- End of Current Batch ---
+                            <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-slate-200">
+                                <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bridging more data...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Loading Overlay for Pagination */}
-            {isLoading && data && data.length > 0 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl text-[10px] font-black uppercase tracking-[0.2em] z-50 border border-slate-700 animate-bounce">
-                    Synchronizing...
-                </div>
-            )}
-        </div>
+            {
+                isLoading && data && data.length > 0 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl text-[10px] font-black uppercase tracking-[0.2em] z-50 border border-slate-700 animate-bounce">
+                        Synchronizing...
+                    </div>
+                )
+            }
+        </div >
     );
 };

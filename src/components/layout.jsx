@@ -16,6 +16,7 @@ export const LoginPage = () => {
     const [step, setStep] = React.useState(1); // 1: Login, 2: OTP
     const [otp, setOtp] = React.useState('');
     const [tempUserId, setTempUserId] = React.useState(null);
+    const [rememberDevice, setRememberDevice] = React.useState(false); // [NEW]
 
     // [NEW] Handle Redirect Error from Google Login
     React.useEffect(() => {
@@ -51,7 +52,7 @@ export const LoginPage = () => {
             if (token) {
                 localStorage.setItem('auth_token', token);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                window.location.href = '/profile';
+                window.location.href = '/dashboard';
             } else {
                 setError('Không nhận được token xác thực.');
             }
@@ -72,14 +73,15 @@ export const LoginPage = () => {
         try {
             const res = await axios.post('/api/auth/2fa/verify', {
                 user_id: tempUserId,
-                code: otp
+                code: otp,
+                remember_device: rememberDevice // [NEW]
             });
 
             const token = res.data.token;
             if (token) {
                 localStorage.setItem('auth_token', token);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                window.location.href = '/profile';
+                window.location.href = '/dashboard';
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Mã xác thực không đúng.');
@@ -174,6 +176,19 @@ export const LoginPage = () => {
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-black text-2xl text-center tracking-[0.5em] text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all"
                                     placeholder="######"
                                 />
+                            </div>
+
+                            {/* [NEW] Trusted Device Checkbox */}
+                            <div className="flex items-center justify-center text-xs mt-2">
+                                <label className="flex items-center text-gray-600 font-bold cursor-pointer select-none hover:text-blue-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={rememberDevice}
+                                        onChange={(e) => setRememberDevice(e.target.checked)}
+                                        className="mr-2 rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                    />
+                                    Tin cậy thiết bị này (Không hỏi lại 2FA 30 ngày)
+                                </label>
                             </div>
 
                             <button

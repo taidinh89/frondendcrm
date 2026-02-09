@@ -7,6 +7,54 @@ import toast from 'react-hot-toast';
 const API_INDEX_ENDPOINT = '/api/v1/direct-inventory';
 const API_CHECK_ENDPOINT = '/api/v1/direct-inventory/check';
 const API_FILTERS_ENDPOINT = '/api/v1/direct-inventory/filter-options';
+const SYNC_STATUS_ENDPOINT = '/api/v1/status';
+const SYNC_TRIGGER_ENDPOINT = '/api/v1/trigger';
+
+const SyncWidget = ({ label, data, onSync, isTriggering }) => {
+    if (!data) return null;
+
+    const isSyncing = data.is_syncing || isTriggering;
+    const isError = data.status_text === 'Lỗi' || (data.message && data.message.toLowerCase().includes('lỗi'));
+
+    const lastSync = data.last_sync_at
+        ? new Date(data.last_sync_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        : 'Chưa chạy';
+
+    return (
+        <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm gap-3 hover:border-blue-200 transition-colors">
+            <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+                <span className="text-[10px] font-bold text-slate-600 tabular-nums">{lastSync}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+                {isError ? (
+                    <div className="flex items-center text-rose-600 text-[10px] font-black uppercase" title={data.message}>
+                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+                        Lỗi
+                    </div>
+                ) : isSyncing ? (
+                    <div className="flex items-center text-blue-600 text-[10px] font-black uppercase italic">
+                        <svg className="animate-spin h-3 w-3 mr-1 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Syncing...
+                    </div>
+                ) : (
+                    <div className="flex items-center text-emerald-600 text-[10px] font-black uppercase">
+                        <UI.Icon path="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className="w-4 h-4 mr-1 text-emerald-500" />
+                        OK
+                    </div>
+                )}
+            </div>
+            <button
+                onClick={onSync}
+                disabled={isSyncing}
+                className={`p-1.5 rounded-lg hover:bg-slate-50 transition-all ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-blue-600 active:scale-90 hover:shadow-inner'}`}
+                title="Đồng bộ ngay"
+            >
+                <UI.Icon path="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" className="w-3.5 h-3.5" />
+            </button>
+        </div>
+    );
+};
 
 export const DirectInventoryChecker = () => {
     const [mode, setMode] = useState('list'); // 'list' or 'check'
@@ -16,6 +64,8 @@ export const DirectInventoryChecker = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [results, setResults] = useState([]);
+    const [syncStatus, setSyncStatus] = useState({ ecount: null, misa: null });
+    const [triggeringTypes, setTriggeringTypes] = useState([]);
 
     const scrollParentRef = React.useRef(null);
 
@@ -48,7 +98,20 @@ export const DirectInventoryChecker = () => {
         } catch (e) { console.error("Filter options error:", e); }
     };
 
+
+    const isFetchingRef = React.useRef(false);
+    const nextPageRef = React.useRef(1);
+    const loadMoreRef = React.useRef(null);
+
     const fetchList = useCallback(async (page = 1, isAppend = false) => {
+        console.log(`%c[Inventory] Fetch Sequence: Page ${page}, Append: ${isAppend}`, "color: #3b82f6; font-weight: bold");
+
+        if (isFetchingRef.current) {
+            console.warn("[Inventory] Fetch blocked: already in progress");
+            return;
+        }
+
+        isFetchingRef.current = true;
         if (isAppend) setIsFetchingNextPage(true);
         else setIsLoading(true);
 
@@ -57,24 +120,42 @@ export const DirectInventoryChecker = () => {
                 params: { ...filters, page, source_type: sourceType }
             });
 
-            const newData = res.data.data || [];
+            const { data: newData, current_page, last_page, total } = res.data;
+            console.log(`%c[Inventory] Received: ${newData?.length || 0} items, Page ${current_page}/${last_page}`, "color: #10b981");
+
             if (isAppend) {
-                setListData(prev => [...prev, ...newData]);
+                setListData(prev => {
+                    const existingIds = new Set(prev.map(item => item.ecount_code || item.primary_code));
+                    const uniqueNewData = (newData || []).filter(item => !existingIds.has(item.ecount_code || item.primary_code));
+
+                    if (uniqueNewData.length === 0 && (newData || []).length > 0) {
+                        console.warn("[Inventory] Duplicate page detected - pausing infinite scroll.");
+                        setPagination(prev => ({ ...prev, last_page: prev.current_page })); // Lock pagination
+                        return prev;
+                    }
+
+                    return [...prev, ...uniqueNewData];
+                });
             } else {
-                setListData(newData);
+                setListData(newData || []);
             }
 
             setPagination({
-                current_page: res.data.current_page,
-                last_page: res.data.last_page,
-                total: res.data.total
+                current_page: current_page,
+                last_page: (newData || []).length === 0 ? current_page : last_page, // Safety if empty
+                total: total
             });
+            nextPageRef.current = current_page + 1;
         } catch (e) {
             toast.error('Lỗi khi tải danh sách tồn kho');
-            console.error(e);
+            console.error("[Inventory] Error:", e);
         } finally {
             setIsLoading(false);
             setIsFetchingNextPage(false);
+            // Lock release with minor safety delay
+            setTimeout(() => {
+                isFetchingRef.current = false;
+            }, 100);
         }
     }, [filters, sourceType]);
 
@@ -82,29 +163,85 @@ export const DirectInventoryChecker = () => {
         fetchFilterOptions();
     }, []);
 
+    // --- SYNC LOGIC ---
+    const fetchSyncStatus = useCallback(async () => {
+        try {
+            const res = await axios.get(SYNC_STATUS_ENDPOINT);
+            setSyncStatus(res.data);
+        } catch (e) {
+            console.error("Lỗi lấy trạng thái sync:", e);
+        }
+    }, []);
+
     useEffect(() => {
-        if (mode === 'list') fetchList(1);
+        fetchSyncStatus();
+        const interval = setInterval(fetchSyncStatus, 10000);
+        return () => clearInterval(interval);
+    }, [fetchSyncStatus]);
+
+    const handleTriggerSync = async (type) => {
+        if (triggeringTypes.includes(type)) return;
+        setTriggeringTypes(prev => [...prev, type]);
+        try {
+            await axios.post(SYNC_TRIGGER_ENDPOINT, { type });
+            fetchSyncStatus();
+            toast.success(`Đã kích hoạt đồng bộ ${type}`);
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message;
+            toast.error(`Lỗi kích hoạt đồng bộ ${type}: ${msg}`);
+        } finally {
+            setTimeout(() => {
+                setTriggeringTypes(prev => prev.filter(t => t !== type));
+            }, 1000);
+        }
+    };
+
+    useEffect(() => {
+        if (mode === 'list') {
+            console.log("[Inventory] List mode reset - fetching page 1");
+            nextPageRef.current = 1;
+            fetchList(1);
+        }
     }, [mode, filters.brand, filters.category, filters.has_stock, sourceType, fetchList]);
 
-    // Infinite Scroll Handler
+    // Infinite Scroll via IntersectionObserver
     useEffect(() => {
-        const container = scrollParentRef.current;
-        if (!container) return;
+        // Đợi một chút để DOM mount ổn định và ref được gán
+        const timer = setTimeout(() => {
+            if (!loadMoreRef.current) return;
 
-        const handleScroll = () => {
-            const { scrollTop, scrollHeight, clientHeight } = container;
-            // Higher sensitivity: Trigger when 1000px from bottom (approx 15-20 rows)
-            if (scrollHeight - scrollTop - clientHeight < 1000 && !isLoading && !isFetchingNextPage) {
-                if (pagination.current_page < pagination.last_page) {
-                    fetchList(pagination.current_page + 1, true);
+            const observer = new IntersectionObserver(([entry]) => {
+                if (entry.isIntersecting) {
+                    const hasMore = pagination.current_page < pagination.last_page;
+
+                    // Chỉ cho phép trigger nếu đã cuộn xuống một khoảng (tránh lỗi auto-load tại đỉnh trang)
+                    const container = scrollParentRef.current;
+                    const scrollDepthOk = container ? (container.scrollTop > 300) : true;
+
+                    console.log(`[Observer] Visible: true | ScrollDepth: ${scrollDepthOk} | Fetching: ${isFetchingRef.current} | ${pagination.current_page}/${pagination.last_page}`);
+
+                    if (!isFetchingRef.current && hasMore && scrollDepthOk) {
+                        const next = nextPageRef.current;
+                        console.log(`[Observer] Triggering fetch for page ${next}`);
+                        fetchList(next, true);
+                    }
                 }
-            }
-        };
+            }, {
+                root: viewMode.startsWith('table') ? scrollParentRef.current : null,
+                rootMargin: '100px',
+                threshold: 0.01
+            });
 
-        container.addEventListener('scroll', handleScroll);
-        // Important: Re-attach when viewMode changes as the ref might move to a different element
-        return () => container.removeEventListener('scroll', handleScroll);
-    }, [pagination, isLoading, isFetchingNextPage, fetchList, viewMode]);
+            observer.observe(loadMoreRef.current);
+
+            return () => {
+                console.log("[Inventory] Observer disconnecting");
+                observer.disconnect();
+            };
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [pagination.current_page, pagination.last_page, viewMode, fetchList]);
 
     const handleCheck = async () => {
         if (!skus.trim()) {
@@ -129,13 +266,21 @@ export const DirectInventoryChecker = () => {
             data,
             onSelectCode: openDetail,
             parentRef: scrollParentRef,
-            isLoading: isFetchingNextPage // Pass loading state to table for overlay
+            loadMoreRef: loadMoreRef,
+            isLoading: isFetchingNextPage
         };
         if (viewMode === 'table_legacy') return <InventoryLegacyTable {...props} />;
         if (viewMode === 'table_v2') return <InventoryVirtualizedTable {...props} />;
         if (viewMode === 'table') return <InventoryDenseTable {...props} />;
         if (viewMode === 'compact') return <InventoryCompactList {...props} />;
-        return <div className="space-y-4">{data.map((item, idx) => <InventoryDetailCard key={idx} item={item} onSelectCode={openDetail} />)}</div>;
+        return (
+            <div className="space-y-4">
+                {data.map((item, idx) => <InventoryDetailCard key={idx} item={item} onSelectCode={openDetail} />)}
+                <div ref={loadMoreRef} className="h-20 flex items-center justify-center text-[10px] text-slate-400 font-black tracking-widest uppercase opacity-50">
+                    Pulling next block...
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -188,6 +333,21 @@ export const DirectInventoryChecker = () => {
                             </button>
                         ))}
                     </div>
+
+                    <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-10">
+                        <SyncWidget
+                            label="Ecount"
+                            data={syncStatus.ecount}
+                            isTriggering={triggeringTypes.includes('ecount')}
+                            onSync={() => handleTriggerSync('ecount')}
+                        />
+                        <SyncWidget
+                            label="Misa"
+                            data={syncStatus.misa}
+                            isTriggering={triggeringTypes.includes('misa')}
+                            onSync={() => handleTriggerSync('misa')}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -217,19 +377,12 @@ export const DirectInventoryChecker = () => {
                                 </div>
                                 <div className="ml-auto flex items-center gap-4 text-[11px] font-bold">
                                     <span className="text-slate-400 uppercase tracking-widest">TỔNG CỘNG:</span>
-                                    <span className="text-blue-600">{pagination.total} <span className="text-slate-400">sản phẩm</span></span>
-                                    {pagination.current_page < pagination.last_page && (
-                                        <>
-                                            <div className="h-4 w-px bg-gray-200 mx-2"></div>
-                                            <button
-                                                onClick={() => fetchList(pagination.current_page + 1, true)}
-                                                disabled={isLoading || isFetchingNextPage}
-                                                className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 flex items-center gap-2"
-                                            >
-                                                {isFetchingNextPage ? <div className="w-3 h-3 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div> : <UI.Icon path="M12 4.5v15m7.5-7.5h-15" className="w-3 h-3" />}
-                                                TẢI THÊM
-                                            </button>
-                                        </>
+                                    <span className="text-blue-600">{pagination.total} <span className="text-slate-400 text-[9px] uppercase">trình diện</span></span>
+                                    {isFetchingNextPage && (
+                                        <div className="flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1 rounded-lg animate-pulse">
+                                            <div className="w-3 h-3 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                            <span className="text-[9px] uppercase font-black">SYNCING...</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
