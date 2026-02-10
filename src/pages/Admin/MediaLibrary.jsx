@@ -1,5 +1,5 @@
 import React from 'react';
-import MediaManager from '../../components/MediaManager';
+import MediaManager from '../../components/Core/MediaManager';
 
 const MediaLibraryPage = () => {
     return (

@@ -2,37 +2,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { LoginPage, Header, Sidebar } from './components/layout.jsx';
+import { LoginPage, Header, Sidebar } from './components/Layout/layout.jsx';
 import { appConfig, ENABLE_PERMISSION_CHECK } from './config/appConfig.js';
 import { Toaster } from 'react-hot-toast';
 
 const ENABLE_LOG = true; // [DEBUG] Toggle log logout
 
 // --- 1. IMPORT CÁC TRANG NGHIỆP VỤ ---
-import { DashboardContent } from './pages/DashboardContent.jsx';
-import { CustomersContent } from './pages/CustomersContent.jsx';
-import { SalesOrdersContent } from './pages/SalesOrdersContent.jsx';
-import { PurchaseOrdersContent } from './pages/PurchaseOrdersContent.jsx';
-import { InventoriesContent } from './pages/InventoriesContent.jsx';
-import { DirectInventoryChecker } from './pages/DirectInventoryChecker.jsx';
-import { InvoicesContent } from './pages/InvoicesContent.jsx';
-import { SalesAnalysisContent } from './pages/SalesAnalysisContent.jsx';
-import { ProductGroupAnalysisContent } from './pages/ProductGroupAnalysisContent.jsx';
-import { PartnerAnalysisContent } from './pages/PartnerAnalysisContent.jsx';
+import { DashboardContent } from './pages/Dashboard/DashboardContent.jsx';
+import { CustomersContent } from './pages/Business/CustomersContent.jsx';
+import { SalesOrdersContent } from './pages/Business/SalesOrdersContent.jsx';
+import { PurchaseOrdersContent } from './pages/Business/PurchaseOrdersContent.jsx';
+import { InventoriesContent } from './pages/Inventory/InventoriesContent.jsx';
+import { DirectInventoryChecker } from './pages/Inventory/DirectInventoryChecker.jsx';
+import { InvoicesContent } from './pages/Finance/InvoicesContent.jsx';
+import { SalesAnalysisContent } from './pages/Analytics/SalesAnalysisContent.jsx';
+import { ProductGroupAnalysisContent } from './pages/Analytics/ProductGroupAnalysisContent.jsx';
+import { PartnerAnalysisContent } from './pages/Analytics/PartnerAnalysisContent.jsx';
 
-import { DebtRiskPage } from './pages/DebtRiskPage.jsx';
-import { PayableRiskPage } from './pages/PayableRiskPage.jsx';
-import { Customer360Content } from './pages/Customer360Content.jsx';
-import { QuotationForm } from './pages/QuotationForm.jsx';
-import { DictionaryManagementPage } from './pages/DictionaryManagementPage.jsx';
-import { GlobalSearchModal } from './components/GlobalSearchModal.jsx';
+import { DebtRiskPage } from './pages/Finance/DebtRiskPage.jsx';
+import { Customer360Content } from './pages/Business/Customer360Content.jsx';
+import { DictionaryManagementPage } from './pages/System/DictionaryManagementPage.jsx';
+import { GlobalSearchModal } from './components/Modals/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
 import { SepayCashier } from './pages/Sepay/SepayCashier.jsx';
-import DepartmentTreeManager from "./pages/DepartmentTreeManager.jsx";
-import AuthorizationBackboneManager from "./pages/AuthorizationBackboneManager.jsx";
+import DepartmentTreeManager from "./pages/System/DepartmentTreeManager.jsx";
 import UserRoleManager from './pages/Security/UserRoleManager';
-import CategoryManager from './components/CategoryManager';
-import BrandManager from './components/BrandManager';
 
 // --- 2. IMPORT MODULE BẢO MẬT (SECURITY) ---
 import SecurityDashboard from './pages/Security/Dashboard';
@@ -47,18 +42,16 @@ import VisualThemeBuilderV2 from './pages/Security/VisualThemeBuilderV2'; // [NE
 import SiteManager from './pages/Security/SiteManager'; // [NEW]
 import ThemeVersionManager from './pages/Security/ThemeVersionManager'; // [NEW]
 
-import SystemIntelligenceDashboard from './pages/SystemIntelligenceDashboard.jsx';
-import UnifiedInventoryDashboardV2 from './pages/UnifiedInventoryDashboardV2.jsx';
-import UnitConversionManager from './pages/UnitConversionManager.jsx';
-import ImportLogViewer from './pages/ImportLogViewer.jsx';
-import { SystemMonitorPage } from './pages/SystemMonitorPage.jsx';
-import ImportManagement from './pages/ImportManagement.jsx';
+import SystemIntelligenceDashboard from './pages/System/SystemIntelligenceDashboard.jsx';
+import UnitConversionManager from './pages/Inventory/UnitConversionManager.jsx';
+import { SystemMonitorPage } from './pages/System/SystemMonitorPage.jsx';
+import ImportManagement from './pages/System/ImportManagement.jsx';
 import { QrHistoryPage } from "./pages/Sepay/QrHistoryPage.jsx";
-import { InvoiceDashboardPage } from './pages/InvoiceDashboardPage.jsx';
-import { QuotationList } from './pages/QuotationList';
-import { QuotationFormNew } from './pages/QuotationFormNew';
-// import { QuotationListV2 } from './pages/QuotationListV2';
-// import { QuotationFormV2 } from './pages/QuotationFormV2';
+import { InvoiceDashboardPage } from './pages/Finance/InvoiceDashboardPage.jsx';
+import { QuotationList } from './pages/Business/QuotationList';
+import { QuotationFormNew } from './pages/Business/QuotationFormNew';
+// import { QuotationListV2 } from './pages/Business/QuotationListV2';
+// import { QuotationFormV2 } from './pages/../archive/pages/QuotationFormV2';
 import MobileScreenManager from './pages/Admin/MobileScreenManager';
 import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
 import MediaLibrary from './pages/Admin/MediaLibrary.jsx';
@@ -69,14 +62,13 @@ import LandingPageList from './pages/LandingPages/LandingPageList.jsx';
 import LandingPageEditor from './pages/LandingPages/LandingPageEditor.jsx';
 
 import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
-import MonitorServiceManager from './pages/MonitorServiceManager.jsx';
-import { ProductStandardization } from './pages/ProductStandardization.jsx';
-import { ProductMappingManager } from './pages/ProductMappingManager.jsx';
-import { EcountProductManager } from './pages/EcountProductManager.jsx';
-import ProductMobileManagerV3 from './components/ProductMobileManagerV3.jsx'; // [NEW V3 MAIN]
-import ProductMobileDetailV3 from './components/ProductMobileDetailV3.jsx'; // [NEW V3 DETAIL]
-import ProductUnifiedEditor from './pages/ProductUnifiedEditor';
-import ProductMobileManager from './components/ProductMobileManager.jsx'; // [OLD V1/V2]
+import MonitorServiceManager from './pages/System/MonitorServiceManager.jsx';
+import { ProductStandardization } from './pages/Inventory/ProductStandardization.jsx';
+import { ProductMappingManager } from './pages/Inventory/ProductMappingManager.jsx';
+import { EcountProductManager } from './pages/Inventory/EcountProductManager.jsx';
+import ProductMobileManagerV3 from './components/Product/ProductMobileManagerV3.jsx'; // [NEW V3 MAIN]
+import ProductMobileDetailV3 from './components/Product/ProductMobileDetailV3.jsx'; // [NEW V3 DETAIL]
+import ProductUnifiedEditor from './pages/Product/ProductUnifiedEditor';
 
 // [NEW] User & Auth Pages
 import { ProfilePage } from './pages/Profile/ProfilePage.jsx';
@@ -113,13 +105,9 @@ const navItems = [
     },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Web', permission: 'invoice.view', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m4.5-12h-8.25A2.25 2.25 0 009 6.75v10.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25V9.75A2.25 2.25 0 0018.75 7.5H15', component: <InvoicesContent /> },
     { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Web', permission: 'system.sync', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', component: <ProductStandardization /> },
-    // { id: 'product-mobile-manager', path: '/product-mobile', label: 'Quản lý SP web (Cũ)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManager /> },
     { id: 'product-mobile-manager-v3', path: '/product-mobile-v3', label: 'Quản lý SP web v3 (Mới)', group: 'Web', permission: 'system.sync', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3', component: <ProductMobileManagerV3 /> }, // [NEW V3 ITEM]
     { id: 'ecount-manager', path: '/ecount-manager', label: 'Kho ECount (Master)', group: 'Web', permission: 'system.sync', icon: 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9', component: <EcountProductManager /> },
     { id: 'product-unified-editor', path: '/product-edit/:id', label: 'Editor', group: 'Hidden', permission: 'system.sync', icon: '', component: <ProductUnifiedEditor />, hidden: true },
-    // { id: 'category-nextgen', path: '/categories-nextgen', label: 'Danh mục (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', component: <CategoryManager /> },
-    // { id: 'brand-nextgen', path: '/brands-nextgen', label: 'Thương hiệu (Next-Gen)', group: 'Web', permission: 'system.sync', icon: 'M9 12l2 2 4-4M7.835 4.697a.75.75 0 001.034-.23 6.75 6.75 0 0111.262 0 .75.75 0 001.034.23 8.25 8.25 0 00-13.33 0zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z', component: <BrandManager /> },
-    // { id: 'product-mapping-global', path: '/product-mapping/:id', label: 'Cấu hình Mapping', group: 'Web', permission: 'system.sync', icon: 'M12 4.5v15m7.5-7.5h-15', component: <ProductMappingManager /> },
 
     // --- NHÓM MEDIA (DƯỚI WEB) ---
     {
@@ -230,16 +218,6 @@ const navItems = [
         icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
         component: <MonitorServiceManager />
     },
-    // { 
-    //     id: 'unit-conversions', 
-    //     path: '/system/unit-conversions', 
-    //     label: 'Quy đổi Đơn vị tính', 
-    //     group: 'Hệ thống', 
-    //     permission: 'system.security', 
-    //     icon: 'M12 3v18m9-9H3m15.75 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z', 
-    //     component: <UnitConversionManager /> 
-    // },
-    // { id: 'import-center', path: '/import-center', label: 'Trung tâm Nạp liệu', group: 'Hệ thống', permission: 'system.import', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <ImportManagement /> },
     {
         id: 'mobile-screen-manager',
         path: '/system/mobile-screens',
@@ -430,7 +408,6 @@ const App = () => {
                                 />
                             ))}
 
-                            <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/product-mapping/:id" element={<ProductMappingManager />} />
 

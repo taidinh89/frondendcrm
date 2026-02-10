@@ -17,7 +17,7 @@ import moment from 'moment';
 
 import TemplateLibrary from './TemplateLibrary';
 import VersionHistory from './VersionHistory';
-import MediaManagerModal from '../../components/MediaManagerModal';
+import MediaManagerModal from '../../components/Modals/MediaManagerModal';
 
 const { Content, Sider } = Layout;
 const { Option } = Select;

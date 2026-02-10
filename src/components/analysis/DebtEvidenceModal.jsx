@@ -6,7 +6,7 @@ import { Modal, Button, Icon } from '../ui.jsx';
 import { Tabs } from './Tabs.jsx';
 
 // [MỚI] Import Modal Chi tiết đơn hàng (để dùng chung logic với Dashboard)
-import { SalesOrderDetailModal } from '../../components/SalesOrderDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx';
 
 // Helper format tiền
 const formatPrice = (val) => new Intl.NumberFormat('vi-VN').format(Number(val) || 0);

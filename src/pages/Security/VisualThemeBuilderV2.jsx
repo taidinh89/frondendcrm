@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { Icon } from '../../components/ui'; // Assuming this exists based on V1
-import MediaManager from '../../components/MediaManager';
+import MediaManager from '../../components/Core/MediaManager';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';

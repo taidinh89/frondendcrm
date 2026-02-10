@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { Icon, Modal } from '../../components/ui';
-import MediaManager from '../../components/MediaManager';
+import MediaManager from '../../components/Core/MediaManager';
 
 const VisualThemeEditor = () => {
     const [sites, setSites] = useState([]);

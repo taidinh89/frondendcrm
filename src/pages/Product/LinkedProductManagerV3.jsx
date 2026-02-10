@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { productApi } from '../../api/admin/productApi';
 import { Icon } from '../../components/ui';
-import LinkedProductDetailV3 from '../../components/LinkedProductDetailV3';
+import LinkedProductDetailV3 from '../../components/Product/LinkedProductDetailV3';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 

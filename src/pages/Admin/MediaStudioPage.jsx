@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import MediaManager from '../../components/MediaManager';
+import MediaManager from '../../components/Core/MediaManager';
 import { Icon } from '../../components/ui';
 
 const MediaStudioPage = () => {
