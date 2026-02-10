@@ -34,7 +34,7 @@ const SyncWidget = ({ label, data, onSync, isTriggering }) => {
                     </div>
                 ) : isSyncing ? (
                     <div className="flex items-center text-blue-600 text-[10px] font-black uppercase italic">
-                        <svg className="animate-spin h-3 w-3 mr-1 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <svg className="animate-spin h-3 w-3 mr-1 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12 a8 8 0 01 8-8 V0 C5.373 0 0 12h4 z m2 5.291 A7.962 7.962 0 01 4 12 H0 c0 3.042 1.135 5.824 3 7.938 l3-2.647 z"></path></svg>
                         Syncing...
                     </div>
                 ) : (
@@ -82,9 +82,14 @@ export const DirectInventoryChecker = () => {
         category: '',
         supplier: '',
         has_stock: false,
-        per_page: 50
+        vat_rate: ''
     });
-    const [filterOptions, setFilterOptions] = useState({ brands: [], categories: [], suppliers: [] });
+    const [filterOptions, setFilterOptions] = useState({
+        brands: [],
+        categories: [],
+        suppliers: [],
+        vat_rates: []
+    });
 
     const openDetail = (item) => {
         setSelectedItem(item);
@@ -202,7 +207,7 @@ export const DirectInventoryChecker = () => {
             nextPageRef.current = 1;
             fetchList(1);
         }
-    }, [mode, filters.brand, filters.category, filters.has_stock, sourceType, fetchList]);
+    }, [mode, filters.brand, filters.category, filters.has_stock, filters.vat_rate, sourceType, fetchList]);
 
     // Infinite Scroll via IntersectionObserver
     useEffect(() => {
@@ -284,9 +289,9 @@ export const DirectInventoryChecker = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#f8fafc] overflow-hidden">
+        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
             {/* Header */}
-            <div className="px-6 py-4 bg-white border-b border-gray-200 flex flex-wrap items-center justify-between sticky top-0 z-10 shadow-sm gap-4">
+            <div className="px-4 md:px-6 py-3 md:py-4 bg-white border-b border-gray-200 flex flex-wrap items-center justify-between shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="flex bg-blue-600 rounded-xl p-2 shadow-lg shadow-blue-200">
                         <UI.Icon path="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" className="w-5 h-5 text-white" />
@@ -314,8 +319,8 @@ export const DirectInventoryChecker = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center bg-gray-100 p-1 rounded-xl">
+                <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto scrollbar-hide pb-1 md:pb-0">
+                    <div className="flex items-center bg-gray-100 p-1 rounded-xl shrink-0">
                         {[
                             { id: 'table_legacy', title: 'Bản gốc', icon: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6.25c-.621 0-1.125.504-1.125 1.125v8.25c0 .621.504 1.125 1.125 1.125h11.5c.621 0 1.125-.504 1.125-1.125V12c0-.621.504-1.125 1.125-1.125h2a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H18m-5.25-13.5h2.25a2.25 2.25 0 012.25 2.25v2.25a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25V6.75a2.25 2.25 0 012.25-2.25z' },
                             { id: 'table_v2', title: 'Siêu Bảng', icon: 'M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5' },
@@ -326,7 +331,7 @@ export const DirectInventoryChecker = () => {
                             <button
                                 key={v.id}
                                 onClick={() => setViewMode(v.id)}
-                                className={`p-2 rounded-lg transition-all ${viewMode === v.id ? 'bg-white shadow-sm text-blue-600 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`p-2 rounded-lg transition-all shrink-0 ${viewMode === v.id ? 'bg-white shadow-sm text-blue-600 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
                                 title={v.title}
                             >
                                 <UI.Icon path={v.icon} className="w-4 h-4" />
@@ -334,7 +339,7 @@ export const DirectInventoryChecker = () => {
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-10">
+                    <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-10 shrink-0">
                         <SyncWidget
                             label="Ecount"
                             data={syncStatus.ecount}
@@ -351,14 +356,14 @@ export const DirectInventoryChecker = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto flex flex-col">
                 {mode === 'list' ? (
                     <>
-                        <div className="bg-white px-6 py-4 border-b border-gray-100 flex flex-col gap-4">
+                        <div className="bg-white px-4 md:px-6 py-3 md:py-4 border-b border-gray-100 flex flex-col gap-4 shadow-sm">
                             {/* Source Picker */}
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nguồn:</span>
-                                <div className="flex bg-gray-100 p-1 rounded-xl">
+                            <div className="flex flex-nowrap items-center gap-3 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Nguồn:</span>
+                                <div className="flex items-center bg-slate-100 p-1 rounded-xl shrink-0">
                                     {[
                                         { id: 'all', label: 'Tất cả' },
                                         { id: 'ecount_only', label: 'Chỉ Ecount' },
@@ -369,15 +374,15 @@ export const DirectInventoryChecker = () => {
                                         <button
                                             key={s.id}
                                             onClick={() => setSourceType(s.id)}
-                                            className={`px-4 py-1 text-[11px] font-bold rounded-lg transition-all ${sourceType === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+                                            className={`shrink-0 px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${sourceType === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-slate-600'}`}
                                         >
                                             {s.label}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="ml-auto flex items-center gap-4 text-[11px] font-bold">
-                                    <span className="text-slate-400 uppercase tracking-widest">TỔNG CỘNG:</span>
-                                    <span className="text-blue-600">{pagination.total} <span className="text-slate-400 text-[9px] uppercase">trình diện</span></span>
+                                <div className="flex items-center gap-2 ml-auto shrink-0 pl-4">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:inline">Tổng cộng:</span>
+                                    <span className="text-blue-600 font-bold">{pagination.total} <span className="text-slate-400 text-[9px] uppercase">trình diện</span></span>
                                     {isFetchingNextPage && (
                                         <div className="flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1 rounded-lg animate-pulse">
                                             <div className="w-3 h-3 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
@@ -414,6 +419,14 @@ export const DirectInventoryChecker = () => {
                                 >
                                     <option value="">Tất cả nhóm</option>
                                     {filterOptions.categories.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                                </select>
+                                <select
+                                    className="h-10 px-4 text-sm bg-slate-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 min-w-[120px]"
+                                    value={filters.vat_rate}
+                                    onChange={e => setFilters(f => ({ ...f, vat_rate: e.target.value }))}
+                                >
+                                    <option value="">Tất cả Thuế</option>
+                                    {filterOptions.vat_rates.map(v => <option key={v} value={v}>{v}%</option>)}
                                 </select>
                                 <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-50 h-10 px-4 rounded-xl hover:bg-slate-100">
                                     <input

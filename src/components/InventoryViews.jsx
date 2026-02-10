@@ -652,6 +652,7 @@ export const InventoryLegacyTable = ({
     parentRef,
     loadMoreRef
 }) => {
+    const [isMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
     // 1. Column Widths State to allow Resizing
     const [colWidths, setColWidths] = useState({
         source: 80,
@@ -751,9 +752,6 @@ export const InventoryLegacyTable = ({
             <div
                 style={{
                     width,
-                    left: isSticky ? left : undefined,
-                    position: isSticky ? 'sticky' : 'relative',
-                    zIndex: isSticky ? 50 : undefined
                 }}
                 className={`px-4 py-3 flex items-center shrink-0 border-r border-slate-200 h-full relative group/h cell-header bg-slate-50/50 ${className}`}
                 onClick={onClick}
@@ -776,24 +774,21 @@ export const InventoryLegacyTable = ({
         <div
             style={{
                 width,
-                left: isSticky ? left : undefined,
-                position: isSticky ? 'sticky' : 'relative',
-                zIndex: isSticky ? 10 : undefined
             }}
-            className={`px-4 py-3 flex items-center shrink-0 border-r border-slate-100 h-full truncate ${isSticky ? 'bg-white' : ''} ${className}`}
+            className={`px-4 py-3 flex items-center shrink-0 border-r border-slate-100 h-full truncate ${className}`}
         >
             {children}
         </div>
     );
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm h-[calc(100vh-280px)]">
+        <div className="flex-1 flex flex-col min-h-0 bg-white border border-slate-200 rounded-xl shadow-sm">
             {/* Scroll Container */}
             <div className="flex-1 overflow-auto bg-slate-50/30" ref={parentRef}>
                 <div style={{ width: totalWidth, minWidth: '100%', position: 'relative' }}>
 
-                    {/* Header: Separate from rows to stay static vertically if needed, but here we want it sticky */}
-                    <div className="flex sticky top-0 z-30 bg-white border-b border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                    {/* Header: Normal flow */}
+                    <div className="flex bg-white border-b border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                         <HeaderCell id="source" width={colWidths.source} isSticky left={offsets.source} className="z-40">Nguồn</HeaderCell>
                         <HeaderCell id="sku" width={colWidths.sku} isSticky left={offsets.sku} className="z-40">Mã SKU</HeaderCell>
                         <HeaderCell id="name_ecount" width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="z-40" onClick={() => onSort('product_name')} sortKey="product_name">Tên Ecount</HeaderCell>
