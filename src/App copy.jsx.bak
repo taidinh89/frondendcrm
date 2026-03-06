@@ -1,4 +1,4 @@
-// src/App.jsx
+npm install laravel-echo pusher-js
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';

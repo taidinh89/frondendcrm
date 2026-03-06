@@ -143,6 +143,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
     const [filter, setFilter] = useState('');
     const [editingPerm, setEditingPerm] = useState(null);
     const [expandedGroups, setExpandedGroups] = useState({}); // Quản lý đóng/mở group
+    const [actionLoading, setActionLoading] = useState(null); // ID of permission being modified
 
     useEffect(() => {
         if (setAppTitle) setAppTitle('Security Matrix v5.0');
@@ -201,6 +202,35 @@ const PermissionMatrix = ({ setAppTitle }) => {
         setExpandedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
     };
 
+    const expandAll = () => {
+        const groups = {};
+        Object.keys(data.matrix).forEach(key => groups[key] = true);
+        setExpandedGroups(groups);
+    };
+
+    const collapseAll = () => {
+        const groups = {};
+        Object.keys(data.matrix).forEach(key => groups[key] = false);
+        setExpandedGroups(groups);
+    };
+
+    const handleBulkToggle = async (groupName, targetStatus) => {
+        if (!window.confirm(`Chuyển TÀN BỘ API trong nhóm "${groupName}" sang ${targetStatus.toUpperCase()}?`)) return;
+
+        const perms = data.matrix[groupName];
+        setLoading(true);
+        try {
+            await Promise.all(perms.map(p =>
+                axios.put(`/api/v2/security/permissions/${p.id}/status`, { status: targetStatus })
+            ));
+            toast.success(`Đã cập nhật nhóm ${groupName}`);
+            loadData();
+        } catch (e) {
+            toast.error("Lỗi cập nhật hàng loạt");
+            loadData();
+        }
+    };
+
     if (loading) return <div className="p-20 text-center font-black text-gray-400 animate-pulse text-xl">ĐANG TẢI MA TRẬN...</div>;
 
     return (
@@ -222,6 +252,8 @@ const PermissionMatrix = ({ setAppTitle }) => {
                             value={filter}
                             onChange={e => setFilter(e.target.value)}
                         />
+                        <button onClick={expandAll} className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition text-xs font-bold" title="Mở rộng tất cả">↕️ Mở</button>
+                        <button onClick={collapseAll} className="p-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition text-xs font-bold" title="Thu gọn tất cả">↔️ Đóng</button>
                         <button onClick={loadData} className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition">🔄</button>
                     </div>
                 </div>
@@ -243,7 +275,7 @@ const PermissionMatrix = ({ setAppTitle }) => {
                                 {/* Group Header */}
                                 <div
                                     onClick={() => toggleGroup(group)}
-                                    className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors"
+                                    className="group px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black text-xs shadow-sm">
@@ -252,6 +284,20 @@ const PermissionMatrix = ({ setAppTitle }) => {
                                         <h3 className="font-bold text-gray-700 uppercase tracking-wide">{group} Module</h3>
                                     </div>
                                     <div className="flex items-center gap-3">
+                                        <div className="hidden group-hover:flex gap-1 mr-2 animate-fade-in">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleBulkToggle(group, 'active'); }}
+                                                className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-[9px] font-bold hover:bg-green-200"
+                                            >
+                                                BATCH ACTIVE
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleBulkToggle(group, 'maintenance'); }}
+                                                className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[9px] font-bold hover:bg-yellow-200"
+                                            >
+                                                BATCH MAINT
+                                            </button>
+                                        </div>
                                         <span className="text-[10px] font-bold bg-white border px-2 py-1 rounded text-gray-500">{permissions.length} API</span>
                                         <span className={`transform transition-transform ${expandedGroups[group] ? 'rotate-180' : ''}`}>▼</span>
                                     </div>

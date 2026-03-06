@@ -30,9 +30,9 @@ export default function ProductMobileManagerV3() {
             const p = isRefresh ? 1 : page;
             const res = await productApi.getLibrary({ page: p, search });
 
-            const rawData = res.data.data;
-            const productsList = Array.isArray(rawData) ? rawData : (rawData?.data || []);
-            const meta = res.data.meta || {};
+            const resData = res.data;
+            const productsList = Array.isArray(resData) ? resData : (resData?.data || []);
+            const meta = resData?._meta || resData?.meta || {};
 
             if (isRefresh) {
                 setProducts(productsList);
@@ -45,8 +45,8 @@ export default function ProductMobileManagerV3() {
 
             if (meta.pagination) {
                 if (p >= meta.pagination.total_pages) setHasMore(false);
-            } else if (res.data.meta?.total_pages) {
-                if (p >= res.data.meta.total_pages) setHasMore(false);
+            } else if (meta.total_pages) {
+                if (p >= meta.total_pages) setHasMore(false);
             }
 
         } catch (e) {
@@ -100,13 +100,16 @@ export default function ProductMobileManagerV3() {
             setPage(nextPage);
             productApi.getLibrary({ page: nextPage, search })
                 .then(res => {
-                    const rawData = res.data.data;
-                    const newData = Array.isArray(rawData) ? rawData : (rawData?.data || []);
+                    const resData = res.data;
+                    const newData = Array.isArray(resData) ? resData : (resData?.data || []);
                     setProducts(prev => [...prev, ...newData]);
 
-                    const meta = res.data.meta || {};
-                    const lastPage = meta.pagination?.total_pages || meta.total_pages;
+                    const meta = resData?._meta || resData?.meta || {};
+                    const lastPage = meta.pagination?.total_pages || meta.total_pages || 1;
                     if (newData.length === 0 || nextPage >= lastPage) setHasMore(false);
+                }).catch(e => {
+                    console.error("Load more error", e);
+                    setHasMore(false);
                 });
         }
     };

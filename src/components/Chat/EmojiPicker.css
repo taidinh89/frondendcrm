@@ -1,0 +1,114 @@
+.emoji-picker-container {
+    position: relative;
+    display: inline-block;
+}
+
+.emoji-trigger-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.emoji-trigger-btn:hover {
+    background: #f0f0f0;
+    color: #003366;
+}
+
+.emoji-picker-popup {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    width: 320px;
+    max-height: 400px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.emoji-picker-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.emoji-picker-header span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.emoji-categories {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px;
+}
+
+.emoji-category {
+    margin-bottom: 16px;
+}
+
+.category-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+}
+
+.emoji-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.emoji-button:hover {
+    background: #e8f4f8;
+    transform: scale(1.2);
+}
+
+.emoji-button:active {
+    transform: scale(1.1);
+}
+
+/* Scrollbar styling */
+.emoji-categories::-webkit-scrollbar {
+    width: 6px;
+}
+
+.emoji-categories::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.emoji-categories::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.emoji-categories::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}

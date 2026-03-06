@@ -1,0 +1,101 @@
+.media-uploader {
+    width: 100%;
+}
+
+.drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.drop-zone:hover {
+    border-color: #003366;
+    background: #e8f4f8;
+}
+
+.upload-icon {
+    color: #003366;
+    margin-bottom: 8px;
+}
+
+.drop-zone p {
+    margin: 8px 0 4px;
+    font-weight: 500;
+    color: #333;
+}
+
+.drop-zone small {
+    color: #666;
+    font-size: 12px;
+}
+
+.media-preview {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+    padding: 12px;
+}
+
+.media-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 4px;
+}
+
+.media-preview-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    color: #666;
+}
+
+.media-preview-icon span {
+    font-size: 13px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-progress {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-progress span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #003366;
+}
+
+.remove-preview {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.remove-preview:hover {
+    background: rgba(0, 0, 0, 0.8);
+}

@@ -2,7 +2,8 @@ import React from 'react';
 import { Icon } from '../ui';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
+import chatApi from '../../services/chatApi';
+import { useChatStore } from '../../stores/useChatStore';
 export const LoginPage = () => {
     const handleGoogleLogin = () => { window.location.href = '/auth/google/redirect'; };
 
@@ -244,42 +245,125 @@ export const LoginPage = () => {
 };
 
 export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebarPinned, onTogglePin, onSearchClick }) => {
+    const isChatV2 = currentView?.id === 'chat-v2' || currentView?.id === 'chat';
+    const headerBg = isChatV2 ? 'bg-[#003366]' : 'bg-white';
+    const textColor = isChatV2 ? 'text-white' : 'text-gray-800';
+    const iconColor = isChatV2 ? 'text-white hover:text-blue-300' : 'text-gray-500 hover:text-blue-600';
+
+    // [REFACTOR] Sử dụng Global Store thay vì tự fetch
+    const notifications = useChatStore((state) => state.notifications);
+    const unreadCount = useChatStore((state) => state.unreadNotifyCount);
+    const markNotifyReadLocal = useChatStore((state) => state.markNotifyReadLocal);
+
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    const handleMarkRead = async (n) => {
+        try {
+            if (!n.read_at) {
+                // Update UI immediately (optimistic)
+                markNotifyReadLocal(n.id);
+                // Background update
+                chatApi.post(`v1/notifications/${n.id}/read`).catch(console.error);
+            }
+            if (n.data?.url) {
+                // Nếu là URL nội bộ (bản thân CRM)
+                if (n.data.url.startsWith('/')) {
+                    // Cần dùng navigate từ react-router-dom nếu Header có access
+                    // Ở đây Header không có hook navigate sẵn, ta có thể dùng window.location hoặc tìm cách khác
+                    // Tuy nhiên Header này nằm trong App, có thể truyền navigate vào hoặc dùng window.location
+                    window.location.href = n.data.url;
+                } else {
+                    window.open(n.data.url, '_blank');
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     return (
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6 flex-shrink-0 z-10">
+        <header className={`h-16 ${headerBg} border-b border-opacity-10 flex items-center justify-between px-6 flex-shrink-0 z-50 transition-colors duration-300`}>
             <div className="flex items-center">
-                {/* --- 1. SỬA ICON MENU MOBILE (Giữ nguyên hoặc làm đậm hơn) --- */}
-                <button onClick={onToggleSidebar} className="lg:hidden mr-3 text-gray-500 hover:text-blue-600 transition-colors">
+                <button onClick={onToggleSidebar} className={`lg:hidden mr-3 ${iconColor} transition-colors`}>
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </button>
 
-                {/* --- 2. SỬA ICON THU GỌN/MỞ RỘNG TRÊN PC (Fix lỗi icon chỉ có 1 gạch) --- */}
-                <button onClick={onTogglePin} className="hidden lg:block mr-4 text-gray-500 hover:text-blue-600 transition-colors" title={isSidebarPinned ? "Thu gọn menu" : "Ghim menu"}>
-                    {/* Dùng icon 3 gạch (Hamburger) chuẩn để làm nút toggle */}
+                <button onClick={onTogglePin} className={`hidden lg:block mr-4 ${iconColor} transition-colors`} title={isSidebarPinned ? "Thu gọn menu" : "Ghim menu"}>
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </button>
 
-                <h1 className="text-lg font-semibold text-gray-800">{currentView.label}</h1>
+                <h1 className={`text-lg font-bold ${textColor}`}>{currentView.label}</h1>
             </div>
             <div className="flex items-center space-x-4">
-                <button onClick={onSearchClick} className="text-gray-600 hover:text-blue-600 transition-colors">
+                <button onClick={onSearchClick} className={`${iconColor} transition-colors`}>
                     <Icon path="M10.5 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.657-5.657" />
                 </button>
 
+                <div className="relative">
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`p-2 rounded-full hover:bg-black hover:bg-opacity-5 ${iconColor} transition-all relative`}
+                    >
+                        {unreadCount > 0 && (
+                            <div className="min-w-[16px] h-4 bg-red-500 rounded-full absolute top-1 right-1 border-2 border-white text-[10px] flex items-center justify-center text-white px-1">
+                                {unreadCount}
+                            </div>
+                        )}
+                        <Icon name="bell" />
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border border-gray-100 overflow-hidden z-50">
+                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                                <span className="font-bold text-gray-800">Thông báo</span>
+                                <Link to="/notifications/admin" className="text-xs text-blue-600 font-bold" onClick={() => setIsOpen(false)}>Quản lý</Link>
+                            </div>
+                            <div className="max-h-96 overflow-y-auto">
+                                {notifications.length > 0 ? (
+                                    notifications.map(n => (
+                                        <div
+                                            key={n.id}
+                                            onClick={() => { handleMarkRead(n); setIsOpen(false); }}
+                                            className={`p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read_at ? 'bg-blue-50/30' : ''}`}
+                                        >
+                                            <div className="flex gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                                    <Icon name="bell" />
+                                                </div>
+                                                <div>
+                                                    <p className={`text-sm ${!n.read_at ? 'font-bold' : 'font-medium'} text-gray-800`}>
+                                                        {n.data?.title || 'Thông báo hệ thống'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.data?.body || n.data?.message}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">
+                                                        {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-10 text-center text-gray-400 text-sm italic">Không có thông báo mới</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {user && (
-                    <Link to="/profile" className="text-sm hidden sm:flex font-medium text-gray-700 hover:text-blue-600 transition-colors items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase border border-blue-200">
+                    <Link to="/profile" className={`text-sm hidden sm:flex font-medium ${textColor} opacity-90 hover:opacity-100 transition-all items-center gap-2`}>
+                        <div className={`w-8 h-8 rounded-full ${isChatV2 ? 'bg-white bg-opacity-20' : 'bg-blue-100'} flex items-center justify-center ${isChatV2 ? 'text-white' : 'text-blue-600'} font-bold text-xs uppercase border border-white border-opacity-20`}>
                             {user.avatar ? <img src={user.avatar} alt="avar" className="w-full h-full rounded-full object-cover" /> : user.name?.charAt(0)}
                         </div>
-                        <span>Chào, {user.name}</span>
+                        <span className="font-semibold">{user.name}</span>
                     </Link>
                 )}
 
-                {/* --- 3. SỬA ICON LOGOUT (Fix lỗi icon bị mất hình) --- */}
-                <button onClick={onLogout} className="text-gray-500 hover:text-red-600 transition-colors" title="Đăng xuất">
-                    {/* Icon "Cánh cửa có mũi tên đi ra" (Arrow Right On Rectangle) */}
-                    <Icon path="M15.75 9V5.25a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v13.5a2.25 2.25 0 002.25 2.25h6.75a2.25 2.25 0 002.25-2.25v-3.75m-3-3.75h10.5m-10.5 0l3-3m-3 3l3 3" />
+                <button onClick={onLogout} className={`${isChatV2 ? 'text-white' : 'text-gray-500'} hover:text-red-400 transition-colors`} title="Đăng xuất">
+                    <Icon name="logout" />
                 </button>
             </div>
+            {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>}
         </header>
     );
 };
@@ -298,6 +382,30 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
         return acc;
     }, {});
 
+    // [MOD] SẮP XẾP NHÓM MENU: Đưa Hệ thống xuống cuối và ưu tiên thứ tự nghiệp vụ
+    const groupOrder = ['Giao tiếp', 'Chung', 'Kinh doanh', 'Web', 'Media', 'Thanh toán', 'Báo cáo', 'Quản lý Website'];
+    const sortedGroups = Object.entries(groupedItems).sort(([groupA], [groupB]) => {
+        const isSystemA = groupA.startsWith('Hệ thống');
+        const isSystemB = groupB.startsWith('Hệ thống');
+
+        // Nếu A là hệ thống, B không phải -> A xuống sau
+        if (isSystemA && !isSystemB) return 1;
+        if (!isSystemA && isSystemB) return -1;
+
+        // Nếu cả 2 đều là hệ thống -> Sắp xếp theo tên (Bảo mật, Nhân sự, Giám sát...)
+        if (isSystemA && isSystemB) return groupA.localeCompare(groupB);
+
+        // Các nhóm nghiệp vụ khác sắp xếp theo mảng groupOrder
+        const idxA = groupOrder.indexOf(groupA);
+        const idxB = groupOrder.indexOf(groupB);
+
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+
+        return groupA.localeCompare(groupB);
+    });
+
     return (
         <>
             <div className={`fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
@@ -314,7 +422,7 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
 
                 {/* PHẦN CUỘN MENU: Quan trọng nhất để fix lỗi mobile */}
                 <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto overflow-x-hidden custom-sidebar">
-                    {Object.entries(groupedItems).map(([groupName, items]) => {
+                    {sortedGroups.map(([groupName, items]) => {
                         const visibleItems = items.filter(item => !checkAccess || checkAccess(item.permission));
                         if (visibleItems.length === 0) return null;
 

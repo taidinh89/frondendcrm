@@ -1,0 +1,63 @@
+.tags-manager-modal .create-tag-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.tags-manager-modal .color-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tags-manager-modal .color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: 2px solid transparent;
+}
+
+.tags-manager-modal .color-option:hover {
+    transform: scale(1.1);
+}
+
+.tags-manager-modal .color-option.selected {
+    border-color: #000;
+    transform: scale(1.2);
+}
+
+.tags-manager-modal .section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tags-manager-modal .tag-usage {
+    font-size: 12px;
+    color: #999;
+}
+
+.tags-manager-modal .modal-footer {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 16px;
+}
+
+.tags-manager-modal .manage-link {
+    color: #1890ff;
+    font-size: 13px;
+}
+
+.tags-manager-modal .manage-link:hover {
+    text-decoration: underline;
+}

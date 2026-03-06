@@ -21,17 +21,24 @@ const ProductUnifiedEditor = () => {
 
     const [dictionary, setDictionary] = useState(location.state?.dictionary || null);
     const [detailVersion, setDetailVersion] = useState(() => {
-        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
-        const saved = localStorage.getItem(storageKey);
-        if (saved) return saved;
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        return isMobile ? 'v4' : 'v3';
+        // 1. Nếu là PC (không phải Mobile UA), ép về v3 (Bản đầy đủ)
+        if (!isMobileUA) {
+            localStorage.setItem('pm_local_version', 'v3');
+            return 'v3';
+        }
+
+        // 2. Nếu là Mobile, kiểm tra ưu tiên Mobile
+        const savedMobile = localStorage.getItem('pm_mobile_version_pref');
+        if (savedMobile) return savedMobile;
+
+        return 'v4'; // Mặc định mobile dùng Lite (v4)
     });
 
     useEffect(() => {
-        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const storageKey = isMobile ? 'pm_mobile_version_pref' : 'pm_local_version';
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const storageKey = isMobileUA ? 'pm_mobile_version_pref' : 'pm_local_version';
         localStorage.setItem(storageKey, detailVersion);
     }, [detailVersion]);
 

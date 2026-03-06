@@ -53,9 +53,19 @@ import { QuotationFormNew } from './pages/Business/QuotationFormNew';
 // import { QuotationListV2 } from './pages/Business/QuotationListV2';
 // import { QuotationFormV2 } from './pages/../archive/pages/QuotationFormV2';
 import MobileScreenManager from './pages/Admin/MobileScreenManager';
+import AppSDUIManager from './pages/Admin/AppSDUIManager';
 import MobileAppBuilder from './pages/Admin/MobileAppBuilder.jsx';
 import MediaLibrary from './pages/Admin/MediaLibrary.jsx';
 import MediaStudioPage from './pages/Admin/MediaStudioPage.jsx';
+import NewsFeedManager from './pages/Admin/NewsFeedManager.jsx';
+
+// [NEW V3] SDUI App Builder Pages
+import BlockLibrary from './pages/AppManager/BlockLibrary.jsx';
+import ScreenBuilder from './pages/AppManager/ScreenBuilder.jsx';
+import TargetingManager from './pages/AppManager/TargetingManager.jsx';
+import NavigationManager from './pages/AppManager/NavigationManager.jsx';
+import VersionHistory from './pages/AppManager/VersionHistory.jsx';
+import AuditCenter from './pages/AppManager/AuditCenter.jsx';
 
 // [NEW] Landing Page Management
 import LandingPageList from './pages/LandingPages/LandingPageList.jsx';
@@ -69,6 +79,12 @@ import { EcountProductManager } from './pages/Inventory/EcountProductManager.jsx
 import ProductMobileManagerV3 from './components/Product/ProductMobileManagerV3.jsx'; // [NEW V3 MAIN]
 import ProductMobileDetailV3 from './components/Product/ProductMobileDetailV3.jsx'; // [NEW V3 DETAIL]
 import ProductUnifiedEditor from './pages/Product/ProductUnifiedEditor';
+import OmnichannelChatPage from './components/Chat/OmnichannelChatPage.jsx'; // [OMNICHANNEL CHAT]
+import InternalChatPage from './pages/Communication/InternalChatPage.jsx'; // [INTERNAL CHAT]
+import ChatBubble from './components/Chat/ChatBubble.jsx'; // [GLOBAL CHAT BUBBLE WIDGET]
+import ChannelManager from './components/Chat/ChannelManager.jsx'; // [OMNICHANNEL ADMIN]
+import StaffGroupManager from './components/Chat/StaffGroupManager.jsx'; // [STAFF GROUP ADMIN]
+import NotificationManager from './components/Notification/NotificationManager.jsx'; // [NEW NOTIFICATION ADMIN]
 
 // [NEW] User & Auth Pages
 import { ProfilePage } from './pages/Profile/ProfilePage.jsx';
@@ -76,6 +92,51 @@ import { ResetPasswordPage } from './pages/Auth/ResetPasswordPage.jsx';
 
 // --- 3. CẤU HÌNH MENU (NAV ITEMS) ---
 const navItems = [
+    {
+        id: 'chat-v2',
+        path: '/chat-v2',
+        label: 'Chat Đa kênh V2',
+        group: 'Giao tiếp',
+        permission: null,
+        icon: 'M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z',
+        component: <OmnichannelChatPage />
+    },
+    {
+        id: 'internal-chat',
+        path: '/internal-chat',
+        label: 'Chat Nội bộ',
+        group: 'Giao tiếp',
+        permission: null,
+        icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+        component: <InternalChatPage />
+    },
+    {
+        id: 'chat-admin',
+        path: '/chat-admin',
+        label: 'Quản lý Kênh Chat',
+        group: 'Giao tiếp',
+        permission: 'system.security',
+        icon: 'M10.34 15.84c-.68-.34-1.16-.96-1.34-1.68l-1.5-5a2 2 0 011.34-2.48l5-1.5a2 2 0 012.48 1.34l1.5 5a2 2 0 01-1.34 2.48l-5 1.5a2 2 0 01-2.48-1.34z M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0',
+        component: <ChannelManager />
+    },
+    {
+        id: 'user-group-manager',
+        path: '/user-groups',
+        label: 'Quản lý Nhóm NV',
+        group: 'Giao tiếp',
+        permission: 'system.security',
+        icon: 'M18 18.72a9.094 9.094 0 00-9 0m9 0a8.966 8.966 0 00-4.5-7.962m-4.5 7.962a8.966 8.966 0 01-4.5-7.962m0 0A5.25 5.25 0 0113.5 10.5m0 0v5.25m0 0v5.25m0 0A5.25 5.25 0 0113.5 10.5M6 6.75A5.25 5.25 0 0111.25 1.5m0 0A5.25 5.25 0 0116.5 6.75m-5.25 0v5.25m-5.25 0A5.25 5.25 0 0111.25 1.5',
+        component: <StaffGroupManager />
+    },
+    {
+        id: 'notification-admin',
+        path: '/notifications/admin',
+        label: 'Trung tâm Thông báo',
+        group: 'Giao tiếp',
+        permission: 'system.security',
+        icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
+        component: <NotificationManager />
+    },
     {
         id: 'dashboard',
         path: '/dashboard',
@@ -145,8 +206,8 @@ const navItems = [
     { id: 'sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SepaySyncManager /> },
     { id: 'sepay-admin', path: '/sepay-admin', label: 'Quản trị Dòng tiền', group: 'Thanh toán', permission: 'sepay.viewall', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <SepayDashboard /> },
     { id: 'sepay-cashier', path: '/sepay-cashier', label: 'Thu ngân (QR Code)', group: 'Thanh toán', permission: 'sepay.create', icon: 'M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z', component: <SepayCashier /> },
-    { id: 'security-commander', path: '/security/commander', label: 'Trung tâm Chỉ huy (Sếp)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', component: <SecurityCommanderCenter /> },
-    { id: 'session-manager', path: '/security/sessions', label: 'Quản lý Phiên đăng nhập', group: 'Hệ thống', permission: 'system.security', icon: 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z', component: <SessionManager /> }, // [NEW]
+    { id: 'security-commander', path: '/security/commander', label: 'Trung tâm Chỉ huy (Sếp)', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', component: <SecurityCommanderCenter /> },
+    { id: 'session-manager', path: '/security/sessions', label: 'Quản lý Phiên đăng nhập', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z', component: <SessionManager /> }, // [NEW]
     {
         id: 'visual-builder',
         path: '/security/visual-builder',
@@ -165,11 +226,11 @@ const navItems = [
         icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z', // Zap Icon
         component: <VisualThemeBuilderV2 />
     },
-    { id: 'user-role-manager', path: '/security/users', label: 'Quản lý Người dùng', group: 'Hệ thống', permission: 'system.security', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <UserRoleManager /> },
-    { id: 'security-dashboard', path: '/security/dashboard', label: 'Bảng điều khiển An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SecurityDashboard /> },
-    { id: 'permission-matrix', path: '/security/matrix', label: 'Ma trận Phân quyền', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <PermissionMatrix /> },
-    { id: 'role-manager', path: '/security/roles', label: 'Quản lý Vai trò', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <RoleManager /> },
-    { id: 'org-chart', path: '/security/org-chart', label: 'Sơ đồ Tổ chức (OrgChart)', group: 'Hệ thống', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <OrgChart /> },
+    { id: 'user-role-manager', path: '/security/users', label: 'Quản lý Người dùng', group: 'Hệ thống - Nhân sự', permission: 'system.security', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', component: <UserRoleManager /> },
+    { id: 'security-dashboard', path: '/security/dashboard', label: 'Bảng điều khiển An ninh', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <SecurityDashboard /> },
+    { id: 'permission-matrix', path: '/security/matrix', label: 'Ma trận Phân quyền', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <PermissionMatrix /> },
+    { id: 'role-manager', path: '/security/roles', label: 'Quản lý Vai trò', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <RoleManager /> },
+    { id: 'org-chart', path: '/security/org-chart', label: 'Sơ đồ Tổ chức (OrgChart)', group: 'Hệ thống - Nhân sự', permission: 'system.security', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', component: <OrgChart /> },
     {
         id: 'site-manager',
         path: '/security/sites',
@@ -188,14 +249,14 @@ const navItems = [
         icon: 'M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zm0 6c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zm0 6c0-.355.186-.676.401-.959.221-.29.349-.634.349-.978 0-.344-.128-.688-.349-.979-.215-.282-.401-.603-.401-.958a.563.563 0 01.562-.563h.75c.311 0 .563.251.563.563 0 .355-.186.676-.401.959-.221.29-.349.634-.349.978 0 .344.128.688.349.979.215.282.401.603.401.958a.563.563 0 01-.562.563h-.75a.563.563 0 01-.563-.563zM3.75 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5zm0 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5zm0 6h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5z',
         component: <ThemeVersionManager />
     },
-    { id: 'definitions', path: '/security/definitions', label: 'Định nghĩa An ninh', group: 'Hệ thống', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <Definitions /> },
-    { id: 'department-tree', path: '/department-tree', label: 'Quản lý Phòng ban', group: 'Hệ thống', permission: 'system.security', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', component: <DepartmentTreeManager /> },
-    { id: 'dictionary-management', path: '/dictionary', label: 'Quản lý Từ điển', group: 'Hệ thống', permission: 'system.dictionary', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-.75a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 017.5 4.125v.75a3.375 3.375 0 00-3.375 3.375H3.75a1.125 1.125 0 00-1.125 1.125v2.625c0 .621.504 1.125 1.125 1.125h1.5A3.375 3.375 0 007.5 16.5v.75a1.125 1.125 0 001.125 1.125h1.5a3.375 3.375 0 003.375-3.375v-.75a1.125 1.125 0 011.125-1.125h1.5c.621 0 1.125-.504 1.125-1.125zM10.5 12a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0z', component: <DictionaryManagementPage /> },
+    { id: 'definitions', path: '/security/definitions', label: 'Định nghĩa An ninh', group: 'Hệ thống - Bảo mật', permission: 'system.security', icon: 'M3 13V6a2 2 0 012-2h14a2 2 0 012 2v7M3 13h18M3 13V21M21 13V21M3 21h18', component: <Definitions /> },
+    { id: 'department-tree', path: '/department-tree', label: 'Quản lý Phòng ban', group: 'Hệ thống - Nhân sự', permission: 'system.security', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', component: <DepartmentTreeManager /> },
+    { id: 'dictionary-management', path: '/dictionary', label: 'Quản lý Từ điển', group: 'Hệ thống - Dữ liệu', permission: 'system.dictionary', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-.75a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 017.5 4.125v.75a3.375 3.375 0 00-3.375 3.375H3.75a1.125 1.125 0 00-1.125 1.125v2.625c0 .621.504 1.125 1.125 1.125h1.5A3.375 3.375 0 007.5 16.5v.75a1.125 1.125 0 001.125 1.125h1.5a3.375 3.375 0 003.375-3.375v-.75a1.125 1.125 0 011.125-1.125h1.5c.621 0 1.125-.504 1.125-1.125zM10.5 12a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0z', component: <DictionaryManagementPage /> },
     {
         id: 'system-monitor-v2',
         path: '/system/monitor-v2',
         label: 'Giám sát & Vận hành V2.2',
-        group: 'Hệ thống',
+        group: 'Hệ thống - Giám sát',
         permission: 'system.security',
         icon: 'M9 12.75L11.25 15 15 9.75m-3-10.5c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12 15.75h.007v.008H12v-.008z',
         component: <SystemMonitorPage />
@@ -204,7 +265,7 @@ const navItems = [
         id: 'observer-dashboard',
         path: '/system/intelligence',
         label: 'Trung tâm Giám sát API(Live)',
-        group: 'Hệ thống',
+        group: 'Hệ thống - Giám sát',
         permission: 'system.security',
         icon: 'M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zm-1 5h2v6h-2V9zm0-4h2v2h-2V5z',
         component: <SystemIntelligenceDashboard />
@@ -213,21 +274,35 @@ const navItems = [
         id: 'monitor-config',
         path: '/system/monitor-config',
         label: 'Cấu hình Giám sát API',
-        group: 'Hệ thống',
+        group: 'Hệ thống - Giám sát',
         permission: 'system.security',
         icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
         component: <MonitorServiceManager />
     },
     {
-        id: 'mobile-screen-manager',
-        path: '/system/mobile-screens',
-        label: 'Quản lý App Mobile',
-        group: 'Hệ thống',
+        id: 'app-sdui-manager',
+        path: '/system/sdui',
+        label: 'Kiến tạo App (SDUI) [Legacy]',
+        group: 'Hệ thống - Mobile',
         permission: 'system.security',
-        icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3',
-        component: <MobileScreenManager />
+        icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
+        component: <AppSDUIManager />,
+        hidden: true
     },
-    { id: 'mobileapp-builder', path: '/system/mobileapp-builder', label: 'Xây dựng App Mobile', group: 'Hệ thống', permission: 'system.security', icon: 'M12 6v12m-3-2.818l-.504-.252a1.125 1.125 0 010-2.052l.504-.252L12 12m-3-2.818v2.818m3-2.818l.504.252a1.125 1.125 0 010 2.052l-.504.252L12 12m3-2.818v2.818M11.25 18a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5z', component: <MobileAppBuilder /> },
+    {
+        id: 'news-feed-admin',
+        path: '/system/news-feed',
+        label: 'Quản lý News Feed',
+        group: 'Hệ thống - Mobile',
+        permission: 'system.security',
+        icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+        component: <NewsFeedManager />
+    },
+    /* 
+    Legacy Mobile Managers (V1/V2) - Keeping files but removing from Nav:
+    { id: 'mobile-screen-manager', path: '/system/mobile-screens', label: 'Quản lý App Mobile', group: 'Hệ thống - Mobile', permission: 'system.security', component: <MobileScreenManager /> },
+    { id: 'mobileapp-builder', path: '/system/mobileapp-builder', label: 'Xây dựng App Mobile', group: 'Hệ thống - Mobile', permission: 'system.security', component: <MobileAppBuilder /> },
+    */
 
     // --- LANDING PAGE MANAGEMENT ---
     {
@@ -238,6 +313,62 @@ const navItems = [
         permission: 'system.security',
         icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z',
         component: <LandingPageList />
+    },
+
+    // --- [NEW V3] QUẢN TRỊ ỨNG DỤNG (SDUI BUILDER) ---
+    {
+        id: 'sdui-blocks',
+        path: '/admin/app-manager/blocks',
+        label: 'Kho Linh Kiện (Blocks)',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9',
+        component: <BlockLibrary />
+    },
+    {
+        id: 'sdui-screens',
+        path: '/admin/app-manager/screens',
+        label: 'Thiết Kế Màn Hình',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3',
+        component: <ScreenBuilder />
+    },
+    {
+        id: 'sdui-targeting',
+        path: '/admin/app-manager/targeting',
+        label: 'Phân Phối & Nhắm Mục Tiêu',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+        component: <TargetingManager />
+    },
+    {
+        id: 'sdui-navigation',
+        path: '/admin/app-manager/navigation',
+        label: 'Thanh Điều Hướng (Tab)',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M3.75 6h16.5M3.75 12h16.5M3.75 18h16.5',
+        component: <NavigationManager />
+    },
+    {
+        id: 'sdui-versions',
+        path: '/admin/app-manager/snapshots',
+        label: 'Lịch Sử Phiên Bản',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
+        component: <VersionHistory />
+    },
+    {
+        id: 'sdui-audit',
+        path: '/admin/app-manager/audit',
+        label: 'Trung tâm Kiểm soát (Audit)',
+        group: 'Quản Trị Ứng Dụng (V3)',
+        permission: 'system.security',
+        icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z',
+        component: <AuditCenter />
     },
 
 ];
@@ -304,8 +435,31 @@ const App = () => {
         const checkAuth = async () => {
             try {
                 const response = await axios.get('/api/user');
-                setUser(response.data.user || response.data);
-            } catch (error) { setUser(null); } finally { setIsLoading(false); }
+                const userData = response.data.user || response.data;
+                setUser(userData);
+
+                // [NEW] Lưu User vào LocalStorage để các component khác (như Chat) dùng đồng bộ
+                localStorage.setItem('user', JSON.stringify(userData));
+
+                // [NEW] Nếu chưa có Bearer Token (do log bằng Session/Google), lấy token để dùng cho Chat VPS
+                if (!localStorage.getItem('auth_token')) {
+                    console.info('[Auth] Missing Bearer token, fetching from CRM...');
+                    try {
+                        const tokenRes = await axios.get('/api/auth/token');
+                        if (tokenRes.data.token) {
+                            localStorage.setItem('auth_token', tokenRes.data.token);
+                            console.info('[Auth] Token synchronized successfully.');
+                        }
+                    } catch (e) {
+                        console.warn('[Auth] Failed to fetch sync token', e);
+                    }
+                }
+            } catch (error) {
+                setUser(null);
+                localStorage.removeItem('user');
+            } finally {
+                setIsLoading(false);
+            }
         };
         checkAuth();
     }, []);
@@ -437,6 +591,9 @@ const App = () => {
                     </main>
                 </div>
                 <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} onNavigate={(id) => { handleNavigate(id); setIsSearchOpen(false); }} />
+
+                {/* [GLOBAL] Chat Bubble Widget & Call Coordination */}
+                <ChatBubble user={user} />
             </div>
         );
     };

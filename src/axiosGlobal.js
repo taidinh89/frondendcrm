@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { message } from 'antd';
 
 // =============================================================================
 // 1. CẤU HÌNH HỆ THỐNG
@@ -152,10 +153,64 @@ const smartAdapter = async (config) => {
 };
 
 // =============================================================================
-// 6. ÁP DỤNG
+// 6. CẤU HÌNH ĐỊNH DẠNG RESPONSE CHUẨN (ENVELOPE HANDLER)
+// =============================================================================
+
+// --- Global Response Interceptor ---
+axios.interceptors.response.use(response => {
+    const { data: body } = response;
+
+    // A. Xử lý chuẩn Envelope: { code, status, data, meta }
+    if (body && typeof body === 'object' && (body.status === 'success' || body.success === true)) {
+        // Gán meta ngầm vào data (kể cả mảng) để component dùng (VD: pagination)
+        const result = body.data;
+        if (body.meta && typeof result === 'object' && result !== null) {
+            result._meta = body.meta;
+        }
+
+        // Cập nhật lại response.data bằng data thực sự
+        return { ...response, data: result };
+    }
+
+    // B. Mặc định trả về response gốc
+    return response;
+}, error => {
+    const { response } = error;
+    let errorMsg = 'Lỗi hệ thống';
+    let errorCode = 'SYSTEM_ERROR';
+
+    if (response) {
+        const body = response.data;
+
+        // Xử lý báo lỗi chuẩn Envelope
+        if (body && (body.error || body.message)) {
+            errorMsg = (body.error?.message) || body.message || errorMsg;
+            errorCode = (body.error?.code) || errorCode;
+        }
+
+        // Thông báo cho user qua Toast (Defensive UI)
+        if (response.status === 401) {
+            // Layout handled redirect
+        } else if (response.status === 403) {
+            message.error('Bạn không có quyền thực hiện hành động này');
+        } else if (response.status >= 500) {
+            message.error('Lỗi máy chủ: ' + errorMsg);
+        } else {
+            message.error(errorMsg);
+        }
+    } else {
+        message.error('Không thể kết nối tới máy chủ');
+    }
+
+    return Promise.reject(error);
+});
+
+// =============================================================================
+// 7. ÁP DỤNG
 // =============================================================================
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.adapter = smartAdapter;
 
 export default axios;

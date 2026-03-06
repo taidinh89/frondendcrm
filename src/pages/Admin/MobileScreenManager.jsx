@@ -207,7 +207,7 @@ export default function MobileScreenManager() {
                         </tr>
                     </thead>
                     <tbody>
-                        {screensData?.data?.map(item => (
+                        {(screensData?.data || (Array.isArray(screensData) ? screensData : [])).map(item => (
                             <tr key={item.id} className="hover:bg-gray-50 group">
                                 <td className="p-3 border-b w-12">
                                     {item.icon_url ? <img src={item.icon_url} className="w-8 h-8 object-contain bg-gray-100 rounded p-1" /> : <div className="w-8 h-8 bg-gray-200 rounded"></div>}

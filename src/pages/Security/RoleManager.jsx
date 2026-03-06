@@ -5,21 +5,22 @@ import SuperTable from '../../components/ui/SuperTable';
 const RoleManager = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [permissionMatrix, setPermissionMatrix] = useState({}); 
-  const [selectedPermissions, setSelectedPermissions] = useState([]); 
+  const [permissionMatrix, setPermissionMatrix] = useState({});
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [formData, setFormData] = useState({ name: '', data_scopes: '{}', access_policies: '{}' });
   const [scopeType, setScopeType] = useState('custom');
+  const [permSearch, setPermSearch] = useState('');
 
   useEffect(() => { loadRoles(); loadPermissionMatrix(); }, []);
 
   // --- LOGIC PHÂN TÍCH SỐ LIỆU (REAL-TIME ADVICE) ---
   const stats = useMemo(() => {
     if (!roles.length) return null;
-    
+
     // Đếm Role quyền lực (Global)
     const globalRoles = roles.filter(r => {
       const scope = typeof r.data_scopes === 'string' ? JSON.parse(r.data_scopes || '{}') : r.data_scopes;
@@ -123,10 +124,12 @@ const RoleManager = () => {
   // --- COLUMNS ---
   const columns = [
     { header: 'Chức danh', accessor: 'name', sortable: true, className: 'font-bold text-gray-800' },
-    { header: 'Quyền hạn', accessor: 'permissions_count', sortable: true,
+    {
+      header: 'Quyền hạn', accessor: 'permissions_count', sortable: true,
       render: (row) => <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-1 rounded">🛡️ {row.permissions?.length || 0} quyền</span>
     },
-    { header: 'Phạm vi (Scope)', accessor: 'data_scopes',
+    {
+      header: 'Phạm vi (Scope)', accessor: 'data_scopes',
       render: (row) => {
         const s = row.data_scopes || {};
         if (s.view_type === 'global') return <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded">🌍 Toàn cục</span>;
@@ -138,7 +141,7 @@ const RoleManager = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
-      
+
       {/* 1. DASHBOARD & KPI */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
         <div className="flex justify-between items-center mb-6">
@@ -181,12 +184,12 @@ const RoleManager = () => {
         <div className="mt-6 bg-white border-l-4 border-indigo-500 rounded-r-xl p-6 shadow-sm">
           <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">🤖 TRỢ LÝ HỆ THỐNG KHUYẾN NGHỊ:</h3>
           <ul className="space-y-2 text-sm text-gray-600">
-            
+
             {/* Tư vấn về Global Role */}
             {stats.globalCount > 3 ? (
               <li className="flex items-start text-red-600">
                 <span className="mr-2">⚠️</span>
-                <b>Cảnh báo bảo mật:</b> Bạn đang có tới <b>{stats.globalCount} chức danh</b> xem được toàn bộ dữ liệu công ty. 
+                <b>Cảnh báo bảo mật:</b> Bạn đang có tới <b>{stats.globalCount} chức danh</b> xem được toàn bộ dữ liệu công ty.
                 Hãy rà soát lại, chỉ nên cấp quyền này cho: <i>Giám đốc, Kế toán trưởng, Admin</i>. Các vị trí khác nên chuyển về "Phòng ban" hoặc "Cá nhân".
               </li>
             ) : (
@@ -200,7 +203,7 @@ const RoleManager = () => {
             {stats.emptyCount > 0 ? (
               <li className="flex items-start text-orange-600">
                 <span className="mr-2">🧹</span>
-                <b>Dọn dẹp:</b> Hệ thống phát hiện <b>{stats.emptyCount} chức danh rỗng</b> (chưa gán quyền nào). 
+                <b>Dọn dẹp:</b> Hệ thống phát hiện <b>{stats.emptyCount} chức danh rỗng</b> (chưa gán quyền nào).
                 Hãy bấm nút 🗑️ xóa chúng đi để danh sách gọn gàng hơn.
               </li>
             ) : (
@@ -209,7 +212,7 @@ const RoleManager = () => {
                 Dữ liệu sạch sẽ, không có chức danh rác.
               </li>
             )}
-            
+
             <li className="flex items-start text-blue-600">
               <span className="mr-2">ℹ️</span>
               <b>Mẹo:</b> Sử dụng tính năng <b>Nhân bản (Clone)</b> 📑 để tạo nhanh chức danh tương tự nhau (VD: tạo "Sale Hà Nội" từ "Sale Admin") thay vì tạo mới từ đầu.
@@ -225,21 +228,40 @@ const RoleManager = () => {
             <div className="p-5 border-b bg-gray-50 flex justify-between"><h2 className="font-bold">Chỉnh sửa Chức danh</h2><button onClick={() => setShowModal(false)}>✕</button></div>
             <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
               <div className="flex-1 p-6 overflow-y-auto border-r">
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border p-2 mb-4 font-bold" placeholder="Tên chức danh..." />
+                <div className="flex gap-4 mb-4">
+                  <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="flex-1 border p-2 font-bold rounded-lg" placeholder="Tên chức danh..." />
+                  <input value={permSearch} onChange={e => setPermSearch(e.target.value)} className="w-64 border p-2 text-sm rounded-lg" placeholder="🔍 Tìm quyền..." />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
-                  {Object.keys(permissionMatrix).map(group => (
-                    <div key={group} className="border p-3 rounded bg-gray-50">
-                      <div className="flex justify-between font-bold text-sm mb-2"><span>{group}</span><button onClick={() => toggleModule(permissionMatrix[group])} className="text-blue-600 text-xs">Chọn hết</button></div>
-                      <div className="max-h-32 overflow-y-auto">
-                        {permissionMatrix[group].map(p => (
-                          <label key={p.name} className="flex gap-2 text-sm p-1 hover:bg-white cursor-pointer">
-                            <input type="checkbox" checked={selectedPermissions.includes(p.name)} onChange={() => setSelectedPermissions(prev => prev.includes(p.name)?prev.filter(x=>x!==p.name):[...prev,p.name])} />
-                            <span>{p.label}</span>
-                          </label>
-                        ))}
+                  {Object.keys(permissionMatrix).map(group => {
+                    const filteredPerms = permissionMatrix[group].filter(p =>
+                      p.label.toLowerCase().includes(permSearch.toLowerCase()) ||
+                      p.name.toLowerCase().includes(permSearch.toLowerCase())
+                    );
+                    if (filteredPerms.length === 0) return null;
+
+                    return (
+                      <div key={group} className="border p-3 rounded bg-gray-50 shadow-sm">
+                        <div className="flex justify-between font-bold text-sm mb-2">
+                          <span className="uppercase text-blue-800">{group}</span>
+                          <button onClick={() => toggleModule(filteredPerms)} className="text-blue-600 text-xs bg-white px-2 py-0.5 rounded border hover:bg-blue-50">Chọn tất cả</button>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                          {filteredPerms.map(p => (
+                            <label key={p.name} className="flex items-center gap-2 text-sm p-1.5 hover:bg-white rounded cursor-pointer transition-colors border border-transparent hover:border-gray-100">
+                              <input
+                                type="checkbox"
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                                checked={selectedPermissions.includes(p.name)}
+                                onChange={() => setSelectedPermissions(prev => prev.includes(p.name) ? prev.filter(x => x !== p.name) : [...prev, p.name])}
+                              />
+                              <span className={selectedPermissions.includes(p.name) ? "font-bold text-blue-700" : "text-gray-600"}>{p.label}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               <div className="w-96 bg-gray-50 p-6">
@@ -247,13 +269,13 @@ const RoleManager = () => {
                 <select value={scopeType} onChange={e => handleScopeTypeChange(e.target.value)} className="w-full border p-2 mb-2 rounded">
                   <option value="own">👤 Cá nhân</option><option value="department">📂 Phòng ban</option><option value="global">🌍 Toàn cục</option><option value="custom">🔧 Tùy chỉnh</option>
                 </select>
-                {scopeType==='custom' && <textarea value={formData.data_scopes} onChange={e=>setFormData({...formData, data_scopes:e.target.value})} className="w-full border p-2 text-xs font-mono h-24 mb-4"/>}
-                
+                {scopeType === 'custom' && <textarea value={formData.data_scopes} onChange={e => setFormData({ ...formData, data_scopes: e.target.value })} className="w-full border p-2 text-xs font-mono h-24 mb-4" />}
+
                 <label className="font-bold text-xs mb-2 block">CHÍNH SÁCH (LỚP 3)</label>
-                <textarea value={formData.access_policies} onChange={e=>setFormData({...formData, access_policies:e.target.value})} className="w-full border p-2 text-xs font-mono h-24"/>
+                <textarea value={formData.access_policies} onChange={e => setFormData({ ...formData, access_policies: e.target.value })} className="w-full border p-2 text-xs font-mono h-24" />
               </div>
             </div>
-            <div className="p-4 border-t flex justify-end gap-2"><button onClick={()=>setShowModal(false)} className="px-4 py-2 border rounded">Hủy</button><button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded font-bold">Lưu</button></div>
+            <div className="p-4 border-t flex justify-end gap-2"><button onClick={() => setShowModal(false)} className="px-4 py-2 border rounded">Hủy</button><button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded font-bold">Lưu</button></div>
           </div>
         </div>
       )}
