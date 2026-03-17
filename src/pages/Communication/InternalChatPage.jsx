@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Layout, Input, Button, List, Avatar, Badge, Typography, Space, message as antMessage, Modal, Spin, Drawer, Tabs, Tooltip, Dropdown, Menu } from 'antd';
+import { Layout, Input, Button, List, Avatar, Badge, Typography, Space, message as antMessage, Modal, Spin, Drawer, Tabs, Tooltip, Dropdown, Menu, Divider } from 'antd';
 import {
     SendOutlined, UserOutlined, PlusOutlined, GroupOutlined, MessageOutlined,
     LoadingOutlined, InfoCircleOutlined, EditOutlined, FolderOpenOutlined,
-    FileOutlined, PictureOutlined, TeamOutlined, MoreOutlined
+    FileOutlined, PictureOutlined, TeamOutlined, MoreOutlined,
+    ExclamationCircleOutlined, CheckOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { Clock } from 'lucide-react';
 import chatApi from '../../services/chatApi';
 import { useChatStore } from '../../stores/useChatStore';
 import { createChatEcho } from '../../services/echo';
@@ -28,7 +30,11 @@ const InternalChatPage = ({ currentUser }) => {
         fetchInternalMessages,
         renameInternalConversation,
         fetchInternalResources,
-        addMessage
+        addMessage,
+        setActiveConversation,
+        typingStatus,
+        connectionStatus,
+        updateMessageStatus
     } = useChatStore();
 
     // --- Local UI State ---
@@ -54,15 +60,8 @@ const InternalChatPage = ({ currentUser }) => {
     const echoRef = useRef(null);
     const location = useLocation();
 
-    // --- Initialization ---
     useEffect(() => {
         fetchAllStaff();
-        const echoInstance = createChatEcho();
-        if (echoInstance) echoRef.current = echoInstance;
-
-        return () => {
-            echoRef.current?.disconnect();
-        };
     }, []);
 
     // --- Handle Deep Linking & Initial Convo ---
@@ -88,7 +87,6 @@ const InternalChatPage = ({ currentUser }) => {
 
         setMsgPage(1);
         loadMessages(activeConvo.id, 1);
-        setupRealtime(activeConvo.id);
 
         // Mark as read
         chatApi.post(`v1/internal/conversations/${activeConvo.id}/read`).catch(() => { });
@@ -108,15 +106,7 @@ const InternalChatPage = ({ currentUser }) => {
         setLoadingMore(false);
     };
 
-    const setupRealtime = (convoId) => {
-        if (!echoRef.current) return;
 
-        // Global store already listens to broadcast events for general list updates,
-        // but here we ensure the active room's specific messages are captured.
-        // Actually, store.js handles MessageSent and adds it to activeMessages if ID matches.
-        // So we just need to ensure we're joined to the private channel.
-        echoRef.current.private(`conversation.${convoId}`);
-    };
 
     const loadResources = async (convoId) => {
         const media = await fetchInternalResources(convoId, 'media');
@@ -142,7 +132,8 @@ const InternalChatPage = ({ currentUser }) => {
 
         // Optimistic UI handled by store usually, but let's do local sync for speed
         const optimistic = {
-            id: tempId,
+            id: null,
+            optimistic_id: tempId,
             user_id: user.id,
             content: msgText,
             type: 'text',
@@ -157,10 +148,13 @@ const InternalChatPage = ({ currentUser }) => {
                 conversation_id: activeConvo.id,
                 content: msgText,
                 type: 'text',
+                optimistic_id: tempId
             });
             const sent = res?.data ?? res;
             addMessage(activeConvo.id, { ...sent, status: 'sent', optimistic_id: tempId });
-        } catch {
+        } catch (error) {
+            console.error('[InternalChat] Send error:', error);
+            updateMessageStatus(tempId, 'failed');
             antMessage.error('Không thể gửi tin nhắn');
         }
     };
@@ -249,7 +243,10 @@ const InternalChatPage = ({ currentUser }) => {
                         return (
                             <List.Item
                                 className={`convo-item ${isSelected ? 'active' : ''}`}
-                                onClick={() => setActiveConvo(item)}
+                                onClick={() => {
+                                    setActiveConvo(item);
+                                    setActiveConversation(item);
+                                }}
                                 style={{
                                     cursor: 'pointer',
                                     padding: '12px 16px',
@@ -301,7 +298,20 @@ const InternalChatPage = ({ currentUser }) => {
                                 />
                                 <div>
                                     <div style={{ fontWeight: 600, fontSize: 16 }}>{getConvoTitle(activeConvo)}</div>
-                                    <div style={{ fontSize: 12, color: '#52c41a' }}><Badge status="processing" color="#52c41a" /> Đang hoạt động</div>
+                                    <div style={{ fontSize: 12, color: '#52c41a' }}>
+                                        {typingStatus[activeConvo.id] ? (
+                                            <span style={{ fontWeight: 'bold', color: '#1890ff' }}>{typingStatus[activeConvo.id]} đang soạn...</span>
+                                        ) : (
+                                            <Space split={<Divider type="vertical" />}>
+                                                <span><Badge status="processing" color="#52c41a" /> Đang hoạt động</span>
+                                                <Badge
+                                                    status={connectionStatus === 'connected' ? 'success' : (connectionStatus === 'connecting' ? 'processing' : 'error')}
+                                                    text={connectionStatus === 'connected' ? 'Máy chủ: OK' : (connectionStatus === 'connecting' ? 'Đang kết nối...' : 'Lỗi kết nối')}
+                                                    style={{ fontSize: '11px' }}
+                                                />
+                                            </Space>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <Space>
@@ -354,7 +364,22 @@ const InternalChatPage = ({ currentUser }) => {
                                                         lineHeight: 1.5,
                                                         wordBreak: 'break-word'
                                                     }}>
-                                                        {msg.content}
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            {msg.content}
+                                                            {isMe && (
+                                                                <div style={{ alignSelf: 'flex-end', fontSize: 10, marginTop: 2, opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                                    {msg.status === 'sending' ? (
+                                                                        <Clock size={10} />
+                                                                    ) : msg.status === 'failed' ? (
+                                                                        <Tooltip title="Gửi lỗi. Token hết hạn hoặc máy chủ quá tải.">
+                                                                            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                                                                        </Tooltip>
+                                                                    ) : (
+                                                                        <CheckOutlined style={{ fontSize: 8 }} />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

@@ -116,14 +116,14 @@ export default function ProductMobileManagerV3() {
 
     // Open Create Page
     const handleCreate = () => {
-        navigate('/product-edit/new', {
+        navigate('/product-mobile-v3/create', {
             state: { returnUrl: location.pathname + location.search }
         });
     };
 
     // Open Edit Page
     const handleEdit = (product) => {
-        navigate(`/product-edit/${product.id}`, {
+        navigate(`/product-mobile-v3/${product.id}`, {
             state: { returnUrl: location.pathname + location.search }
         });
     };

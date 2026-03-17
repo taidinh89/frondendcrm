@@ -42,6 +42,7 @@ export const InvoicesContent = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [modal, setModal] = useState({ open: false, data: null, mode: 'details', html: null, loading: false });
     const [formData, setFormData] = useState({ misa_status: '', notes: '' });
+    const iframeRef = useRef(null);
 
     useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(columns)), [columns]);
 
@@ -102,6 +103,16 @@ export const InvoicesContent = () => {
             const res = await axios.get(`${API}/${inv.invoice_uuid}/html`);
             setModal(m => ({ ...m, html: res.data.html, loading: false }));
         } catch (e) { setModal(m => ({ ...m, html: '<p class="p-4 text-red-500 text-center font-bold">Lỗi tải dữ liệu từ CQT.</p>', loading: false })); }
+    };
+
+    const handlePrintInvoice = () => {
+        if (iframeRef.current) {
+            const contentWindow = iframeRef.current.contentWindow;
+            contentWindow.focus();
+            contentWindow.print();
+        } else {
+            alert("Không tìm thấy nội dung để in!");
+        }
     };
 
     const renderCell = (inv, id) => {
@@ -209,7 +220,21 @@ export const InvoicesContent = () => {
                     <UI.Pagination pagination={pagination} onPageChange={setPage} />
                 </div>
             </div>
-            <InvoiceModal isOpen={modal.open} onClose={() => setModal({ ...modal, open: false })} selectedInvoice={modal.data} modalFormData={formData} setModalFormData={setFormData} modalViewMode={modal.mode} setModalViewMode={v => setModal({ ...modal, mode: v })} invoiceHtml={modal.html} isHtmlLoading={modal.loading} handleUpdateInvoice={fetchInvoices} handleFetchInvoiceHtml={handleViewHtml} />
+            <InvoiceModal
+                isOpen={modal.open}
+                onClose={() => setModal({ ...modal, open: false })}
+                selectedInvoice={modal.data}
+                modalFormData={formData}
+                setModalFormData={setFormData}
+                modalViewMode={modal.mode}
+                setModalViewMode={v => setModal({ ...modal, mode: v })}
+                invoiceHtml={modal.html}
+                isHtmlLoading={modal.loading}
+                iframeRef={iframeRef}
+                handleUpdateInvoice={fetchInvoices}
+                handleFetchInvoiceHtml={handleViewHtml}
+                handlePrintInvoice={handlePrintInvoice}
+            />
         </div>
     );
 };

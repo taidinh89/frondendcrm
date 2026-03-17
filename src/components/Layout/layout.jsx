@@ -383,17 +383,17 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
     }, {});
 
     // [MOD] SẮP XẾP NHÓM MENU: Đưa Hệ thống xuống cuối và ưu tiên thứ tự nghiệp vụ
-    const groupOrder = ['Giao tiếp', 'Chung', 'Kinh doanh', 'Web', 'Media', 'Thanh toán', 'Báo cáo', 'Quản lý Website'];
+    const groupOrder = ['Chung', 'Báo cáo', 'Tồn kho - Web', 'Hệ thống - Bảo mật', 'Giao tiếp', 'Kinh doanh', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
+    const bottomGroups = ['Media', 'Thanh toán', 'Hệ thống - Giám sát', 'Quản Trị Ứng Dụng (V3)', 'Thiên Đức V4'];
+
     const sortedGroups = Object.entries(groupedItems).sort(([groupA], [groupB]) => {
-        const isSystemA = groupA.startsWith('Hệ thống');
-        const isSystemB = groupB.startsWith('Hệ thống');
+        const isBottomA = bottomGroups.includes(groupA);
+        const isBottomB = bottomGroups.includes(groupB);
 
-        // Nếu A là hệ thống, B không phải -> A xuống sau
-        if (isSystemA && !isSystemB) return 1;
-        if (!isSystemA && isSystemB) return -1;
-
-        // Nếu cả 2 đều là hệ thống -> Sắp xếp theo tên (Bảo mật, Nhân sự, Giám sát...)
-        if (isSystemA && isSystemB) return groupA.localeCompare(groupB);
+        // [MỚI] Đẩy các nhóm đặc thù xuống cuối cùng
+        if (isBottomA && !isBottomB) return 1;
+        if (!isBottomA && isBottomB) return -1;
+        if (isBottomA && isBottomB) return bottomGroups.indexOf(groupA) - bottomGroups.indexOf(groupB);
 
         // Các nhóm nghiệp vụ khác sắp xếp theo mảng groupOrder
         const idxA = groupOrder.indexOf(groupA);
@@ -437,7 +437,7 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
                                             className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentViewId === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
                                             title={item.label}
                                         >
-                                            <Icon path={item.icon} className="w-5 h-5 flex-shrink-0" />
+                                            <Icon name={item.iconName} path={item.icon} className="w-5 h-5 flex-shrink-0" />
                                             <span className={`ml-3 truncate transition-all ${isSidebarPinned || isTempOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>{item.label}</span>
                                         </button>
                                     ))}

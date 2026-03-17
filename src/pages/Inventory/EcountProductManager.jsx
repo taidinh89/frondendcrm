@@ -190,7 +190,7 @@ export const EcountProductManager = ({ setAppTitle }) => {
             console.log("[DEBUG] Mapped QVC Data:", mappedData);
 
             // Navigate to separate route
-            navigate('/product-edit/new', {
+            navigate('/product-mobile-v3/create', {
                 state: {
                     product: mappedData,
                     dictionary: webDictionary,

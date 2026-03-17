@@ -18,6 +18,7 @@ export const useChatStore = create(
             isLoadingMessages: false,
             lastSync: null,
             typingStatus: {},
+            activeConversationId: null,
 
             // --- INTERNAL CHAT & NOTIFICATION STATE ---
             internalConversations: [],
@@ -27,6 +28,8 @@ export const useChatStore = create(
 
             // --- GLOBAL SOCKET ---
             globalEcho: null,
+            activeConvoChannelName: null,
+            connectionStatus: 'disconnected', // 'connected', 'connecting', 'disconnected', 'error'
 
             // ==========================================
             // 1. GLOBAL INITIALIZATION (Call once on login/mount)
@@ -100,85 +103,99 @@ export const useChatStore = create(
                 });
 
                 channel.notification((payload) => {
-                    console.info('%c[Fast-Socket] ⚡ Nhận tin mới:', 'color: #4caf50; font-weight: bold;', payload);
-
+                    console.info('%c[Socket-User] 🔔 Thông báo mới:', 'color: #ff9800; font-weight: bold;', payload);
                     const state = get();
 
-                    // Update Badge immediate
+                    // 1. Update Badge immediate
                     if (payload.unread_total !== undefined) {
                         set({ unreadInternalCount: payload.unread_total });
                     }
 
-                    // If it's a new message
+                    // 2. Phân loại Notification
                     if (payload.type === 'NewMessage' && payload.message) {
-                        const incomingMsg = payload.message;
-                        const convoId = incomingMsg.conversation_id;
-                        const isCustomer = incomingMsg.conversation_platform && incomingMsg.conversation_platform !== 'internal';
+                        // Tín hiệu tin nhắn mới từ Kênh Cá Nhân (Broadcasting via Laravel Notification)
+                        // Kênh này đảm bảo tin nhắn luôn đến dù bạn ở đâu
+                        get().addMessage(payload.message.conversation_id, payload.message);
 
-                        // 1. Update active view if viewing this chat
-                        get().addMessage(convoId, incomingMsg);
-
-                        // 2. Update conversation list preview
-                        if (isCustomer) {
-                            // Update Omni list (already handled by addMessage -> updateConversationLatest, 
-                            // but we might need to handle new incoming convos that aren't in the list)
-                            get().updateConversationLatest(convoId, incomingMsg);
-                        } else {
-                            // Update Internal List
-                            const prevList = state.internalConversations;
-                            const existingIndex = prevList.findIndex(c => c.id === convoId);
-                            let newList = [...prevList];
-                            let targetConvo;
-
-                            if (existingIndex > -1) {
-                                targetConvo = {
-                                    ...newList[existingIndex],
-                                    unread_count: (newList[existingIndex].unread_count || 0) + 1,
-                                    messages: [incomingMsg]
-                                };
-                                newList.splice(existingIndex, 1);
-                            } else {
-                                targetConvo = {
-                                    id: convoId,
-                                    name: incomingMsg.sender?.name || 'Hội thoại mới',
-                                    unread_count: 1,
-                                    messages: [incomingMsg],
-                                    platform: 'internal',
-                                    participants: [{ user: incomingMsg.sender, user_id: incomingMsg.sender_id }]
-                                };
-                            }
-                            set({
-                                internalConversations: [targetConvo, ...newList],
-                                unreadInternalCount: state.unreadInternalCount + 1
-                            });
-                        }
-
-                        // 3. Show Toast if not the sender
-                        if (incomingMsg.sender_id !== userId) {
+                        // Show Toast if not the sender OR if current view is not this conversation
+                        if (payload.message.sender_id !== userId && String(state.activeConversationId) !== String(payload.message.conversation_id)) {
                             antMessage.success({
-                                content: `💬 ${incomingMsg.sender?.name || 'Ai đó'}: ${incomingMsg.sender?.content?.substring(0, 30) || incomingMsg.content?.substring(0, 30)}`,
-                                duration: 5
+                                content: `💬 ${payload.message.sender?.name || 'Ai đó'}: ${payload.message.content?.substring(0, 30)}...`,
+                                duration: 4
                             });
                         }
-
                     } else {
-                        // System notification
-                        set({
-                            unreadNotifyCount: state.unreadNotifyCount + 1
-                        });
-                        antMessage.info(payload.title || 'Bạn có thông báo mới');
-                        // Tạm thời refetch notify để có full data
+                        // Thông báo hệ thống khác
+                        set({ unreadNotifyCount: state.unreadNotifyCount + 1 });
+                        if (payload.title) antMessage.info(payload.title);
                         get().refreshNotifications();
                     }
                 });
 
                 set({ globalEcho: echoInstance });
+
+                // Listen for connection events
+                echoInstance.connector.pusher.connection.bind('state_change', (states) => {
+                    console.info('[Socket] State changed from', states.previous, 'to', states.current);
+                    let status = 'disconnected';
+                    if (states.current === 'connected') status = 'connected';
+                    else if (states.current === 'connecting') status = 'connecting';
+                    else if (states.current === 'unavailable' || states.current === 'failed') status = 'error';
+                    set({ connectionStatus: status });
+                });
+            },
+
+            // --- Quản lý Kênh Trò Chuyện Riêng Biệt (Room Channel) ---
+            subscribeToConvo: (convoId) => {
+                const { globalEcho, activeConvoChannelName } = get();
+                if (!globalEcho || !convoId) return;
+
+                const newChannelName = `private-conversation.${convoId}`;
+                if (activeConvoChannelName === newChannelName) return; // Đã subscribe rồi
+
+                // 1. Unsubscribe kênh cũ nếu có
+                if (activeConvoChannelName) {
+                    globalEcho.leave(activeConvoChannelName.replace('private-', ''));
+                    console.debug(`[Socket] 🔴 Rời kênh: ${activeConvoChannelName}`);
+                }
+
+                // 2. Join kênh mới
+                const channel = globalEcho.private(`conversation.${convoId}`);
+                console.info(`%c[Socket] 🟢 Tham gia kênh: ${newChannelName}`, 'color: #4caf50; font-weight: bold;');
+
+                channel.listen('.MessageSent', (e) => {
+                    console.debug('[Socket] 💬 MessageSent event:', e);
+                    get().addMessage(convoId, e.message);
+                });
+
+                channel.listenForWhisper('typing', (e) => {
+                    set((s) => ({ typingStatus: { ...s.typingStatus, [convoId]: e.name } }));
+                    setTimeout(() => {
+                        set((s) => {
+                            const newStatus = { ...s.typingStatus };
+                            delete newStatus[convoId];
+                            return { typingStatus: newStatus };
+                        });
+                    }, 3000);
+                });
+
+                set({ activeConvoChannelName: newChannelName });
+            },
+
+            unsubscribeFromConvo: () => {
+                const { globalEcho, activeConvoChannelName } = get();
+                if (globalEcho && activeConvoChannelName) {
+                    globalEcho.leave(activeConvoChannelName.replace('private-', ''));
+                    set({ activeConvoChannelName: null, typingStatus: {} });
+                    console.debug(`[Socket] 🔴 Ngắt kết nối kênh room: ${activeConvoChannelName}`);
+                }
             },
 
             clearGlobalSocket: (userId) => {
-                const { globalEcho } = get();
-                if (globalEcho && userId) {
-                    globalEcho.leave(`user.${userId}`);
+                const { globalEcho, unsubscribeFromConvo } = get();
+                if (globalEcho) {
+                    unsubscribeFromConvo();
+                    if (userId) globalEcho.leave(`user.${userId}`);
                     set({ globalEcho: null });
                 }
             },
@@ -241,8 +258,7 @@ export const useChatStore = create(
 
             addMessage: (convoId, msg) => {
                 set((state) => {
-                    const isForActiveConvo = state.activeMessages.length > 0 &&
-                        state.activeMessages[0].conversation_id === convoId;
+                    const isForActiveConvo = String(state.activeConversationId) === String(convoId);
 
                     let newActiveMsgs = state.activeMessages;
 
@@ -268,39 +284,51 @@ export const useChatStore = create(
 
             updateConversationLatest: async (convoId, message) => {
                 const state = get();
-                const index = state.conversations.findIndex(c => c.id === convoId);
 
-                if (index === -1) {
-                    // New Conversation: Fetch details
+                // 1. Kiểm tra Omnichannel list
+                const index = state.conversations.findIndex(c => c.id === convoId);
+                if (index !== -1) {
+                    set((s) => {
+                        const newList = [...s.conversations];
+                        const c = newList[index];
+                        newList.splice(index, 1);
+                        const updated = {
+                            ...c,
+                            last_message_content: message.type === 'image' ? '[Hình ảnh]' : (message.content || ''),
+                            last_message_at: message.created_at,
+                        };
+                        return { conversations: [updated, ...newList] };
+                    });
+                }
+
+                // 2. Kiểm tra Internal list
+                const internalIndex = state.internalConversations.findIndex(c => c.id === convoId);
+                if (internalIndex !== -1) {
+                    set((s) => {
+                        const newList = [...s.internalConversations];
+                        const c = newList[internalIndex];
+                        newList.splice(internalIndex, 1);
+                        const updated = {
+                            ...c,
+                            last_message_content: message.type === 'image' ? '[Hình ảnh]' : (message.content || ''),
+                            last_message_at: message.created_at,
+                            unread_count: (c.id === s.activeConversationId) ? 0 : (c.unread_count || 0)
+                        };
+                        return { internalConversations: [updated, ...newList] };
+                    });
+                }
+
+                // 3. Nếu không thấy đâu, có thể là convo mới hoàn toàn
+                if (index === -1 && internalIndex === -1 && message.conversation_platform !== 'internal') {
+                    // Fetch detay convo cho Omnichannel
                     try {
                         const res = await chatApi.get(`v1/omnichannel/conversations?id=${convoId}`);
                         if (res.data && res.data.length > 0) {
                             const newConvo = res.data.find(c => c.id === convoId);
-                            if (newConvo) {
-                                set(s => ({ conversations: [newConvo, ...s.conversations] }));
-                            }
+                            if (newConvo) set(s => ({ conversations: [newConvo, ...s.conversations] }));
                         }
-                    } catch (e) {
-                        console.error('[ChatStore] Error fetching new convo', e);
-                    }
-                    return;
+                    } catch (e) { }
                 }
-
-                set((s) => {
-                    const idx = s.conversations.findIndex(c => c.id === convoId);
-                    if (idx === -1) return s;
-
-                    const c = s.conversations[idx];
-                    const updatedConvo = {
-                        ...c,
-                        last_message_content: message.type === 'image' ? '[Hình ảnh]' : message.content,
-                        last_message_at: message.created_at,
-                    };
-
-                    const newList = [...s.conversations];
-                    newList.splice(idx, 1);
-                    return { conversations: [updatedConvo, ...newList] };
-                });
             },
 
             updateMessageStatus: (idOrOptimisticId, status) => {
@@ -319,11 +347,14 @@ export const useChatStore = create(
             },
 
             setActiveConversation: (convo) => {
+                const state = get();
                 if (!convo) {
-                    set({ activeMessages: [] });
+                    state.unsubscribeFromConvo();
+                    set({ activeMessages: [], activeConversationId: null });
                     return;
                 }
-                set({ activeMessages: [] });
+                set({ activeMessages: [], activeConversationId: convo.id });
+                state.subscribeToConvo(convo.id);
                 get().fetchMessages(convo.id);
             },
 
@@ -380,6 +411,7 @@ export const useChatStore = create(
             // 4. INTERNAL CHAT SPECIFIC ACTIONS
             // ==========================================
             fetchInternalMessages: async (convoId, page = 1) => {
+                if (page === 1) set({ activeConversationId: convoId });
                 set({ isLoadingMessages: true });
                 try {
                     const res = await chatApi.get(`v1/internal/conversations/${convoId}/messages?page=${page}&limit=50`);

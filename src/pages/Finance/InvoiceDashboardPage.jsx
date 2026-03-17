@@ -65,6 +65,8 @@ export const InvoiceDashboardPage = () => {
     });
     const [showColMenu, setShowColMenu] = useState(false); // Menu bật tắt cột
     const resizingRef = useRef(null); // Ref để xử lý kéo thả
+    const iframeRef = useRef(null);
+    const [formData, setFormData] = useState({ misa_status: '', notes: '' });
 
     // Lưu cấu hình cột khi thay đổi
     useEffect(() => {
@@ -129,11 +131,23 @@ export const InvoiceDashboardPage = () => {
     // === 6. HANDLE VIEW HTML ===
     const handleViewHtml = async (inv) => {
         setModal({ open: true, data: inv, mode: 'html', html: null, loading: true });
+        // Đồng bộ formData để tab Chi tiết hoạt động
+        setFormData({ misa_status: inv.misa_status || '', notes: inv.notes || '' });
         try {
             const res = await axios.get(`/api/v1/invoices/${inv.invoice_uuid}/html`);
             setModal(m => ({ ...m, html: res.data.html, loading: false }));
         } catch (e) {
             setModal(m => ({ ...m, html: '<div class="p-10 text-center text-red-500">Không tải được bản thể hiện. Vui lòng tải XML gốc.</div>', loading: false }));
+        }
+    };
+
+    const handlePrintInvoice = () => {
+        if (iframeRef.current) {
+            const contentWindow = iframeRef.current.contentWindow;
+            contentWindow.focus();
+            contentWindow.print();
+        } else {
+            alert("Không tìm thấy nội dung để in!");
         }
     };
 
@@ -383,9 +397,14 @@ export const InvoiceDashboardPage = () => {
                 selectedInvoice={modal.data}
                 modalViewMode={modal.mode}
                 setModalViewMode={(mode) => setModal({ ...modal, mode })}
+                modalFormData={formData}
+                setModalFormData={setFormData}
                 invoiceHtml={modal.html}
                 isHtmlLoading={modal.loading}
+                iframeRef={iframeRef}
                 handleFetchInvoiceHtml={handleViewHtml}
+                handlePrintInvoice={handlePrintInvoice}
+                handleUpdateInvoice={fetchData}
             />
         </div>
     );

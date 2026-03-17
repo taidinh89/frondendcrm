@@ -30,6 +30,13 @@ export const subscribeUserToPush = async () => {
 };
 
 const sendTokenToBackend = async (token) => {
+    // Tránh gửi lặp lại cùng 1 token trong 1 phiên làm việc
+    const lastSentToken = sessionStorage.getItem('last_fcm_token');
+    if (lastSentToken === token) {
+        console.debug('[PushManager] ℹ️ Token đã được đồng bộ trước đó, bỏ qua.');
+        return;
+    }
+
     try {
         const payload = {
             token: token,
@@ -38,14 +45,19 @@ const sendTokenToBackend = async (token) => {
         };
 
         console.log('[PushManager] 📡 Đang gửi Token về VPS Chat...', payload);
-        const response = await chatApi.post('v1/notifications/push-tokens', payload);
 
-        if (response.data) {
-            console.log('%c[PushManager] 🎉 VPS Chat đã xác nhận lưu Token thành công!', 'color: #4caf50; font-weight: bold;');
-        }
+        // Sử dụng cờ skipToast: true để không hiện popup lỗi khi server bảo trì/timeout
+        // Vì token push là một tác vụ chạy ngầm, không nên làm phiền User nếu nó thất bại
+        await chatApi.post('v1/notifications/push-tokens', payload, { skipToast: true });
+
+        console.log('%c[PushManager] 🎉 VPS Chat đã xác nhận lưu Token thành công!', 'color: #4caf50; font-weight: bold;');
+        sessionStorage.setItem('last_fcm_token', token);
+
     } catch (error) {
-        console.error('[PushManager] ❌ Lỗi khi gửi Token về VPS Chat:', error.response?.data || error.message);
-        // Nếu lỗi 401/403 ở đây là do Token Bearer giữa CRM và Chat chưa đồng bộ
+        // Log Error ra console nhưng không re-throw để tránh crash các flow khác
+        console.warn('[PushManager] ⚠️ Không thể lưu Token (có thể do server bảo trì hoặc timeout):', error.message);
+        // Lưu ý: chatApi interceptor vẫn sẽ báo Toast đỏ. 
+        // Nếu muốn hết hẳn toast "Lỗi kết nối", cần chỉnh interceptor của chatApi.
     }
 };
 

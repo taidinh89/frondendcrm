@@ -8,7 +8,7 @@ import { message } from 'antd';
  */
 const chatApi = axios.create({
     baseURL: 'https://chat.maytinhquocviet.com/api',
-    timeout: 15000, // Tăng thêm 5s cho ổn định
+    timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -55,7 +55,6 @@ chatApi.interceptors.response.use(response => {
             console.debug(`%c[ChatAPI] << Response OK: ${response.config.url}`, 'color: #4caf50; font-size: 10px;');
         }
 
-        // Đính kèm meta (ví dụ: pagination) vào data để component sử dụng
         const result = body.data;
         if (body.meta && (typeof result === 'object' || Array.isArray(result)) && result !== null) {
             result._meta = body.meta;
@@ -64,7 +63,6 @@ chatApi.interceptors.response.use(response => {
         return { ...response, data: result };
     }
 
-    // B. Xử lý fallback cho API cũ vẫn trả về trực tiếp
     return response;
 
 }, error => {
@@ -75,33 +73,31 @@ chatApi.interceptors.response.use(response => {
     if (response) {
         const body = response.data;
 
-        // 1. Nếu Backend trả về chuẩn Envelope lỗi
         if (body && body.error) {
             errorMsg = body.error.message || errorMsg;
             errorCode = body.error.code || 'UNKNOWN_ERROR';
 
-            // Log chi tiết lỗi validation nếu có
             if (body.error.details) {
                 console.warn('[ChatAPI] Validation Details:', body.error.details);
             }
         }
-        // 2. Nếu Backend trả về lỗi thô (VD: 404, 500 Laravel default)
         else if (body && body.message) {
             errorMsg = body.message;
         }
 
-        // Thông báo cho user nếu là lỗi quan trọng (Defensive)
         if (response.status === 401) {
             errorMsg = 'Phiên làm việc hết hạn. Vui lòng đăng nhập lại.';
         } else if (response.status >= 500 && errorMsg === 'Lỗi kết nối máy chủ Chat') {
-            // Chỉ ghi đè nếu chưa lấy được message cụ thể từ backend
             errorMsg = 'Hệ thống Chat đang bảo trì (500)';
         }
     }
 
-    // Chỉ Toast lỗi nếu không phải là request bị hủy
+    // [MODIFIED] Chỉ Toast lỗi nếu không phải là request bị hủy và không có cờ skipToast
     if (!axios.isCancel(error)) {
-        message.error({ content: errorMsg, key: errorCode });
+        const skipToast = error.config?.skipToast;
+        if (!skipToast) {
+            message.error({ content: errorMsg, key: errorCode });
+        }
         console.error(`%c[ChatAPI] !! Error ${response?.status || '???'} [${errorCode}]:`, 'color: #f44336; font-weight: bold;', errorMsg);
     }
 

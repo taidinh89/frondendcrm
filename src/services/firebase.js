@@ -33,18 +33,8 @@ export const requestForToken = async () => {
         if (currentToken) {
             console.log('%c[FCM] ✅ TOKEN THÀNH CÔNG:', 'color: #4caf50; font-weight: bold;', currentToken);
 
-            // Gửi lên server
-            try {
-                await chatApi.post('v1/notifications/push-tokens', {
-                    token: currentToken,
-                    platform: 'web',
-                    device_model: navigator.userAgent.substring(0, 100)
-                });
-                console.log('[FCM] 📡 Đã đồng bộ với VPS Chat');
-            } catch (err) {
-                console.warn('[FCM] Không thể lưu token lên server.');
-            }
-
+            // Đồng bộ với VPS Chat sẽ được thực hiện bởi pushManager.js
+            // Tránh gọi ở đây gây ra tình trạng double-request và log spam
             return currentToken;
         }
     } catch (err) {

@@ -37,7 +37,9 @@ const ChatBoxV2 = ({ currentUser }) => {
         addMessage,
         updateMessageStatus,
         setActiveConversation,
-        globalEcho
+        globalEcho,
+        typingStatus,
+        connectionStatus
     } = useChatStore();
 
     const [activeConvo, setActiveConvo] = useState(null);
@@ -51,7 +53,6 @@ const ChatBoxV2 = ({ currentUser }) => {
     const [availableTags, setAvailableTags] = useState([]);
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
     const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
-    const [isTyping, setIsTyping] = useState(false); // Other user is typing
     const [stats, setStats] = useState({ unread: 0, total: 0 });
     const [showQuickReply, setShowQuickReply] = useState(false);
     const [showMediaUploader, setShowMediaUploader] = useState(false);
@@ -294,21 +295,7 @@ const ChatBoxV2 = ({ currentUser }) => {
         addMessage(message.conversation_id, message);
     };
 
-    const subscribeToConversation = (id) => {
-        if (!globalEcho) return;
-        const channel = globalEcho.private(`conversation.${id}`);
 
-        channel.listen('.MessageSent', (e) => {
-            // Store handles deduplication and updating optimistic messages
-            addMessage(id, e.message);
-            setIsTyping(false);
-            setTimeout(scrollToBottom, 50);
-        })
-            .listenForWhisper('typing', (e) => {
-                setIsTyping(true);
-                setTimeout(() => setIsTyping(false), 3000);
-            });
-    };
 
     const handleSend = async () => {
         if (!inputText.trim() || !activeConvo) {
@@ -713,8 +700,8 @@ const ChatBoxV2 = ({ currentUser }) => {
                                 <div className="header-user-details">
                                     <div className="user-name">{activeConvo.customer?.name || activeConvo.name}</div>
                                     <div className="platform-link">
-                                        {isTyping ? (
-                                            <span style={{ color: '#22c55e', fontWeight: 600 }}>Khách đang gõ...</span>
+                                        {typingStatus[activeConvo.id] ? (
+                                            <span style={{ color: '#22c55e', fontWeight: 600 }}>{typingStatus[activeConvo.id]} đang gõ...</span>
                                         ) : (
                                             <a
                                                 href={getPlatformUrl(activeConvo) || '#'}
@@ -730,6 +717,29 @@ const ChatBoxV2 = ({ currentUser }) => {
                                                 </span>
                                                 <ExternalLink size={12} style={{ opacity: 0.6 }} />
                                             </a>
+                                        )}
+                                        {activeConvo.channel ? (
+                                            <Space split={<Divider type="vertical" />}>
+                                                <Badge
+                                                    status={activeConvo.channel.is_active ? 'success' : 'error'}
+                                                    text={activeConvo.channel.name}
+                                                    style={{ fontWeight: 600 }}
+                                                />
+                                                <Badge
+                                                    status={connectionStatus === 'connected' ? 'success' : (connectionStatus === 'connecting' ? 'processing' : 'error')}
+                                                    text={connectionStatus === 'connected' ? 'Máy chủ: OK' : 'Máy chủ: Lỗi'}
+                                                    style={{ fontSize: '11px', opacity: 0.8 }}
+                                                />
+                                            </Space>
+                                        ) : (
+                                            <Space split={<Divider type="vertical" />}>
+                                                <span style={{ fontSize: '12px', color: '#64748b' }}>Khách vãng lai</span>
+                                                <Badge
+                                                    status={connectionStatus === 'connected' ? 'success' : (connectionStatus === 'connecting' ? 'processing' : 'error')}
+                                                    text={connectionStatus === 'connected' ? 'Máy chủ: OK' : 'Máy chủ: Lỗi'}
+                                                    style={{ fontSize: '11px', opacity: 0.8 }}
+                                                />
+                                            </Space>
                                         )}
                                     </div>
                                 </div>
@@ -812,7 +822,7 @@ const ChatBoxV2 = ({ currentUser }) => {
                                                 <div className="msg-status-icon">
                                                     {m.status === 'sending' ? (
                                                         <Clock size={10} style={{ opacity: 0.7 }} />
-                                                    ) : m.status === 'error' ? (
+                                                    ) : (m.status === 'error' || m.status === 'failed') ? (
                                                         <Tooltip title="Gửi tin thất bại. Vui lòng kiểm tra lại kết nối hoặc Token.">
                                                             <ExclamationCircleOutlined style={{ fontSize: 12, color: '#ff4d4f' }} />
                                                         </Tooltip>
@@ -853,7 +863,8 @@ const ChatBoxV2 = ({ currentUser }) => {
                                         formData.append('conversation_id', activeConvo.id);
                                         try {
                                             const res = await chatApi.post('v1/omnichannel/messages', formData);
-                                            setMessages(prev => [...prev, res.data]);
+                                            // Ensure we use the normalized data to avoid double item in list
+                                            addMessage(activeConvo.id, res.data);
                                             scrollToBottom();
                                         } catch (err) {
                                             antMessage.error('Gửi file thất bại');

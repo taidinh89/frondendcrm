@@ -19,7 +19,7 @@ const StatusBadge = ({ diff }) => {
 };
 
 /* 1. Chi tiết dạng Card */
-export const InventoryDetailCard = ({ item, onSelectCode }) => (
+export const InventoryDetailCard = ({ item, onSelectCode, onSelectName }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow mb-4">
         <div className={`px-4 py-3 border-b flex items-center justify-between ${item.reconciliation?.diff === 0 ? 'bg-green-50/10' : 'bg-orange-50/10'}`}>
             <div className="flex items-center gap-4">
@@ -30,7 +30,12 @@ export const InventoryDetailCard = ({ item, onSelectCode }) => (
                     {item.ecount_code || item.primary_code}
                     <UI.Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" className="w-3 h-3 group-hover:scale-110 transition-transform" />
                 </button>
-                <h3 className="font-bold text-gray-800 text-sm hidden md:block">{item.product_name || item.ecount?.product?.prod_des}</h3>
+                <button
+                    onClick={() => onSelectName?.(item)}
+                    className="font-bold text-gray-800 text-sm hidden md:block hover:text-blue-600 hover:underline transition-colors"
+                >
+                    {item.product_name || item.ecount?.product?.prod_des}
+                </button>
                 {item.reconciliation && <StatusBadge diff={item.reconciliation.diff} />}
             </div>
             <div className="flex items-center gap-6">
@@ -158,7 +163,7 @@ export const InventoryDetailCard = ({ item, onSelectCode }) => (
 );
 
 /* 2. Dạng Bảng Đối Soát (Standard Table) */
-export const InventoryDenseTable = ({ data, onSelectCode, loadMoreRef }) => (
+export const InventoryDenseTable = ({ data, onSelectCode, onSelectName, loadMoreRef }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
         <table className="w-full text-[11px] border-collapse">
             <thead className="bg-gray-100 text-gray-600 font-bold uppercase tracking-tighter">
@@ -184,7 +189,14 @@ export const InventoryDenseTable = ({ data, onSelectCode, loadMoreRef }) => (
                                 <UI.Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>
                         </td>
-                        <td className="py-3 px-4 font-medium text-gray-700 max-w-md truncate">{item.product_name || item.ecount?.product?.prod_des}</td>
+                        <td className="py-3 px-4 font-medium text-gray-700 max-w-md truncate">
+                            <button
+                                onClick={() => onSelectName?.(item)}
+                                className="hover:text-blue-600 hover:underline text-left w-full"
+                            >
+                                {item.product_name || item.ecount?.product?.prod_des}
+                            </button>
+                        </td>
                         <td className="py-3 px-4">
                             <div className="text-[10px] text-gray-500 font-bold">{item.brand_name || '-'}</div>
                             <div className="text-[9px] text-gray-400">{item.category_name || '-'}</div>
@@ -209,7 +221,7 @@ export const InventoryDenseTable = ({ data, onSelectCode, loadMoreRef }) => (
 );
 
 /* 3. Dạng Bảng Ảo Hóa (Virtualized Table - Superior Mode) */
-export const InventoryVirtualizedTable = ({ data, onSelectCode, parentRef, loadMoreRef }) => {
+export const InventoryVirtualizedTable = ({ data, onSelectCode, onSelectName, parentRef, loadMoreRef }) => {
     const rowVirtualizer = useVirtualizer({
         count: Array.isArray(data) ? data.length : 0,
         getScrollElement: () => parentRef.current,
@@ -255,7 +267,12 @@ export const InventoryVirtualizedTable = ({ data, onSelectCode, parentRef, loadM
                                             </button>
                                         </td>
                                         <td className="py-2 px-4 flex-1 truncate font-medium text-gray-800 uppercase tracking-tighter">
-                                            {item.product_name || item.ecount?.product?.prod_des}
+                                            <button
+                                                onClick={() => onSelectName?.(item)}
+                                                className="hover:text-blue-600 hover:underline text-left w-full truncate"
+                                            >
+                                                {item.product_name || item.ecount?.product?.prod_des}
+                                            </button>
                                         </td>
                                         <td className="py-2 px-4 w-48 min-w-[192px] overflow-hidden whitespace-nowrap">
                                             <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600 mr-2 max-w-[80px] truncate inline-block align-middle">{item.brand_name}</span>
@@ -311,21 +328,30 @@ export const InventoryVirtualizedTable = ({ data, onSelectCode, parentRef, loadM
 };
 
 /* 4. Dạng Danh sách Xem Nhanh */
-export const InventoryCompactList = ({ data, onSelectCode, loadMoreRef }) => (
+export const InventoryCompactList = ({ data, onSelectCode, onSelectName, loadMoreRef }) => (
     <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {data.map((item, idx) => (
                 <div
                     key={idx}
-                    className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 transition-all flex items-center justify-between gap-4 cursor-pointer group"
-                    onClick={() => onSelectCode?.(item)}
+                    className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 transition-all flex items-center justify-between gap-4 group"
                 >
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-xs font-bold text-blue-600 group-hover:underline">{item.ecount_code || item.primary_code}</span>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onSelectCode?.(item); }}
+                                className="font-mono text-xs font-bold text-blue-600 hover:underline"
+                            >
+                                {item.ecount_code || item.primary_code}
+                            </button>
                             <div className={`w-2 h-2 rounded-full ${item.reconciliation?.diff === 0 ? 'bg-green-400' : 'bg-orange-400'}`}></div>
                         </div>
-                        <div className="text-[11px] font-bold text-gray-800 truncate uppercase tracking-tighter">{item.product_name || item.ecount?.product?.prod_des}</div>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onSelectName?.(item); }}
+                            className="text-[11px] font-bold text-gray-800 truncate uppercase tracking-tighter hover:text-blue-600 hover:underline text-left w-full"
+                        >
+                            {item.product_name || item.ecount?.product?.prod_des}
+                        </button>
                     </div>
                     <div className="flex-shrink-0 flex items-center gap-3">
                         <div className="text-right">
@@ -651,6 +677,7 @@ export const InventoryLegacyTable = ({
     sortDirection,
     onSort,
     onSelectCode,
+    onSelectName,
     parentRef,
     loadMoreRef
 }) => {
@@ -828,8 +855,7 @@ export const InventoryLegacyTable = ({
                                         height: `${virtualRow.size}px`,
                                         transform: `translateY(${virtualRow.start}px)`
                                     }}
-                                    onClick={() => onSelectCode?.(product)}
-                                    className="flex hover:bg-blue-50/50 transition-colors border-b border-slate-100 bg-white group cursor-pointer"
+                                    className="flex hover:bg-blue-50/50 transition-colors border-b border-slate-100 bg-white group"
                                 >
                                     <DataCell width={colWidths.source} isSticky left={offsets.source} className="border-r-slate-200">
                                         {product.misa?.links?.length > 0 ? (
@@ -841,11 +867,21 @@ export const InventoryLegacyTable = ({
                                     <DataCell width={colWidths.sku} isSticky left={offsets.sku} className="border-r-slate-200">
                                         <div className="flex flex-col text-[11px] items-start w-full">
                                             {product.misa?.links?.length > 0 && <span className="text-slate-500 font-bold truncate w-full">M: {product.misa.links[0].item.inventory_item_code}</span>}
-                                            <span className="font-mono font-black text-blue-900 truncate w-full">E: {product.ecount_code}</span>
+                                            <button
+                                                onClick={() => onSelectCode?.(product)}
+                                                className="font-mono font-black text-blue-900 truncate w-full text-left hover:underline"
+                                            >
+                                                E: {product.ecount_code}
+                                            </button>
                                         </div>
                                     </DataCell>
                                     <DataCell width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="font-bold text-slate-900 border-r-slate-200 text-sm leading-tight">
-                                        {product.product_name}
+                                        <button
+                                            onClick={() => onSelectName?.(product)}
+                                            className="hover:text-blue-600 hover:underline text-left w-full truncate"
+                                        >
+                                            {product.product_name}
+                                        </button>
                                     </DataCell>
                                     <DataCell width={colWidths.name_misa} className="text-slate-600 text-xs italic leading-tight">
                                         {product.misa?.links?.[0]?.item?.inventory_item_name || '-'}

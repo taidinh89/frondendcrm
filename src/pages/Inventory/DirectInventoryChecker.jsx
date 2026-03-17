@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import { InventoryDetailCard, InventoryDenseTable, InventoryCompactList, ProductDetailModal, InventoryVirtualizedTable, InventoryLegacyTable } from '../../components/Core/InventoryViews.jsx';
+import { ProductDetailModal as ProductHistoryModal } from '../../components/modals/ProductDetailModal.jsx';
 import toast from 'react-hot-toast';
 
 const API_INDEX_ENDPOINT = '/api/v1/direct-inventory';
@@ -72,6 +73,7 @@ export const DirectInventoryChecker = () => {
     // Modal state
     const [selectedItem, setSelectedItem] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [historyProductId, setHistoryProductId] = useState(null);
 
     // List Mode States
     const [listData, setListData] = useState([]);
@@ -94,6 +96,10 @@ export const DirectInventoryChecker = () => {
     const openDetail = (item) => {
         setSelectedItem(item);
         setIsModalOpen(true);
+    };
+
+    const openHistory = (item) => {
+        setHistoryProductId(item.ecount_code || item.primary_code);
     };
 
     const fetchFilterOptions = async () => {
@@ -269,7 +275,8 @@ export const DirectInventoryChecker = () => {
     const renderData = (data) => {
         const props = {
             data,
-            onSelectCode: openDetail,
+            onSelectCode: openHistory,
+            onSelectName: openDetail,
             parentRef: scrollParentRef,
             loadMoreRef: loadMoreRef,
             isLoading: isFetchingNextPage
@@ -280,7 +287,7 @@ export const DirectInventoryChecker = () => {
         if (viewMode === 'compact') return <InventoryCompactList {...props} />;
         return (
             <div className="space-y-4">
-                {data.map((item, idx) => <InventoryDetailCard key={idx} item={item} onSelectCode={openDetail} />)}
+                {data.map((item, idx) => <InventoryDetailCard key={idx} item={item} onSelectCode={openHistory} onSelectName={openDetail} />)}
                 <div ref={loadMoreRef} className="h-20 flex items-center justify-center text-[10px] text-slate-400 font-black tracking-widest uppercase opacity-50">
                     Pulling next block...
                 </div>
@@ -497,6 +504,13 @@ export const DirectInventoryChecker = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
             />
+
+            {historyProductId && (
+                <ProductHistoryModal
+                    productIdentifier={historyProductId}
+                    onClose={() => setHistoryProductId(null)}
+                />
+            )}
         </div>
     );
 };
