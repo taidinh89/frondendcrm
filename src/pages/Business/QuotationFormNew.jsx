@@ -1,585 +1,540 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-
-// --- IMPORT CÁC COMPONENT CON ---
-import { CustomerSearch } from '../../components/Trading/CustomerSearch';
-import { ProductSearch } from '../../components/Product/ProductSearch';
-import { PrintPreviewModal } from '../../components/Modals/PrintPreviewModal'; 
-
-import { 
-    Save, ArrowLeft, Warehouse, History, Image as ImageIcon, 
-    Eye, Printer, RefreshCw, HelpCircle, Clock, Keyboard, X, 
-    Trash2, Edit, Tag, AlertTriangle
+﻿// src/pages/Business/QuotationFormNew.jsx
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+    Button, Input, Card, Table,
+    Modal, Select, Checkbox,
+    Tabs, Tooltip, Badge,
+    Divider, Spin, Empty,
+    Popconfirm, Dropdown, Menu,
+    message
+} from 'antd';
+import {
+    Search, Plus, Trash2, Printer,
+    Save, ArrowLeft, Image as ImageIcon,
+    PlusCircle, MinusCircle, Copy,
+    ChevronDown, Settings, AlertTriangle,
+    Info, FileText, CheckCircle2,
+    Calendar, User, Globe, Calculator,
+    Package, Filter, X
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import dayjs from 'dayjs';
+import axios from 'axios';
+import { useApiData } from '../../hooks/useApiData.jsx';
 
-// =================================================================================
-// 1. UTILS & CACHING
-// =================================================================================
+// --- CÁC COMPONENT CON ---
+const ProductSearch = ({ onSelect, type = 'sale' }) => {
+    const [search, setSearch] = useState('');
+    const { data: products, isLoading } = useApiData('/api/v2/products/search', { q: search, limit: 10 }, 300);
 
-const PRODUCT_INFO_CACHE = new Map();
-
-// Hàm gọi API Lookup (Backend đã sửa để chấp nhận mọi loại mã)
-const fetchProductInfo = async (sku) => {
-    if (!sku) return null;
-    if (PRODUCT_INFO_CACHE.has(sku)) return PRODUCT_INFO_CACHE.get(sku);
-
-    try {
-        const res = await axios.get('/api/v1/productqvc/lookup', { params: { sku } });
-        if (res.data && res.data.data) {
-            PRODUCT_INFO_CACHE.set(sku, res.data.data);
-            return res.data.data;
-        }
-    } catch (e) {
-        console.warn(`Lookup failed for ${sku}`);
-    }
-    return null;
-};
-
-// Component hiển thị ảnh (Tối ưu render)
-const ProductImageDisplay = ({ src, alt }) => {
-    const [imgSrc, setImgSrc] = useState(src);
-    useEffect(() => { setImgSrc(src); }, [src]);
-
-    if (!imgSrc) return <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300"><ImageIcon size={16} /></div>;
-    
     return (
-        <img 
-            src={imgSrc} 
-            className="w-full h-full object-cover"
-            onError={() => setImgSrc(null)} 
-            alt={alt}
-        />
-    );
-};
-
-// Format tiền tệ & số
-const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
-const formatNumber = (num) => new Intl.NumberFormat('vi-VN').format(num || 0);
-
-// =================================================================================
-// CÁC MODAL HỖ TRỢ (GIỮ NGUYÊN)
-// =================================================================================
-const GuideModal = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 text-white flex justify-between items-center">
-                    <h3 className="font-bold text-xl flex items-center gap-2"><HelpCircle/> Hướng dẫn & Logic</h3>
-                    <button onClick={onClose}><X/></button>
-                </div>
-                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                    <div>
-                        <h4 className="font-bold text-gray-800 mb-2 border-b pb-1 flex items-center gap-2"><Keyboard size={18}/> Phím tắt</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="flex justify-between p-2 bg-gray-50 rounded border"><span className="font-bold">F1</span> <span>Mở hướng dẫn</span></div>
-                            <div className="flex justify-between p-2 bg-gray-50 rounded border"><span className="font-bold">F2</span> <span>Sửa chi tiết dòng</span></div>
-                            <div className="flex justify-between p-2 bg-gray-50 rounded border"><span className="font-bold">F4</span> <span>Bật/Tắt Soi Lợi Nhuận</span></div>
-                            <div className="flex justify-between p-2 bg-gray-50 rounded border"><span className="font-bold">Ctrl + S</span> <span>Lưu phiếu</span></div>
-                            <div className="flex justify-between p-2 bg-gray-50 rounded border"><span className="font-bold">Ctrl + P</span> <span>Lưu & In phiếu</span></div>
+        <div className="relative w-full">
+            <Input
+                prefix={<Search size={16} className="text-gray-400" />}
+                placeholder="Tìm sản phẩm (Mã, Tên, Barcode)..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                allowClear
+                className="hover:border-blue-500 focus:border-blue-500 transition-all rounded-lg h-9"
+            />
+            {search && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    {isLoading ? (
+                        <div className="p-4 text-center text-gray-400"><Spin size="small" className="mr-2" /> Đang tìm kiếm...</div>
+                    ) : products?.length > 0 ? (
+                        products.map(p => (
+                            <div
+                                key={p.id}
+                                className="p-3 hover:bg-blue-50 cursor-pointer flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0"
+                                onClick={() => { onSelect(p); setSearch(''); }}
+                            >
+                                <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center overflow-hidden shrink-0">
+                                    {p.thumb ? <img src={p.thumb} alt={p.ten_vt} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-gray-300" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-gray-800 truncate text-sm">{p.ma_vt} - {p.ten_vt}</div>
+                                    <div className="flex items-center gap-4 mt-1">
+                                        <span className="text-xs text-blue-600 font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.gia_ban_le || 0)}</span>
+                                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">Tồn: <span className="font-bold">{p.ton_hien_tai || 0}</span> {p.dvt}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-6 text-center text-gray-400">
+                            <Empty description="Không tìm thấy sản phẩm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                         </div>
-                    </div>
+                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 };
 
-const HistoryModal = ({ isOpen, onClose, onRestore }) => {
-    const [drafts, setDrafts] = useState([]);
-    useEffect(() => { if (isOpen) try { setDrafts(JSON.parse(localStorage.getItem('qvc_drafts') || '[]')); } catch { setDrafts([]); } }, [isOpen]);
-    
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
-                <div className="bg-orange-600 p-4 text-white flex justify-between items-center">
-                    <h3 className="font-bold text-lg flex items-center gap-2"><History/> Lịch sử bản nháp</h3>
-                    <button onClick={onClose}><X/></button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-                    {drafts.map(d => (
-                        <div key={d.id} className="bg-white p-3 rounded border hover:border-blue-500 shadow-sm flex justify-between items-center group">
-                            <div><p className="font-bold text-sm text-gray-800">{d.preview || 'Bản nháp'}</p><p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock size={10}/> {d.timestamp}</p></div>
-                            <button onClick={() => { onRestore(d.data); onClose(); }} className="text-xs bg-orange-100 text-orange-700 px-3 py-1.5 rounded border border-orange-200 font-bold hover:bg-orange-200 flex items-center gap-1"><RefreshCw size={12}/> Khôi phục</button>
-                        </div>
-                    ))}
-                    {drafts.length===0 && <p className="text-center text-gray-400">Trống.</p>}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const ItemEditModal = ({ isOpen, onClose, item, onSave }) => {
-    const [localItem, setLocalItem] = useState(item);
-    useEffect(() => { setLocalItem(item); }, [item]);
-    if (!isOpen || !localItem) return null;
-
-    return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
-            <div className="bg-white rounded-lg w-full max-w-2xl p-6 space-y-5 shadow-xl">
-                <div className="flex justify-between items-center border-b pb-3">
-                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Edit size={18}/> Chỉnh sửa chi tiết sản phẩm</h3>
-                    <button onClick={onClose}><X size={20}/></button>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tên hiển thị:</label>
-                    <textarea className="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" rows={2} value={localItem.product_name || ''} onChange={e => setLocalItem({...localItem, product_name: e.target.value})} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bảo hành:</label><input className="w-full border rounded p-2 text-sm" value={localItem.warranty || ''} onChange={e => setLocalItem({...localItem, warranty: e.target.value})} /></div>
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ghi chú dòng:</label><input className="w-full border rounded p-2 text-sm" value={localItem.note || ''} onChange={e => setLocalItem({...localItem, note: e.target.value})} /></div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                    <button onClick={onClose} className="px-4 py-2 border rounded hover:bg-gray-100 text-sm font-medium">Hủy bỏ</button>
-                    <button onClick={() => onSave(localItem)} className="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 text-sm shadow">Lưu thay đổi</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// =================================================================================
-// 2. MAIN FORM COMPONENT
-// =================================================================================
-export const QuotationFormNew = () => {
-    const { id } = useParams(); 
-    const [searchParams] = useSearchParams();
-    const sourceId = searchParams.get('source_id');
-    const navigate = useNavigate();
-    const qtyInputRefs = useRef([]); 
-    
-    // --- DATA STATE ---
-    const [formData, setFormData] = useState({
-        code: 'Tự động sinh',
-        date: new Date().toISOString().split('T')[0],
-        warehouse_code: '', 
-        note: '',
-        status: 'Mới'
-    });
-    const [customer, setCustomer] = useState(null);
-    const [items, setItems] = useState([]); 
-    const [warehouses, setWarehouses] = useState([]);
-    
-    // --- UI STATE ---
+// --- COMPONENT CHÍNH ---
+export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
+    const isEdit = !!quotationId;
     const [loading, setLoading] = useState(false);
-    const [showImages, setShowImages] = useState(true);
-    const [showProfit, setShowProfit] = useState(false);
-    const [printModalOpen, setPrintModalOpen] = useState(false);
-    
-    const [hoverIndex, setHoverIndex] = useState(-1);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [editingIndex, setEditingIndex] = useState(-1);
-    const [guideModalOpen, setGuideModalOpen] = useState(false);
-    const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    // Auto Save Ref
-    const autoSaveTimer = useRef(null);
+    // --- STATE DỮ LIỆU ---
+    const [formData, setFormData] = useState({
+        ngay_ct: dayjs().format('YYYY-MM-DD'),
+        ma_kh: '',
+        ten_kh: '',
+        dien_thoai: '',
+        dia_chi: '',
+        email: '',
+        ma_nt: 'VND',
+        ty_gia: 1,
+        dien_giai: '',
+        han_thanh_toan: dayjs().add(7, 'day').format('YYYY-MM-DD'),
+        tong_tien: 0,
+        tong_thue: 0,
+        tong_ck: 0,
+        tong_thanh_toan: 0,
+        details: []
+    });
 
-    // --- COMPUTED ---
-    const summary = useMemo(() => {
-        let total = 0, totalProfit = 0;
-        items.forEach(i => {
-            const lineTotal = i.quantity * i.price;
-            total += lineTotal;
-            totalProfit += (lineTotal - (i.quantity * (i.original_cost_price || 0)));
-        });
-        return { total, totalProfit };
-    }, [items]);
-
-    // --- 1. KHỞI TẠO ---
+    // --- LOAD DỮ LIỆU NẾU LÀ EDIT ---
     useEffect(() => {
-        axios.get('/api/v1/warehouses').then(res => {
-            const valid = (res.data.data || []).filter(w => w.code).sort((a,b) => a.source==='ecount'?-1:1);
-            setWarehouses(valid);
-            if(!formData.warehouse_code) setFormData(p=>({...p, warehouse_code: '02'}));
-        });
-        
-        const loadId = id || sourceId;
-        if (loadId) loadQuotationData(loadId, !!sourceId);
-        else {
-            try {
-                const drafts = JSON.parse(localStorage.getItem('qvc_drafts') || '[]');
-                if (drafts.length > 0) toast(t => (
-                    <div className="flex flex-col gap-1 text-sm">
-                        <span>Bản nháp {drafts[0].timestamp}</span>
-                        <button onClick={() => { handleRestore(drafts[0].data); toast.dismiss(t.id); }} className="bg-blue-600 text-white px-2 py-1 rounded shadow text-xs">Khôi phục</button>
-                    </div>
-                ), { icon: '📂', duration: 6000 });
-            } catch {}
+        if (isEdit) {
+            fetchQuotationDetail();
         }
-    }, [id, sourceId]);
+    }, [quotationId]);
 
-    // --- 2. LOAD DATA ---
-    const loadQuotationData = useCallback(async (targetId, isCopy) => {
+    const fetchQuotationDetail = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`/api/v2/quotations/${targetId}`);
-            const data = res.data;
-            
-            setFormData(prev => ({
-                ...prev,
-                code: isCopy ? 'Tự động sinh' : data.code,
-                date: isCopy ? new Date().toISOString().split('T')[0] : (data.date?.split('T')[0]),
-                warehouse_code: data.warehouse_code || '02', 
-                note: isCopy ? `Sao chép từ ${data.code}` : (data.note || ''),
-                status: isCopy ? 'Mới' : data.status,
-            }));
-
-            if (data.customer_id) {
-                setCustomer({ 
-                    id: data.customer_id, 
-                    ma_khncc: data.customer_code, 
-                    ten_cong_ty_khach_hang: data.customer_name,
-                    dien_thoai: data.customer_phone || '',
-                    dia_chi: data.customer_address || ''
-                });
+            const res = await axios.get(`/api/v2/quotations/${quotationId}`);
+            if (res.data) {
+                setFormData(res.data);
             }
-
-            // Map Items & Enrich
-            const enrichedItems = await Promise.all(data.items.map(async (i) => {
-                const orig = typeof i.original_data === 'string' ? JSON.parse(i.original_data) : (i.original_data || {});
-                
-                // Logic thông minh: Nếu thiếu ảnh hoặc bảo hành, tự gọi Lookup bù vào
-                let img = orig.image_url || i.image;
-                let war = i.warranty;
-
-                if (!img || !war) {
-                    const info = await fetchProductInfo(i.product_code);
-                    if (info) {
-                        img = img || info.image;
-                        war = war || info.warranty;
-                    }
-                }
-
-                return {
-                    id: isCopy ? null : i.id,
-                    product_code: i.product_code,
-                    product_name: i.product_name,
-                    unit: i.unit,
-                    quantity: Number(i.quantity),
-                    price: Number(i.price),
-                    image_url: img, 
-                    warranty: war,
-                    
-                    total_stock: orig.total_stock || 0,
-                    _raw_locations: orig.locations || [],
-                    original_cost_price: Number(i.original_cost_price || orig.ref_prices?.cost || 0),
-                    ref_prices: orig.ref_prices || {},
-                    original_data: { ...orig, image_url: img }
-                };
-            }));
-
-            setItems(enrichedItems);
-
-        } catch (e) { toast.error("Lỗi tải dữ liệu!"); } 
-        finally { setLoading(false); }
-    }, []);
-
-    // --- 3. ADD PRODUCT (GỌI LOOKUP ĐỂ LẤY ẢNH CHUẨN) ---
-    const handleAddProduct = async (p, priceKey) => {
-        const newItem = {
-            product_code: p.product_code,
-            product_name: p.display_name,
-            unit: p.unit,
-            quantity: 1,
-            price: p.dataSources?.ecount?.prices?.[priceKey] || p.dataSources?.ecount?.prices?.out_price || 0,
-            image_url: null, // Sẽ update sau khi lookup
-            warranty: '',
-            ref_prices: {
-                retail: p.dataSources?.ecount?.prices?.out_price || 0,
-                cost: p.dataSources?.ecount?.prices?.in_price || 0
-            },
-            original_cost_price: p.dataSources?.ecount?.prices?.in_price || 0,
-            total_stock: p.inventorySummary?.total_ecount_quantity || 0,
-            _raw_locations: p.inventorySummary?.locations || [],
-            original_data: p
-        };
-
-        setItems(prev => [...prev, newItem]);
-        toast.success(`Đã thêm ${p.product_code}`);
-
-        // [QUAN TRỌNG] Gọi API Lookup để lấy ảnh chuẩn và bảo hành
-        const extraInfo = await fetchProductInfo(p.product_code);
-        if (extraInfo) {
-            setItems(currentItems => {
-                // Update item vừa thêm (cuối cùng)
-                if (currentItems.length > 0) {
-                    const lastIdx = currentItems.length - 1;
-                    const updated = [...currentItems];
-                    updated[lastIdx] = { 
-                        ...updated[lastIdx],
-                        product_code: extraInfo.sku, // Chuẩn hóa mã
-                        image_url: extraInfo.image, 
-                        warranty: extraInfo.warranty,
-                        original_data: { ...updated[lastIdx].original_data, image_url: extraInfo.image }
-                    };
-                    return updated;
-                }
-                return currentItems;
-            });
-        }
-    };
-
-    // --- 4. HANDLE SAVE (TRẢ VỀ KẾT QUẢ ĐỂ PRINT DÙNG) ---
-    const handleSave = async (isSilent = false) => {
-        if (!customer) { toast.error("Vui lòng chọn khách hàng!"); return false; }
-        if (items.length === 0) { toast.error("Chưa có sản phẩm nào!"); return false; }
-
-        setLoading(true);
-
-        const payload = {
-            ...formData,
-            // Backend nhận customer_id đơn lẻ
-            customer_id: customer.id, 
-            customer_code: customer.ma_khncc || 'KHACHLE',
-            customer_name: customer.ten_cong_ty_khach_hang || 'Khách lẻ',
-            customer_phone: customer.dien_thoai || '',
-            customer_address: customer.dia_chi || '',
-            
-            items: items.map(item => ({
-                product_code: item.product_code,
-                product_name: item.product_name, 
-                unit: item.unit || 'Cái',
-                quantity: item.quantity,
-                price: item.price,
-                vat_rate: 0,
-                note: item.note || '',
-                warranty: item.warranty || '',
-                
-                // Lưu JSON original_data kèm ảnh
-                original_data: {
-                    ...(item.original_data || {}),
-                    image_url: item.image_url, 
-                }
-            })),
-            total_amount: items.reduce((sum, i) => sum + (i.quantity * i.price), 0)
-        };
-
-        try {
-            let res;
-            if (id) {
-                // Update
-                res = await axios.put(`/api/v2/quotations/${id}`, payload);
-                if(!isSilent) toast.success("Cập nhật thành công!");
-                return { success: true, id: id, code: formData.code };
-            } else {
-                // Create
-                res = await axios.post('/api/v2/quotations', payload);
-                if(!isSilent) toast.success("Lưu thành công!");
-                localStorage.removeItem('qvc_drafts');
-                
-                // Điều hướng sang trang edit nhưng trả về info ngay
-                if (res.data.id) {
-                    navigate(`/quotations/edit/${res.data.id}`, { replace: true });
-                    // Cập nhật ngay formData để Modal in có mã phiếu
-                    setFormData(p => ({ ...p, code: res.data.code }));
-                    return { success: true, id: res.data.id, code: res.data.code };
-                }
-            }
-        } catch (error) {
-            const msg = error.response?.data?.message || error.message;
-            toast.error(`Lỗi lưu: ${msg}`);
-            return { success: false };
+        } catch (err) {
+            message.error('Không thể tải thông tin báo giá');
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
-    // --- 5. HANDLE PRINT & SAVE (TÍNH NĂNG MỚI) ---
-    const handlePrintAndSave = async () => {
-        // Gọi lưu trước
-        const result = await handleSave(true); // true = silent toast (hoặc hiện cũng được)
-        
-        if (result && result.success) {
-            // Lưu xong mới mở modal
-            setPrintModalOpen(true);
+    // --- TÍNH TOÁN TỔNG HỢP ---
+    const updateTotals = (details) => {
+        let t_tien = 0;
+        let t_ck = 0;
+        let t_thue = 0;
+
+        details.forEach(item => {
+            const tierSum = (item.gia || 0) * (item.sl || 0);
+            const ckVal = item.loai_ck === '%' ? (tierSum * (item.ck || 0) / 100) : (item.ck || 0);
+            const afterCk = tierSum - ckVal;
+            const thueVal = (afterCk * (item.thue_suat || 0) / 100);
+
+            t_tien += tierSum;
+            t_ck += ckVal;
+            t_thue += thueVal;
+        });
+
+        setFormData(prev => ({
+            ...prev,
+            details,
+            tong_tien: t_tien,
+            tong_ck: t_ck,
+            tong_thue: t_thue,
+            tong_thanh_toan: t_tien - t_ck + t_thue
+        }));
+    };
+
+    // --- HANDLERS ---
+    const handleAddProduct = (p) => {
+        const exists = formData.details.find(d => d.ma_vt === p.ma_vt);
+        if (exists) {
+            message.info(`Sản phẩm ${p.ma_vt} đã có trong danh sách`);
+            return;
         }
-    };
 
-    const handleRestore = (data) => {
-        setFormData(data.formData);
-        setCustomer(data.customer);
-        setItems(data.items);
-        toast.success("Đã khôi phục dữ liệu!");
-    };
-
-    // --- SHORTCUTS ---
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'F1') { e.preventDefault(); setGuideModalOpen(true); }
-            if (e.key === 'F4') { e.preventDefault(); setShowProfit(prev => !prev); }
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); handleSave(); }
-            // [QUAN TRỌNG] Ctrl + P: Lưu rồi In
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); handlePrintAndSave(); }
-            
-            if (e.key === 'F2' && hoverIndex !== -1 && items[hoverIndex]) {
-                e.preventDefault();
-                setEditingItem(items[hoverIndex]); setEditingIndex(hoverIndex); setEditModalOpen(true);
-            }
+        const newItem = {
+            id: `new_${Date.now()}`,
+            ma_vt: p.ma_vt,
+            ten_vt: p.ten_vt,
+            dvt: p.dvt,
+            sl: 1,
+            gia: p.gia_ban_le || 0,
+            thue_suat: p.thue_suat || 0,
+            ck: 0,
+            loai_ck: '%',
+            ghi_chu: '',
+            thumb: p.thumb
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [items, hoverIndex, customer, formData, id]); // Dependencies quan trọng cho handleSave
 
-    // --- AUTO SAVE ---
-    useEffect(() => {
-        if ((items.length > 0 || customer) && !loading && !id) {
-            if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-            autoSaveTimer.current = setTimeout(() => {
-                const draft = { id: Date.now(), timestamp: new Date().toLocaleString('vi-VN'), preview: customer?.ten_cong_ty_khach_hang, data: { formData, customer, items } };
-                localStorage.setItem('qvc_drafts', JSON.stringify([draft].slice(0, 5)));
-            }, 3000);
+        updateTotals([...formData.details, newItem]);
+    };
+
+    const handleUpdateItem = (id, field, value) => {
+        const newDetails = formData.details.map(item => {
+            if (item.id === id) return { ...item, [field]: value };
+            return item;
+        });
+        updateTotals(newDetails);
+    };
+
+    const handleRemoveItem = (id) => {
+        updateTotals(formData.details.filter(i => i.id !== id));
+    };
+
+    const handleSave = async (isPrint = false) => {
+        if (!formData.ma_kh && !formData.ten_kh) {
+            message.warning('Vui lòng chọn hoặc nhập tên khách hàng');
+            return;
         }
-    }, [items, customer, formData, loading, id]);
+        if (formData.details.length === 0) {
+            message.warning('Vui lòng thêm ít nhất một sản phẩm');
+            return;
+        }
 
-    // --- RENDER ---
+        setSaving(true);
+        try {
+            const url = isEdit ? `/api/v2/quotations/${quotationId}` : '/api/v2/quotations';
+            const method = isEdit ? 'put' : 'post';
+            const res = await axios[method](url, formData);
+
+            message.success('Đã lưu báo giá thành công');
+            if (isPrint) {
+                handlePrint(res.data.id || quotationId);
+            }
+            if (!isPrint && onSaveSuccess) onSaveSuccess();
+        } catch (err) {
+            message.error('Lỗi khi lưu báo giá');
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handlePrint = (id) => {
+        window.open(`/api/v2/quotations/${id}/print`, '_blank');
+    };
+
+    if (loading) return (
+        <div className="h-full flex flex-col items-center justify-center bg-gray-50/50">
+            <Spin size="large" tip="Đang tải dữ liệu báo giá..." />
+        </div>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-sm pb-20">
-            {/* Modal In */}
-            <PrintPreviewModal 
-                isOpen={printModalOpen} 
-                onClose={() => setPrintModalOpen(false)} 
-                data={{
-                    code: formData.code,
-                    date: formData.date,
-                    customer_name: customer?.ten_cong_ty_khach_hang,
-                    customer_address: customer?.dia_chi,
-                    customer_phone: customer?.dien_thoai,
-                    items: items.map(i => ({ ...i, image: i.image_url, name: i.product_name })),
-                    total_amount: summary.total,
-                    note: formData.note,
-                    creator_name: 'Phòng Kinh Doanh'
-                }} 
-            />
-            
-            <GuideModal isOpen={guideModalOpen} onClose={() => setGuideModalOpen(false)} />
-            <HistoryModal isOpen={historyModalOpen} onClose={() => setHistoryModalOpen(false)} onRestore={handleRestore} />
-            <ItemEditModal isOpen={editModalOpen} item={editingItem} onClose={() => setEditModalOpen(false)} 
-                onSave={(u) => { const n = [...items]; n[editingIndex] = u; setItems(n); setEditModalOpen(false); toast.success("Đã cập nhật!"); }} 
-            />
-
-            {/* HEADER */}
-            <div className="bg-white shadow-sm border-b p-3 flex justify-between items-center sticky top-0 z-30">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/quotations')} className="text-gray-500 hover:text-blue-600"><ArrowLeft size={20}/></button>
+        <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden font-inter animate-in fade-in duration-500">
+            {/* Header Sticky */}
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-30">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={onBack}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-blue-600"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
                     <div>
-                        <h1 className="font-bold text-lg text-gray-800">{id ? `Sửa: ${formData.code}` : 'Tạo Mới'}</h1>
-                        <span className="text-xs text-gray-500 flex items-center gap-1"><Warehouse size={12}/> {warehouses.find(w => w.code === formData.warehouse_code)?.name || 'Kho 02'}</span>
+                        <h1 className="text-xl font-black text-gray-800 flex items-center gap-2 m-0">
+                            {isEdit ? 'CHỈNH SỬA BÁO GIÁ' : 'TẠO BÁO GIÁ MỚI'}
+                            {isEdit && <span className="text-blue-600">#{formData.so_ct || quotationId}</span>}
+                        </h1>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider m-0">Quản lý báo giá & đàm phán khách hàng</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => setHistoryModalOpen(true)} className="p-2 text-orange-600 hover:bg-orange-50 rounded" title="Lịch sử"><History size={20}/></button>
-                    <button onClick={()=>setShowImages(!showImages)} className={`p-2 rounded border ${showImages?'bg-blue-50 text-blue-600':''}`} title="Ảnh"><ImageIcon size={18}/></button>
-                    <button onClick={()=>setShowProfit(!showProfit)} className={`p-2 rounded border ${showProfit?'bg-yellow-50 text-yellow-600':''}`} title="Soi Lãi (F4)"><Eye size={18}/></button>
-                    
-                    {/* NÚT IN & LƯU */}
-                    <button onClick={handlePrintAndSave} className="bg-green-600 text-white px-3 rounded flex gap-2 items-center font-bold hover:bg-green-700 shadow">
-                        <Printer size={18}/> Lưu & In
-                    </button>
-                    
-                    <button type="button" onClick={()=>handleSave(false)} disabled={loading} className={`bg-blue-600 text-white px-4 rounded flex gap-2 items-center font-bold hover:bg-blue-700 shadow ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        {loading ? <RefreshCw className="animate-spin" size={18}/> : <Save size={18}/>}
-                        {loading ? 'Đang lưu...' : 'Lưu'}
-                    </button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        icon={<Printer size={16} />}
+                        onClick={() => handleSave(true)}
+                        className="flex items-center gap-2 font-bold h-9 bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100"
+                    >
+                        Lưu & In
+                    </Button>
+                    <Button
+                        type="primary"
+                        icon={<Save size={16} />}
+                        loading={saving}
+                        onClick={() => handleSave(false)}
+                        className="flex items-center gap-2 font-bold h-9 shadow-blue-200 shadow-md"
+                    >
+                        Lưu Báo Giá
+                    </Button>
                 </div>
             </div>
 
-            {/* BODY */}
-            <div className="p-4 max-w-7xl mx-auto space-y-4">
-                <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-3 gap-4 border border-gray-200">
-                    <div><label className="font-bold block mb-1">Khách hàng *</label><CustomerSearch selectedCustomer={customer} onSelect={setCustomer} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="font-bold block mb-1">Ngày</label><input type="date" className="w-full border rounded p-2" value={formData.date} onChange={e=>setFormData({...formData, date: e.target.value})} /></div>
-                        <div>
-                            <label className="font-bold block mb-1">Kho xuất</label>
-                            <select className="w-full border rounded p-2 bg-indigo-50" value={formData.warehouse_code} onChange={e=>setFormData({...formData, warehouse_code: e.target.value})}>
-                                {warehouses.map(w => <option key={w.code} value={w.code}>{w.name}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    <div><label className="font-bold block mb-1">Ghi chú</label><textarea className="w-full border rounded p-2 h-[74px]" value={formData.note} onChange={e=>setFormData({...formData, note: e.target.value})} /></div>
-                </div>
+            {/* Content Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+                <div className="grid grid-cols-12 gap-6 pb-20">
 
-                <ProductSearch onAddProduct={handleAddProduct} selectedWarehouseCode={formData.warehouse_code} />
-                
-                <div className="bg-white rounded shadow overflow-x-auto border border-gray-200 min-h-[400px]">
-                    <table className="w-full text-sm min-w-[900px]">
-                        <thead className="bg-gray-100 font-bold sticky top-0 z-10 border-b">
-                            <tr>
-                                <th className="p-3 w-10 text-center">#</th>
-                                {showImages && <th className="p-3 w-16 text-center">Ảnh</th>}
-                                <th className="p-3 text-left">Sản phẩm</th>
-                                <th className="p-3 w-20 text-center">ĐVT</th>
-                                <th className="p-3 w-24 text-center">SL</th>
-                                <th className="p-3 w-32 text-right">Giá</th>
-                                <th className="p-3 w-32 text-right">Thành tiền</th>
-                                {showProfit && <th className="p-3 w-28 text-right bg-yellow-50 text-yellow-800">Lãi</th>}
-                                <th className="p-3 w-10"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {items.map((item, idx) => {
-                                const profit = (item.price - (item.original_cost_price||0)) * item.quantity;
-                                const isLowStock = item.quantity > item.total_stock; // Logic tạm
-                                
-                                return (
-                                    <tr key={idx} className="hover:bg-blue-50/30 group" onMouseEnter={()=>setHoverIndex(idx)} onMouseLeave={()=>setHoverIndex(-1)}>
-                                        <td className="p-3 text-center text-gray-400">{idx+1}</td>
-                                        
-                                        {showImages && (
-                                            <td className="p-3 text-center relative">
-                                                <div className="w-10 h-10 bg-gray-100 rounded border mx-auto overflow-hidden group/img cursor-pointer flex items-center justify-center">
-                                                    <ProductImageDisplay src={item.image_url} alt={item.product_code} />
-                                                    <div className="absolute hidden group-hover/img:block z-50 left-10 top-0 w-32 h-32 bg-white shadow-xl border rounded p-1">
-                                                        <ProductImageDisplay src={item.image_url} alt={item.product_code} />
+                    {/* Panel Trái: Thông tin chung */}
+                    <div className="col-span-12 lg:col-span-8 space-y-6">
+
+                        {/* 1. Thông tin khách hàng */}
+                        <Card
+                            title={<div className="flex items-center gap-2 text-blue-700"><User size={18} /><span>Thông tin Khách hàng</span></div>}
+                            className="shadow-sm border-gray-100 rounded-xl overflow-hidden"
+                            bodyStyle={{ padding: '20px' }}
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Tên Khách hàng / Công ty <span className="text-red-500">*</span></label>
+                                    <Input
+                                        placeholder="Nhập tên khách hàng..."
+                                        value={formData.ten_kh}
+                                        onChange={e => setFormData({ ...formData, ten_kh: e.target.value })}
+                                        className="rounded-lg h-9 border-gray-200"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Số điện thoại</label>
+                                    <Input
+                                        placeholder="09xx xxx xxx"
+                                        value={formData.dien_thoai}
+                                        onChange={e => setFormData({ ...formData, dien_thoai: e.target.value })}
+                                        className="rounded-lg h-9 border-gray-200"
+                                    />
+                                </div>
+                                <div className="col-span-2 space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Địa chỉ giao hàng / Gửi báo giá</label>
+                                    <Input
+                                        placeholder="Số nhà, đường, phường/xã, quận/huyện..."
+                                        value={formData.dia_chi}
+                                        onChange={e => setFormData({ ...formData, dia_chi: e.target.value })}
+                                        className="rounded-lg h-9 border-gray-200"
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* 2. Chi tiết sản phẩm */}
+                        <Card
+                            title={
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2 text-blue-700"><Package size={18} /><span>Sản phẩm & Dịch vụ</span></div>
+                                    <div className="w-80"><ProductSearch onSelect={handleAddProduct} /></div>
+                                </div>
+                            }
+                            className="shadow-sm border-gray-100 rounded-xl overflow-hidden"
+                            bodyStyle={{ padding: 0 }}
+                        >
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead className="bg-gray-50/80 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider w-10 text-center">#</th>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sản phẩm</th>
+                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-24">ĐVT</th>
+                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-28">Số lượng</th>
+                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-36">Đơn giá</th>
+                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-32">Chiết khấu</th>
+                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-40">Thành tiền</th>
+                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-12"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {formData.details.length > 0 ? formData.details.map((item, idx) => {
+                                            const lineTien = (item.gia || 0) * (item.sl || 0);
+                                            const lineCk = item.loai_ck === '%' ? (lineTien * (item.ck || 0) / 100) : (item.ck || 0);
+                                            const lineTotal = lineTien - lineCk;
+
+                                            return (
+                                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                    <td className="px-4 py-4 text-center text-xs text-gray-400 font-bold">{idx + 1}</td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-gray-100 rounded border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-200 transition-all">
+                                                                {item.thumb ? <img src={item.thumb} alt={item.ten_vt} className="w-full h-full object-cover" /> : <ImageIcon size={16} className="text-gray-300" />}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="text-sm font-bold text-gray-800 truncate" title={item.ten_vt}>{item.ten_vt}</div>
+                                                                <div className="text-[10px] text-gray-400 font-mono italic mt-0.5">{item.ma_vt}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">{item.dvt}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.sl}
+                                                            onChange={e => handleUpdateItem(item.id, 'sl', parseFloat(e.target.value) || 0)}
+                                                            className="text-center h-8 rounded-lg font-bold border-gray-200"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.gia}
+                                                            onChange={e => handleUpdateItem(item.id, 'gia', parseFloat(e.target.value) || 0)}
+                                                            className="text-right h-8 rounded-lg font-mono font-bold text-blue-600 bg-blue-50/30 border-blue-100"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-1">
+                                                            <Input
+                                                                type="number"
+                                                                value={item.ck}
+                                                                onChange={e => handleUpdateItem(item.id, 'ck', parseFloat(e.target.value) || 0)}
+                                                                className="text-right h-8 rounded-lg border-gray-200 w-full"
+                                                            />
+                                                            <select
+                                                                className="text-[10px] font-bold border rounded-md h-8 px-1 bg-gray-50 text-gray-500"
+                                                                value={item.loai_ck}
+                                                                onChange={e => handleUpdateItem(item.id, 'loai_ck', e.target.value)}
+                                                            >
+                                                                <option value="%">%</option>
+                                                                <option value="đ">đ</option>
+                                                            </select>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-right">
+                                                        <div className="text-sm font-black text-gray-800 font-mono">
+                                                            {new Intl.NumberFormat('vi-VN').format(lineTotal)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <button
+                                                            onClick={() => handleRemoveItem(item.id)}
+                                                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }) : (
+                                            <tr>
+                                                <td colSpan="8" className="py-20 text-center">
+                                                    <div className="flex flex-col items-center justify-center text-gray-300">
+                                                        <PlusCircle size={48} strokeWidth={1} className="mb-3" />
+                                                        <p className="text-sm font-medium">Chưa có sản phẩm nào. Hãy tìm kiếm để thêm.</p>
                                                     </div>
-                                                </div>
-                                            </td>
+                                                </td>
+                                            </tr>
                                         )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Card>
 
-                                        <td className="p-3">
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold">{item.product_code}</span>
-                                                </div>
-                                                <div className="cursor-pointer hover:text-blue-600 hover:underline decoration-dashed" onClick={()=>{setEditingItem(item); setEditingIndex(idx); setEditModalOpen(true);}}>
-                                                    {item.product_name}
-                                                </div>
-                                                <div className="flex gap-2 mt-1">
-                                                    {item.warranty && <span className="text-[10px] bg-gray-100 px-1 rounded text-gray-500"><Tag size={10} className="inline"/> {item.warranty}</span>}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-3 text-center">{item.unit}</td>
-                                        <td className="p-3">
-                                            <input type="number" ref={el => qtyInputRefs.current[idx] = el} className={`w-full border rounded text-center font-bold ${isLowStock?'border-red-500 text-red-600 bg-red-50':''}`} value={item.quantity} onChange={e=>{const n=[...items]; n[idx].quantity=Number(e.target.value); setItems(n)}}/>
-                                        </td>
-                                        <td className="p-3"><input type="number" className="w-full border rounded text-right" value={item.price} onChange={e=>{const n=[...items]; n[idx].price=Number(e.target.value); setItems(n)}}/></td>
-                                        <td className="p-3 text-right font-bold">{formatCurrency(item.quantity*item.price)}</td>
-                                        {showProfit && (
-                                            <td className={`p-3 text-right text-xs font-bold ${profit<0?'text-red-600':'text-green-600'}`}>
-                                                {formatCurrency(profit)}
-                                            </td>
-                                        )}
-                                        <td className="p-3 text-center"><button onClick={()=>setItems(items.filter((_,i)=>i!==idx))} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                        {/* 3. Ghi chí & Điều khoản */}
+                        <Card className="shadow-sm border-gray-100 rounded-xl">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-tight flex items-center gap-2">
+                                    <FileText size={14} /> Ghi chú nội bộ
+                                </label>
+                                <Input.TextArea
+                                    rows={3}
+                                    placeholder="Ghi chú về khách hàng, đối thủ hoặc lý do giảm giá..."
+                                    className="rounded-xl border-gray-100 bg-gray-50/50 p-4 focus:bg-white transition-all text-sm"
+                                    value={formData.dien_giai}
+                                    onChange={e => setFormData({ ...formData, dien_giai: e.target.value })}
+                                />
+                            </div>
+                        </Card>
+                    </div>
 
-                <div className="flex justify-end mt-4">
-                    <div className="bg-white p-4 rounded shadow border w-full md:w-1/3">
-                         <div className="flex justify-between items-center text-xl font-black text-red-600"><span>TỔNG CỘNG:</span><span>{formatCurrency(summary.total)}</span></div>
-                         {showProfit && <div className="flex justify-between text-sm font-bold text-green-700 border-t pt-2 mt-2"><span>Lãi dự kiến:</span><span>{formatCurrency(summary.totalProfit)}</span></div>}
+                    {/* Panel Phải: Tổng hợp & Cấu hình */}
+                    <div className="col-span-12 lg:col-span-4 space-y-6">
+
+                        {/* 1. Cấu hình chứng từ */}
+                        <Card
+                            title={<div className="flex items-center gap-2 text-blue-700"><Calculator size={18} /><span>Thiết lập Phiếu</span></div>}
+                            className="shadow-sm border-gray-100 rounded-xl"
+                        >
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Ngày báo giá</label>
+                                        <Input
+                                            type="date"
+                                            value={formData.ngay_ct}
+                                            onChange={e => setFormData({ ...formData, ngay_ct: e.target.value })}
+                                            className="rounded-lg h-9 border-gray-200 text-sm font-bold"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Hạn hiệu lực</label>
+                                        <Input
+                                            type="date"
+                                            value={formData.han_thanh_toan}
+                                            onChange={e => setFormData({ ...formData, han_thanh_toan: e.target.value })}
+                                            className="rounded-lg h-9 border-gray-200 text-sm font-bold text-orange-600"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Loại tiền tệ</label>
+                                    <div className="flex gap-2">
+                                        <Select
+                                            className="flex-1 h-9"
+                                            defaultValue="VND"
+                                            onChange={val => setFormData({ ...formData, ma_nt: val })}
+                                        >
+                                            <Select.Option value="VND">VND - Việt Nam Đồng</Select.Option>
+                                            <Select.Option value="USD">USD - Đô la Mỹ</Select.Option>
+                                        </Select>
+                                        <Input
+                                            type="number"
+                                            className="w-24 h-9 rounded-lg border-gray-200 text-sm font-bold text-gray-400"
+                                            value={formData.ty_gia}
+                                            disabled={formData.ma_nt === 'VND'}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* 2. Tổng cộng tiền */}
+                        <Card className="shadow-lg border-blue-100 border-2 rounded-xl bg-gradient-to-br from-white to-blue-50/30 overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                <Calculator size={120} strokeWidth={1} />
+                            </div>
+                            <div className="space-y-4 relative z-10">
+                                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                                    <span>Tổng tiền hàng</span>
+                                    <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_tien)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm font-medium text-red-500 bg-red-50 px-2 py-1.5 rounded-lg border border-red-100">
+                                    <span className="flex items-center gap-1">Tổng chiết khấu <Info size={12} className="cursor-help" title="Cộng dồn chiết khấu từng dòng" /></span>
+                                    <span className="font-mono font-bold">- {new Intl.NumberFormat('vi-VN').format(formData.tong_ck)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                                    <span>Thuế GTGT</span>
+                                    <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_thue)}</span>
+                                </div>
+                                <Divider className="my-2 border-gray-200" />
+                                <div className="space-y-1">
+                                    <div className="text-xs font-black text-blue-600 uppercase tracking-widest text-right">Tổng thanh toán</div>
+                                    <div className="text-3xl font-black text-right text-gray-800 font-mono tracking-tighter">
+                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(formData.tong_thanh_toan)}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 italic text-right mt-1">Đã bao gồm VAT & Chiết khấu</div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* 3. Information Alert */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-800">
+                            <AlertTriangle className="shrink-0" size={18} />
+                            <div>
+                                <div className="text-xs font-bold uppercase tracking-tight mb-1">Cần lưu ý</div>
+                                <p className="text-[11px] leading-relaxed m-0 opacity-80">
+                                    Báo giá này sẽ có hiệu lực trong vòng <b>7 ngày</b>.
+                                    Sau thời gian này, giá có thể thay đổi tùy thuộc vào biến động thị trường hoặc chương trình khuyến mãi.
+                                </p>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+            </div>
+
+            {/* Footer Status Bar */}
+            <div className="bg-gray-100 border-t border-gray-200 px-6 py-2 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest z-30">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> Hệ thống ổn định</span>
+                    <span>Tài liệu: {formData.details.length} dòng</span>
+                </div>
+                <div>ID: {isEdit ? `EDIT_${quotationId}` : 'DRAFT_NEW'} | Dev by Taidinh89</div>
             </div>
         </div>
     );

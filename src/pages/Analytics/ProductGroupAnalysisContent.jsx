@@ -1,23 +1,23 @@
-// src/pages/ProductGroupAnalysisContent.jsx
+﻿// src/pages/Analytics/ProductGroupAnalysisContent.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend
-} from 'recharts'; 
+} from 'recharts';
 
 import { SalesAnalysisFilterBar } from '../../components/analysis/SalesAnalysisFilterBar.jsx';
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
 import { Tabs } from '../../components/analysis/Tabs.jsx';
-import { ProductGroupAnalysisDataTable } from '../../components/analysis/ProductGroupAnalysisDataTable.jsx'; 
-import { ProductDetailModal } from '../../components/Modals/ProductDetailModal.jsx';
-import { CustomerDetailModal } from '../../components/Modals/CustomerDetailModal.jsx';
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx';
+import { ProductGroupAnalysisDataTable } from '../../components/analysis/ProductGroupAnalysisDataTable.jsx';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
+import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
 import { dateUtils } from '../../utils/dateUtils.js';
 
 // [FIX] Import Hook chuẩn
 import { useApiData } from '../../hooks/useApiData.jsx';
 
-const API_ENDPOINT = '/api/v2/sales-analysis'; 
+const API_ENDPOINT = '/api/v2/sales-analysis';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 const formatPrice = (value) => new Intl.NumberFormat('vi-VN').format(value);
 
@@ -40,13 +40,13 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
     const [viewingProductId, setViewingProductId] = useState(null);
     const [viewingCustomerId, setViewingCustomerId] = useState(null);
     const [viewingOrderId, setViewingOrderId] = useState(null);
-    
+
     useEffect(() => { setAppTitle('Phân tích Hiệu quả Kinh doanh'); }, [setAppTitle]);
 
     // LOGIC TÍNH TOÁN (Giữ nguyên)
     const charts = fullData?.charts || {};
-    const totalRevenue = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_revenue)||0), 0);
-    const totalProfit = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_profit)||0), 0);
+    const totalRevenue = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_revenue) || 0), 0);
+    const totalProfit = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_profit) || 0), 0);
     const totalCost = totalRevenue - totalProfit;
 
     const totalOrders = useMemo(() => {
@@ -62,7 +62,7 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
     const pieProfitByBrand = useMemo(() => {
         const raw = charts.stats_by_brand_l1 || [];
         const top8 = raw.slice(0, 8);
-        const others = raw.slice(8).reduce((sum, item) => sum + (parseFloat(item.total_profit)||0), 0);
+        const others = raw.slice(8).reduce((sum, item) => sum + (parseFloat(item.total_profit) || 0), 0);
         const result = top8.map(item => ({
             name: item.category_name || item.category_id || 'Khác',
             value: parseFloat(item.total_profit) || 0
@@ -115,8 +115,8 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
 
         return (
             <div className="space-y-6">
-                 {/* KPI Boxes */}
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* KPI Boxes */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <AnalysisCard className="text-center py-4 border-t-4 border-green-500">
                         <p className="text-gray-500 text-sm font-medium">Lợi nhuận gộp</p>
                         <p className="text-2xl font-bold text-green-600 mt-1">{formatPrice(totalProfit)}</p>
@@ -128,7 +128,7 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                     <AnalysisCard className="text-center py-4 border-t-4 border-purple-500">
                         <p className="text-gray-500 text-sm font-medium">Tỷ suất Lãi Gộp</p>
                         <p className="text-2xl font-bold text-purple-600 mt-1">
-                            {totalRevenue > 0 ? ((totalProfit/totalRevenue)*100).toFixed(1) + '%' : '0%'}
+                            {totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) + '%' : '0%'}
                         </p>
                     </AnalysisCard>
                     <AnalysisCard className="text-center py-4 border-t-4 border-gray-500">
@@ -147,7 +147,7 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                                         <Cell fill="#10b981" /> <Cell fill="#e2e8f0" />
                                     </Pie>
                                     <Tooltip formatter={(val) => formatPrice(val)} />
-                                    <Legend verticalAlign="bottom" height={36}/>
+                                    <Legend verticalAlign="bottom" height={36} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -161,7 +161,7 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                                         {pieProfitByBrand.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip formatter={(val) => formatPrice(val)} />
-                                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{fontSize: '12px'}}/>
+                                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '12px' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -172,10 +172,10 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                 <AnalysisCard title="Xu hướng Kinh doanh (30 ngày)">
                     <div className="h-80 w-full p-2">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={charts.profit_trend || []} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
+                            <BarChart data={charts.profit_trend || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="date" tickFormatter={(t) => new Date(t).getDate()} />
-                                <YAxis tickFormatter={(val) => (val/1000000).toFixed(0) + 'Tr'} />
+                                <YAxis tickFormatter={(val) => (val / 1000000).toFixed(0) + 'Tr'} />
                                 <Tooltip formatter={(val) => formatPrice(val)} />
                                 <Legend />
                                 <Bar dataKey="total_cost" stackId="a" name="Giá vốn" fill="#cbd5e1" />
@@ -190,10 +190,10 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                     <AnalysisCard title="Top 10 Nhóm L2 (Loại Sản Phẩm) Lãi cao nhất">
                         <div className="h-80 w-full p-2">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={barProfitL2} layout="vertical" margin={{top: 5, right: 30, left: 40, bottom: 5}}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false}/>
+                                <BarChart data={barProfitL2} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={130} tick={{fontSize: 11}} />
+                                    <YAxis dataKey="name" type="category" width={130} tick={{ fontSize: 11 }} />
                                     <Tooltip formatter={(val) => formatPrice(val)} />
                                     <Bar dataKey="value" fill="#3b82f6" barSize={15} radius={[0, 4, 4, 0]} />
                                 </BarChart>
@@ -204,10 +204,10 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                     <AnalysisCard title="Top 10 Nhóm L3 (Chi tiết) Lãi cao nhất">
                         <div className="h-80 w-full p-2">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={barProfitL3} layout="vertical" margin={{top: 5, right: 30, left: 40, bottom: 5}}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false}/>
+                                <BarChart data={barProfitL3} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={130} tick={{fontSize: 11}} />
+                                    <YAxis dataKey="name" type="category" width={130} tick={{ fontSize: 11 }} />
                                     <Tooltip formatter={(val) => formatPrice(val)} />
                                     <Bar dataKey="value" fill="#8b5cf6" barSize={15} radius={[0, 4, 4, 0]} />
                                 </BarChart>
@@ -219,7 +219,7 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                 {/* Detailed Table */}
                 <AnalysisCard title="Bảng Dữ liệu Chi tiết">
                     <div className="px-4 pt-2 border-b bg-gray-50 rounded-t-lg">
-                        <Tabs 
+                        <Tabs
                             items={[
                                 { id: 'products_profit', label: 'Top sản phẩm Lãi' },
                                 { id: 'products_loss', label: 'Top sản phẩm Lỗ (Cảnh báo)' },
@@ -229,22 +229,22 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                                 { id: 'listCustomersByLoss', label: 'Khách Lỗ' },
                                 { id: 'listOrderStats', label: 'Đơn hàng' },
                                 { id: 'listOrdersByLoss', label: 'Đơn Lỗ' }
-                            ]} 
-                            activeTab={activeListTab} 
-                            onTabChange={setActiveListTab} 
+                            ]}
+                            activeTab={activeListTab}
+                            onTabChange={setActiveListTab}
                         />
                     </div>
                     <div className="p-4">
-                        <ProductGroupAnalysisDataTable 
-                            data={currentListData} 
+                        <ProductGroupAnalysisDataTable
+                            data={currentListData}
                             type={
-                                activeListTab.includes('employees') ? 'employees' : 
-                                activeListTab.includes('Customer') ? 'customers' :
-                                activeListTab.includes('Order') ? 'orders' :
-                                activeListTab.includes('frequency') ? 'frequency' :
-                                'products' 
+                                activeListTab.includes('employees') ? 'employees' :
+                                    activeListTab.includes('Customer') ? 'customers' :
+                                        activeListTab.includes('Order') ? 'orders' :
+                                            activeListTab.includes('frequency') ? 'frequency' :
+                                                'products'
                             }
-                            onItemClick={handleDataTableItemClick} 
+                            onItemClick={handleDataTableItemClick}
                         />
                     </div>
                 </AnalysisCard>
@@ -255,13 +255,13 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
     return (
         <div className="p-6 space-y-6 bg-gray-100 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800">Phân tích Kinh doanh Tổng hợp</h2>
-            
+
             <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
-            
+
             <div className="flex justify-end px-2">
                 <label className="inline-flex items-center cursor-pointer space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
-                    <input 
-                        type="checkbox" 
+                    <input
+                        type="checkbox"
                         className="form-checkbox h-4 w-4 text-blue-600 rounded"
                         checked={filters.include_returns}
                         onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}

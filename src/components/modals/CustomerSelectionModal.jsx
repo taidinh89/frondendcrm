@@ -1,4 +1,4 @@
-// src/components/modals/CustomerSelectionModal.jsx
+﻿// src/components/modals/CustomerSelectionModal.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Input, Icon } from '../ui'; // Import từ ui.jsx của bạn
 import axios from 'axios';
@@ -13,7 +13,7 @@ export const CustomerSelectionModal = ({ isOpen, onClose, onSelect }) => {
     useEffect(() => {
         if (isOpen) {
             setSearchTerm('');
-            fetchCustomers(''); 
+            fetchCustomers('');
             // Tự động focus vào ô tìm kiếm (nếu cần)
         }
     }, [isOpen]);
@@ -63,10 +63,10 @@ export const CustomerSelectionModal = ({ isOpen, onClose, onSelect }) => {
     );
 
     return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={onClose} 
-            title="Tìm & Chọn Khách Hàng" 
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Tìm & Chọn Khách Hàng"
             maxWidthClass="max-w-4xl" // Modal rộng để hiển thị bảng
             footer={modalFooter}
         >
@@ -74,14 +74,14 @@ export const CustomerSelectionModal = ({ isOpen, onClose, onSelect }) => {
                 {/* 1. Ô Tìm kiếm */}
                 <div className="flex gap-2">
                     <div className="flex-1 relative">
-                        <Input 
-                            placeholder="Nhập tên, mã, số điện thoại hoặc MST..." 
+                        <Input
+                            placeholder="Nhập tên, mã, số điện thoại hoặc MST..."
                             value={searchTerm}
                             onChange={handleSearchChange}
                             className="pl-10" // Chừa chỗ cho icon
                         />
                         <div className="absolute left-3 top-2.5 text-gray-400">
-                            <Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="w-5 h-5"/>
+                            <Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="w-5 h-5" />
                         </div>
                     </div>
                     <Button onClick={() => fetchCustomers(searchTerm)}>Tìm kiếm</Button>
@@ -104,7 +104,7 @@ export const CustomerSelectionModal = ({ isOpen, onClose, onSelect }) => {
                                 <tr>
                                     <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
                                         <div className="flex justify-center items-center gap-2">
-                                            <Icon path="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" className="w-5 h-5 animate-spin"/>
+                                            <Icon path="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" className="w-5 h-5 animate-spin" />
                                             Đang tải dữ liệu...
                                         </div>
                                     </td>

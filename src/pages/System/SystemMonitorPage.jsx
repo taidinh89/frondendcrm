@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios'; 
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 
 // --- IMPORTS UI COMPONENTS ---
 import { Button, Icon } from '../../components/ui.jsx';
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
 import { ProductAnalysisPieChart } from '../../components/analysis/ProductAnalysisPieChart.jsx';
 import { ProductAnalysisBarChart } from '../../components/analysis/ProductAnalysisBarChart.jsx';
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx'; 
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
 
 // --- CONFIG ---
 const API_ENDPOINT = '/api/v2/monitor';
@@ -39,23 +39,23 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
     // --- STATE ---
     const [debugMode, setDebugMode] = useState(false); // [DEBUG] State bật tắt debug
     const [debugLog, setDebugLog] = useState('');      // [DEBUG] Log dữ liệu
-    
+
     const [stats, setStats] = useState(null);
     const [anomalies, setAnomalies] = useState([]);
     const [loading, setLoading] = useState(false);
-    
-    const [isResolving, setIsResolving] = useState(null); 
+
+    const [isResolving, setIsResolving] = useState(null);
     const [viewingOrderId, setViewingOrderId] = useState(null);
-    
+
     const [anomalyFilters, setAnomalyFilters] = useState({
         type: '',
         search: '',
-        status: 'pending', 
+        status: 'pending',
         limit: 50
     });
 
-    useEffect(() => { 
-        if(setAppTitle) setAppTitle('Trung tâm Kiểm soát Sức khỏe Hệ thống'); 
+    useEffect(() => {
+        if (setAppTitle) setAppTitle('Trung tâm Kiểm soát Sức khỏe Hệ thống');
     }, [setAppTitle]);
 
     // --- FETCH DATA (Dùng Axios trực tiếp để kiểm soát lỗi) ---
@@ -70,14 +70,14 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
             const params = new URLSearchParams();
             params.append('status', anomalyFilters.status);
             params.append('limit', anomalyFilters.limit);
-            if(anomalyFilters.type) params.append('type', anomalyFilters.type);
-            if(anomalyFilters.search) params.append('search', anomalyFilters.search);
+            if (anomalyFilters.type) params.append('type', anomalyFilters.type);
+            if (anomalyFilters.search) params.append('search', anomalyFilters.search);
 
             const url = `${API_ENDPOINT}/anomalies?${params.toString()}`;
             console.log("Calling URL:", url); // Xem trong Console F12
 
             const anomaliesRes = await axios.get(url);
-            
+
             // [DEBUG] Ghi lại log để hiển thị ra màn hình
             setDebugLog(JSON.stringify({
                 url: url,
@@ -142,7 +142,7 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
     // --- RENDER TABLE ---
     const renderTable = () => {
         if (loading) return <tr><td colSpan="6" className="p-8 text-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div></td></tr>;
-        
+
         if (!anomalies || anomalies.length === 0) {
             return (
                 <tr>
@@ -154,7 +154,7 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
         }
 
         return anomalies.map(item => {
-            const safeDetails = item.details || {}; 
+            const safeDetails = item.details || {};
             const hasDetails = safeDetails && typeof safeDetails === 'object' && Object.keys(safeDetails).length > 0;
 
             return (
@@ -168,9 +168,9 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
                         <div className="text-sm font-medium">{item.description}</div>
                         {hasDetails && (
                             <div className="mt-1 text-xs bg-gray-100 p-1 rounded font-mono">
-                               {Object.entries(safeDetails).map(([k, v]) => (
-                                   <span key={k} className="mr-2"><b>{k}:</b> {String(v)}</span>
-                               ))}
+                                {Object.entries(safeDetails).map(([k, v]) => (
+                                    <span key={k} className="mr-2"><b>{k}:</b> {String(v)}</span>
+                                ))}
                             </div>
                         )}
                     </td>
@@ -178,12 +178,12 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
                         {item.created_at}
                     </td>
                     <td className="px-6 py-4 text-right">
-                         {/* Check cả chuỗi "1" và số 1 */}
+                        {/* Check cả chuỗi "1" và số 1 */}
                         {item.is_resolved == 1 ? (
                             <span className="text-xs font-bold text-gray-400">Đã xong</span>
                         ) : (
-                            <Button 
-                                variant="secondary" 
+                            <Button
+                                variant="secondary"
                                 className="text-xs px-2 py-1"
                                 disabled={isResolving === item.id}
                                 onClick={() => handleResolve(item.id)}
@@ -206,7 +206,7 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
                     Health Check Center
                 </h2>
                 <div className="flex gap-2">
-                    <button 
+                    <button
                         onClick={() => setDebugMode(!debugMode)}
                         className={`px-3 py-1 rounded text-sm font-bold ${debugMode ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                     >
@@ -255,7 +255,7 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
                 </AnalysisCard>
                 <AnalysisCard title="Top Lỗi">
                     <div className="h-64 p-2">
-                        <ProductAnalysisBarChart data={chartData} dataKey="value" nameKey="name" unit=" lỗi" layout="vertical" barColor="#6366f1"/>
+                        <ProductAnalysisBarChart data={chartData} dataKey="value" nameKey="name" unit=" lỗi" layout="vertical" barColor="#6366f1" />
                     </div>
                 </AnalysisCard>
             </div>
@@ -264,19 +264,19 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
             <AnalysisCard title="Danh sách Chi tiết">
                 {/* Filter Bar */}
                 <div className="p-4 border-b bg-gray-50 flex gap-4">
-                    <select 
+                    <select
                         className="bg-white border rounded px-3 py-2"
-                        value={anomalyFilters.type} 
-                        onChange={(e) => setAnomalyFilters({...anomalyFilters, type: e.target.value})}
+                        value={anomalyFilters.type}
+                        onChange={(e) => setAnomalyFilters({ ...anomalyFilters, type: e.target.value })}
                     >
                         <option value="">-- Tất cả --</option>
                         {Object.entries(ERROR_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
-                    <input 
+                    <input
                         className="flex-1 border rounded px-3 py-2"
                         placeholder="Tìm kiếm..."
                         value={anomalyFilters.search}
-                        onChange={(e) => setAnomalyFilters({...anomalyFilters, search: e.target.value})}
+                        onChange={(e) => setAnomalyFilters({ ...anomalyFilters, search: e.target.value })}
                     />
                 </div>
 
@@ -300,8 +300,8 @@ export const SystemMonitorPage = ({ setAppTitle }) => {
             </AnalysisCard>
 
             {viewingOrderId && (
-                <SalesOrderDetailModal 
-                    orderIdentifier={viewingOrderId} 
+                <SalesOrderDetailModal
+                    orderIdentifier={viewingOrderId}
                     onClose={() => setViewingOrderId(null)}
                     onSaveSuccess={() => fetchData()}
                 />

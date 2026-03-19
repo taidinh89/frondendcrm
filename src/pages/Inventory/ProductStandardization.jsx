@@ -1,10 +1,10 @@
-// src/pages/ProductStandardization.jsx
+﻿// src/pages/Inventory/ProductStandardization.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import toast from 'react-hot-toast';
-import { ProductDetailModal } from '../../components/Modals/ProductDetailModal.jsx';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
 
 const API_BASE = '/api/v2/v1/admin/standardization';
 
@@ -182,7 +182,7 @@ export const ProductStandardization = ({ setAppTitle }) => {
                         </select>
                     </div>
                     <div className="w-64 group">
-                        <label className="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-2 ml-1 group-focus-within:text-rose-600 transition-colors">Loại Xung đột</label>
+                        <label className="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-2 ml-1 group-focus-within:text-rose-600 transition-colors">Loại Xung Đột</label>
                         <select
                             className="w-full h-14 px-5 rounded-2xl bg-rose-50/50 border-2 border-transparent focus:border-rose-500 focus:bg-white outline-none text-sm font-black text-rose-700 transition-all appearance-none cursor-pointer"
                             value={conflictFilter}

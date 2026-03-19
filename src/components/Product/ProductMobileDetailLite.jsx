@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { productApi } from '../../api/admin/productApi';
 import { Icon } from '../ui';
@@ -7,9 +7,9 @@ import ProductSeoSection from './ProductSeoSection';
 import ProductContentSection from './ProductContentSection';
 import axiosClient from '../../axiosGlobal';
 
-import BrandSelectionModal from '../Modals/BrandSelectionModal';
-import CategorySelectionModal from '../Modals/CategorySelectionModal';
-import UnifiedMediaManagerModal from '../Modals/UnifiedMediaManagerModal';
+import BrandSelectionModal from '../modals/BrandSelectionModal';
+import CategorySelectionModal from '../modals/CategorySelectionModal';
+import UnifiedMediaManagerModal from '../modals/UnifiedMediaManagerModal';
 import { PLACEHOLDER_NO_IMAGE_SQUARE } from '../../constants/placeholders';
 
 /**
@@ -136,7 +136,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             setActiveTabId(mainProd.id);
             mapProductToForm(mainProd);
         } catch (e) {
-            toast.error("Lỗi nạp danh sách chi nhánh");
+            toast.error("Lá»—i náº¡p danh sÃ¡ch chi nhÃ¡nh");
             fetchDetail(rootId); // Fallback to single detail
         } finally {
             setIsLoading(false);
@@ -152,27 +152,27 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             setActiveTabId(tabId);
             mapProductToForm(prodData);
         } catch (e) {
-            toast.error("Lỗi chuyển chi nhánh");
+            toast.error("Lá»—i chuyá»ƒn chi nhÃ¡nh");
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleCreateForSite = async (targetSite) => {
-        if (!window.confirm(`Kích hoạt sản phẩm này cho chi nhánh ${targetSite}?`)) return;
+        if (!window.confirm(`KÃ­ch hoáº¡t sáº£n pháº©m nÃ y cho chi nhÃ¡nh ${targetSite}?`)) return;
 
         setIsLoading(true);
-        const tid = toast.loading(`Đang khởi tạo bản cho ${targetSite}...`);
+        const tid = toast.loading(`Äang khá»Ÿi táº¡o báº£n cho ${targetSite}...`);
         try {
             const rootId = tabs.find(t => t.is_root)?.id;
             const res = await axiosClient.post(`/api/v2/product-links/${rootId}/sync/${targetSite}`);
             const newProd = res.data.data || res.data;
 
-            toast.success(`Đã kích hoạt ${targetSite}!`, { id: tid });
+            toast.success(`ÄÃ£ kÃ­ch hoáº¡t ${targetSite}!`, { id: tid });
             setIsAddSiteOpen(false);
             initializeTabs(rootId); // Refresh tabs
         } catch (e) {
-            toast.error("Lỗi kích hoạt: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i kÃ­ch hoáº¡t: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsLoading(false);
         }
@@ -189,7 +189,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             mapProductToForm(res.data.data || res.data);
             setActiveTabId(id);
         } catch (e) {
-            toast.error("Lỗi nạp dữ liệu");
+            toast.error("Lá»—i náº¡p dá»¯ liá»‡u");
         } finally {
             setIsLoading(false);
         }
@@ -255,7 +255,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
 
     const handleSave = async () => {
         setIsSaving(true);
-        const tid = toast.loading("Đang lưu...");
+        const tid = toast.loading("Äang lÆ°u...");
         try {
             const payload = { ...formData };
             // Simple mapping for Lite
@@ -266,30 +266,30 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             } else {
                 await productApi.createV2(payload);
             }
-            toast.success("Lưu thành công", { id: tid });
+            toast.success("LÆ°u thÃ nh cÃ´ng", { id: tid });
             setBaseData(JSON.parse(JSON.stringify(formData))); // Reset base after save
             onRefresh && onRefresh();
             if (!product?.id || product.id === 'temp') {
                 onSuccess && onSuccess();
             }
         } catch (e) {
-            toast.error("Lỗi: " + e.message, { id: tid });
+            toast.error("Lá»—i: " + e.message, { id: tid });
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm("Bạn có chắc chắn muốn XÓA sản phẩm này? Thao tác này không thể hoàn tác.")) return;
+        if (!window.confirm("Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n XÃ“A sáº£n pháº©m nÃ y? Thao tÃ¡c nÃ y khÃ´ng thá»ƒ hoÃ n tÃ¡c.")) return;
         setIsLoading(true);
-        const tid = toast.loading("Đang xóa...");
+        const tid = toast.loading("Äang xÃ³a...");
         try {
             await productApi.deleteV2(product.id);
-            toast.success("Đã xóa sản phẩm", { id: tid });
+            toast.success("ÄÃ£ xÃ³a sáº£n pháº©m", { id: tid });
             onRefresh && onRefresh();
             onClose();
         } catch (e) {
-            toast.error("Lỗi xóa: " + e.message, { id: tid });
+            toast.error("Lá»—i xÃ³a: " + e.message, { id: tid });
         } finally {
             setIsLoading(false);
         }
@@ -297,7 +297,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
 
     const handleBack = () => {
         if (isDirty) {
-            if (!window.confirm("Bạn có thay đổi chưa lưu. Vẫn muốn đóng?")) return;
+            if (!window.confirm("Báº¡n cÃ³ thay Ä‘á»•i chÆ°a lÆ°u. Váº«n muá»‘n Ä‘Ã³ng?")) return;
         }
         onClose();
     };
@@ -323,7 +323,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
     };
 
     const smartUploadHandler = async (fileOrUrl) => {
-        const tid = toast.loading("Đang tải ảnh...");
+        const tid = toast.loading("Äang táº£i áº£nh...");
         try {
             const fd = new FormData();
             if (fileOrUrl instanceof File) fd.append('image', fileOrUrl);
@@ -337,7 +337,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             const url = newImg.url || newImg.displayUrl || newImg.preview_url;
             const fileId = newImg.id || newImg.master_file_id || (newImg.data && newImg.data.id);
 
-            if (!fileId) throw new Error("ID ảnh trống");
+            if (!fileId) throw new Error("ID áº£nh trá»‘ng");
 
             setFullImages(prev => [...prev, { ...newImg, id: fileId, displayUrl: url, is_temp: true }]);
             setFormData(prev => ({
@@ -345,9 +345,9 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                 media_ids: [...new Set([...(prev.media_ids || []), fileId])]
             }));
 
-            toast.success("Đã dán ảnh!", { id: tid });
+            toast.success("ÄÃ£ dÃ¡n áº£nh!", { id: tid });
         } catch (e) {
-            toast.error("Lỗi: " + e.message, { id: tid });
+            toast.error("Lá»—i: " + e.message, { id: tid });
         }
     };
 
@@ -363,10 +363,10 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                     </button>
                     <div className="min-w-0">
                         <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight truncate">
-                            {formData.proName || 'Sản phẩm mới'}
+                            {formData.proName || 'Sáº£n pháº©m má»›i'}
                         </h2>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 rounded">LITE (V4) • {formData.site_code}</span>
+                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 rounded">LITE (V4) â€¢ {formData.site_code}</span>
                             {typeof onSwitchVersion === 'function' && (
                                 <button onClick={onSwitchVersion} className="text-[10px] font-bold text-slate-400 underline">V3</button>
                             )}
@@ -381,7 +381,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                                 href={getPlatformUrl('QVC', formData.request_path, product.id)}
                                 target="_blank" rel="noopener noreferrer"
                                 className="p-2 text-slate-300 hover:text-indigo-600 transition-colors"
-                                title="Xem trên QVC.VN"
+                                title="Xem trÃªn QVC.VN"
                             >
                                 <Icon name="external-link" className="w-4.5 h-4.5" />
                             </a>
@@ -389,11 +389,11 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                                 href={getPlatformUrl(formData.site_code, formData.request_path, product.id)}
                                 target="_blank" rel="noopener noreferrer"
                                 className="p-2 text-slate-300 hover:text-indigo-600 transition-colors"
-                                title="Xem Nội Bộ"
+                                title="Xem Ná»™i Bá»™"
                             >
                                 <Icon name="eye" className="w-4.5 h-4.5" />
                             </a>
-                            <button onClick={handleDelete} className="p-2 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa sản phẩm">
+                            <button onClick={handleDelete} className="p-2 text-slate-300 hover:text-rose-500 transition-colors" title="XÃ³a sáº£n pháº©m">
                                 <Icon name="trash" className="w-4.5 h-4.5" />
                             </button>
                         </>
@@ -405,7 +405,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                             disabled={isSaving || isLoading}
                             className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 active:scale-95 transition-all animate-scaleIn"
                         >
-                            {isSaving ? '...' : (!product?.id || product.id === 'temp' ? 'TẠO MỚI' : 'LƯU')}
+                            {isSaving ? '...' : (!product?.id || product.id === 'temp' ? 'Táº O Má»šI' : 'LÆ¯U')}
                         </button>
                     ) : (
                         <button
@@ -446,7 +446,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                 {/* Add Site Popover */}
                 {isAddSiteOpen && (
                     <div className="absolute top-[100%] left-4 right-4 mt-2 bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 p-2 z-[100] animate-slideUp max-h-[200px] overflow-y-auto">
-                        <div className="text-[9px] font-black text-slate-400 p-2 uppercase tracking-widest border-b mb-1">Kích hoạt Site</div>
+                        <div className="text-[9px] font-black text-slate-400 p-2 uppercase tracking-widest border-b mb-1">KÃ­ch hoáº¡t Site</div>
                         <div className="grid grid-cols-2 gap-1">
                             {dictionary?.sites?.filter(s => !tabs.some(t => t.site_code === s.code)).map(s => (
                                 <button
@@ -466,9 +466,9 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
             {/* QUICK SECTIONS TAB (FOR MOBILE) */}
             <div className="shrink-0 bg-slate-50 border-b flex overflow-x-auto no-scrollbar px-2 z-20">
                 {[
-                    { id: 'basic', label: 'Cơ bản', icon: 'settings' },
-                    { id: 'media', label: 'Hình ảnh', icon: 'image' },
-                    { id: 'content', label: 'Nội dung', icon: 'file-text' },
+                    { id: 'basic', label: 'CÆ¡ báº£n', icon: 'settings' },
+                    { id: 'media', label: 'HÃ¬nh áº£nh', icon: 'image' },
+                    { id: 'content', label: 'Ná»™i dung', icon: 'file-text' },
                     { id: 'seo', label: 'SEO', icon: 'search' }
                 ].map(s => (
                     <button
@@ -494,21 +494,21 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                         {activeSection === 'basic' && (
                             <div className="space-y-4 animate-fadeIn">
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                                    <FormField label="Tên sản phẩm" value={formData.proName} onChange={v => setFormData({ ...formData, proName: v })} isDirty={isFieldDirty('proName')} />
+                                    <FormField label="TÃªn sáº£n pháº©m" value={formData.proName} onChange={v => setFormData({ ...formData, proName: v })} isDirty={isFieldDirty('proName')} />
                                     <div className="grid grid-cols-2 gap-4 mt-4">
                                         <FormField label="Model / MSX" value={formData.productModel} onChange={v => setFormData({ ...formData, productModel: v })} isDirty={isFieldDirty('productModel')} />
                                         <FormField label="SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} isDirty={isFieldDirty('storeSKU')} />
                                     </div>
                                 </div>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 grid grid-cols-2 gap-4">
-                                    <FormField label="Giá bán" type="number" value={formData.price} onChange={v => setFormData({ ...formData, price: v })} isDirty={isFieldDirty('price')} />
-                                    <FormField label="Giá hãng" type="number" value={formData.market_price} onChange={v => setFormData({ ...formData, market_price: v })} isDirty={isFieldDirty('market_price')} />
-                                    <FormField label="Số lượng" type="number" value={formData.quantity} onChange={v => setFormData({ ...formData, quantity: v })} isDirty={isFieldDirty('quantity')} />
-                                    <FormField label="Bảo hành" value={formData.warranty} onChange={v => setFormData({ ...formData, warranty: v })} isDirty={isFieldDirty('warranty')} />
+                                    <FormField label="GiÃ¡ bÃ¡n" type="number" value={formData.price} onChange={v => setFormData({ ...formData, price: v })} isDirty={isFieldDirty('price')} />
+                                    <FormField label="GiÃ¡ hÃ£ng" type="number" value={formData.market_price} onChange={v => setFormData({ ...formData, market_price: v })} isDirty={isFieldDirty('market_price')} />
+                                    <FormField label="Sá»‘ lÆ°á»£ng" type="number" value={formData.quantity} onChange={v => setFormData({ ...formData, quantity: v })} isDirty={isFieldDirty('quantity')} />
+                                    <FormField label="Báº£o hÃ nh" value={formData.warranty} onChange={v => setFormData({ ...formData, warranty: v })} isDirty={isFieldDirty('warranty')} />
                                 </div>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                                     <FormField
-                                        label="Thương hiệu"
+                                        label="ThÆ°Æ¡ng hiá»‡u"
                                         type="select"
                                         value={formData.brandId}
                                         options={dictionary?.brands || []}
@@ -518,7 +518,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                                         isDirty={isFieldDirty('brandId')}
                                     />
                                     <FormField
-                                        label="Danh mục"
+                                        label="Danh má»¥c"
                                         type="select"
                                         multiple
                                         value={formData.catId}
@@ -529,8 +529,8 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <ToggleField label="Hiển thị WEB" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" />
-                                    <ToggleField label="Sản phẩm HOT" checked={formData.is_hot} onChange={v => setFormData({ ...formData, is_hot: v })} color="orange" />
+                                    <ToggleField label="Hiá»ƒn thá»‹ WEB" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" />
+                                    <ToggleField label="Sáº£n pháº©m HOT" checked={formData.is_hot} onChange={v => setFormData({ ...formData, is_hot: v })} color="orange" />
                                 </div>
                             </div>
                         )}
@@ -540,9 +540,9 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                             <div className="space-y-4 animate-fadeIn">
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Bộ sưu tập ({standardImages.length})</h3>
+                                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Bá»™ sÆ°u táº­p ({standardImages.length})</h3>
                                         <button onClick={() => setIsMediaManagerOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100">
-                                            + Thêm ảnh
+                                            + ThÃªm áº£nh
                                         </button>
                                     </div>
                                     <div
@@ -560,7 +560,7 @@ const ProductMobileDetailLite = ({ isOpen, onClose, product, mode, onRefresh, di
                                         ))}
                                         {standardImages.length === 0 && (
                                             <div className="col-span-full py-10 text-center text-slate-300 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-                                                Dán ảnh (Ctrl+V) <br /> hoặc chọn từ kho
+                                                DÃ¡n áº£nh (Ctrl+V) <br /> hoáº·c chá»n tá»« kho
                                             </div>
                                         )}
                                     </div>

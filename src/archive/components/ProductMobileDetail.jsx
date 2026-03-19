@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { productApi } from '../../api/admin/productApi';
 import { Icon, Button, Modal } from '../../components/ui';
 import { toast } from 'react-hot-toast';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { metaApi } from '../../api/admin/metaApi';
-import BrandSelectionModal from '../../components/Modals/BrandSelectionModal.jsx';
-import CategorySelectionModal from '../../components/Modals/CategorySelectionModal.jsx';
-import MediaManagerModal from '../../components/Modals/MediaManagerModal.jsx';
+import BrandSelectionModal from '../../components/modals/BrandSelectionModal.jsx';
+import CategorySelectionModal from '../../components/modals/CategorySelectionModal.jsx';
+import MediaManagerModal from '../../components/modals/MediaManagerModal.jsx';
 import { PLACEHOLDER_UPLOAD_ERROR, PLACEHOLDER_WORD_ERROR } from '../../constants/placeholders';
 
 
-// --- HIỆU ỨNG PHONG CÁCH TƯƠNG LAI ---
+// --- HIá»†U á»¨NG PHONG CÃCH TÆ¯Æ NG LAI ---
 const SectionHeader = ({ title, icon, color = "blue" }) => {
     const colors = {
         blue: "text-blue-600 bg-blue-50 border-blue-100",
@@ -58,7 +58,7 @@ const FormField = ({ label, name, value, onChange, type = "text", placeholder, o
             <div className="flex items-center justify-between px-1">
                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.1em] group-focus-within:text-indigo-600 transition-colors">{label}</label>
                 {type === 'select' && onManage && (
-                    <button type="button" onClick={onManage} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline transition-all uppercase">Quản lý</button>
+                    <button type="button" onClick={onManage} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline transition-all uppercase">Quáº£n lÃ½</button>
                 )}
             </div>
 
@@ -114,7 +114,7 @@ const FormField = ({ label, name, value, onChange, type = "text", placeholder, o
                                     <input
                                         autoFocus
                                         className="w-full p-4 pl-12 bg-white border-2 border-transparent focus:border-indigo-500 rounded-2xl text-sm font-black outline-none transition-all shadow-sm placeholder:text-gray-300"
-                                        placeholder="Tìm nhanh..."
+                                        placeholder="TÃ¬m nhanh..."
                                         value={search}
                                         onChange={e => setSearch(e.target.value)}
                                     />
@@ -166,14 +166,14 @@ const FormField = ({ label, name, value, onChange, type = "text", placeholder, o
                                 }) : (
                                     <div className="py-20 flex flex-col items-center justify-center gap-5 opacity-40">
                                         <Icon name="search" className="w-16 h-16 text-indigo-300" />
-                                        <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Không tìm thấy</span>
+                                        <span className="text-xs font-black uppercase tracking-widest text-indigo-900">KhÃ´ng tÃ¬m tháº¥y</span>
                                     </div>
                                 )}
                             </div>
                             <div className="p-5 bg-gray-50/80 backdrop-blur-md border-t flex justify-between items-center px-8">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{filtered.length} kết quả</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{filtered.length} káº¿t quáº£</span>
                                 <button type="button" onClick={() => { setIsOpen(false); onManage?.(); }} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100">
-                                    <Icon name="plus" className="w-3 h-3" /> QUẢN LÝ
+                                    <Icon name="plus" className="w-3 h-3" /> QUáº¢N LÃ
                                 </button>
                             </div>
                         </div>
@@ -219,7 +219,7 @@ const ToggleField = ({ label, checked, onChange, color = "indigo" }) => {
     );
 };
 
-// --- HELPER RÚT GỌN TÊN SẢN PHẨM ---
+// --- HELPER RÃšT Gá»ŒN TÃŠN Sáº¢N PHáº¨M ---
 const getShortProName = (name) => {
     if (!name) return "Product";
     return name.split(' ').slice(0, 5).join(' ').replace(/[^a-zA-Z0-9- ]/g, '');
@@ -227,19 +227,19 @@ const getShortProName = (name) => {
 
 const WORD_IMAGE_ERROR_PLACEHOLDER = PLACEHOLDER_WORD_ERROR;
 
-// --- HELPER DỌN DẸP HTML TỒN TẠI SAU KHI PASTE (WORD, WEBSITE, ETC) ---
+// --- HELPER Dá»ŒN Dáº¸P HTML Tá»’N Táº I SAU KHI PASTE (WORD, WEBSITE, ETC) ---
 const cleanHtmlForEditor = (html) => {
     if (!html) return '';
 
-    // Sử dụng DOMParser để dọn dẹp cấu trúc thực tế
+    // Sá»­ dá»¥ng DOMParser Ä‘á»ƒ dá»n dáº¹p cáº¥u trÃºc thá»±c táº¿
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // 1. Loại bỏ các thẻ rác của Office/Word/Meta và các thành phần web không cần thiết
+    // 1. Loáº¡i bá» cÃ¡c tháº» rÃ¡c cá»§a Office/Word/Meta vÃ  cÃ¡c thÃ nh pháº§n web khÃ´ng cáº§n thiáº¿t
     const junkSelectors = [
         'meta', 'link', 'style', 'script', 'noscript', 'xml', 'o\\:p', 'v\\:*',
         '.MsoNormal', '[style*="mso-"]', '[class^="Mso"]',
-        'footer', 'header', 'nav', 'aside', // Thẻ cấu trúc web rác
+        'footer', 'header', 'nav', 'aside', // Tháº» cáº¥u trÃºc web rÃ¡c
         '.social-share', '.share-buttons', '.author-info', '.tags-list', '.related-posts',
         '[class*="share"]', '[class*="author"]', '[id*="social"]'
     ];
@@ -249,20 +249,20 @@ const cleanHtmlForEditor = (html) => {
         } catch (e) { }
     });
 
-    // 2. Làm sạch STYLE: Loại bỏ background-color và font-family ngoại lai
+    // 2. LÃ m sáº¡ch STYLE: Loáº¡i bá» background-color vÃ  font-family ngoáº¡i lai
     doc.querySelectorAll('*').forEach(el => {
         if (el.style) {
             el.style.backgroundColor = '';
             el.style.fontFamily = '';
-            // Xóa attribute style nếu sau khi xóa các prop trên nó trở nên rỗng
+            // XÃ³a attribute style náº¿u sau khi xÃ³a cÃ¡c prop trÃªn nÃ³ trá»Ÿ nÃªn rá»—ng
             if (!el.getAttribute('style') || el.style.length === 0) el.removeAttribute('style');
         }
 
-        // 3. Xử lý link: Loại bỏ link rác (share, author)
+        // 3. Xá»­ lÃ½ link: Loáº¡i bá» link rÃ¡c (share, author)
         if (el.tagName === 'A') {
             const href = (el.getAttribute('href') || '').toLowerCase();
             const text = el.textContent.toLowerCase();
-            const junkPatterns = ['share', 'facebook', 'twitter', 'zalo', 'author', 'admin', 'chính sách', 'quy định', 'pinterest'];
+            const junkPatterns = ['share', 'facebook', 'twitter', 'zalo', 'author', 'admin', 'chÃ­nh sÃ¡ch', 'quy Ä‘á»‹nh', 'pinterest'];
             if (junkPatterns.some(p => href.includes(p) || text.includes(p))) {
                 if (el.textContent.trim()) {
                     el.replaceWith(doc.createTextNode(el.textContent));
@@ -272,17 +272,17 @@ const cleanHtmlForEditor = (html) => {
             }
         }
 
-        // 4. Xóa các đoạn text rác (Copyright)
+        // 4. XÃ³a cÃ¡c Ä‘oáº¡n text rÃ¡c (Copyright)
         if (el.textContent && el.children.length === 0) {
             const txt = el.textContent.toLowerCase();
-            const copyrightPatterns = ['copyright ©', 'tất cả quyền được bảo lưu', 'bản quyền thuộc về', 'nguồn:', 'source:'];
+            const copyrightPatterns = ['copyright Â©', 'táº¥t cáº£ quyá»n Ä‘Æ°á»£c báº£o lÆ°u', 'báº£n quyá»n thuá»™c vá»', 'nguá»“n:', 'source:'];
             if (copyrightPatterns.some(p => txt.includes(p)) && el.textContent.length < 200) {
                 el.remove();
             }
         }
     });
 
-    // 5. Làm sạch các thẻ span lồng nhau vô nghĩa
+    // 5. LÃ m sáº¡ch cÃ¡c tháº» span lá»“ng nhau vÃ´ nghÄ©a
     doc.querySelectorAll('span').forEach(span => {
         if (!span.attributes.length || (span.attributes.length === 1 && span.style.length === 0)) {
             span.replaceWith(...span.childNodes);
@@ -292,7 +292,7 @@ const cleanHtmlForEditor = (html) => {
     return doc.body.innerHTML.trim();
 };
 
-// --- TRÌNH XỬ LÝ PASTE DỮ LIỆU TỪ WORD/HTML ---
+// --- TRÃŒNH Xá»¬ LÃ PASTE Dá»® LIá»†U Tá»ª WORD/HTML ---
 let lastProcessedHtml = null;
 let lastProcessedTime = 0;
 
@@ -311,15 +311,15 @@ const logTrace = (type, message, data = null) => {
 
 const processHtmlImages = async (htmlContent, proName) => {
     const now = Date.now();
-    // Guard chống xử lý trùng lặp HTML giống hệt nhau trong 1 giây
+    // Guard chá»‘ng xá»­ lÃ½ trÃ¹ng láº·p HTML giá»‘ng há»‡t nhau trong 1 giÃ¢y
     if (htmlContent === lastProcessedHtml && (now - lastProcessedTime) < 1000) {
-        console.warn("🛑 [PASTE_DEBUG] Bỏ qua vì phát hiện nội dung HTML trùng lặp vừa được xử lý!");
+        console.warn("ðŸ›‘ [PASTE_DEBUG] Bá» qua vÃ¬ phÃ¡t hiá»‡n ná»™i dung HTML trÃ¹ng láº·p vá»«a Ä‘Æ°á»£c xá»­ lÃ½!");
         return htmlContent;
     }
     lastProcessedHtml = htmlContent;
     lastProcessedTime = now;
 
-    console.group(`📋 [PASTE_DEBUG] Start Processing Content (Len: ${htmlContent.length})`);
+    console.group(`ðŸ“‹ [PASTE_DEBUG] Start Processing Content (Len: ${htmlContent.length})`);
 
     const cleanedHtml = cleanHtmlForEditor(htmlContent);
     const parser = new DOMParser();
@@ -334,13 +334,13 @@ const processHtmlImages = async (htmlContent, proName) => {
         const src = img.getAttribute('src');
         if (!src) continue;
 
-        // Bỏ qua nếu là ảnh nội bộ hoặc blob
+        // Bá» qua náº¿u lÃ  áº£nh ná»™i bá»™ hoáº·c blob
         if ((src.includes('qvc.vn') || src.includes('std.rocks')) && !src.includes('blob:')) continue;
 
         let fileToUpload = null;
         let isUrlObj = false;
 
-        // Tự động nhận diện loại ảnh:
+        // Tá»± Ä‘á»™ng nháº­n diá»‡n loáº¡i áº£nh:
         // Case A: Base64 Data URI
         if (src.startsWith('data:image')) {
             try {
@@ -352,7 +352,7 @@ const processHtmlImages = async (htmlContent, proName) => {
                 console.warn(`[PASTE_DEBUG] Img #${index}: Failed to convert base64`, e);
             }
         }
-        // Case B: External URL (bất kỳ link nào không phải nội bộ)
+        // Case B: External URL (báº¥t ká»³ link nÃ o khÃ´ng pháº£i ná»™i bá»™)
         else if (src.startsWith('http') || src.startsWith('//')) {
             isUrlObj = true;
             fileToUpload = src.startsWith('//') ? `https:${src}` : src;
@@ -360,7 +360,7 @@ const processHtmlImages = async (htmlContent, proName) => {
         // Case C: file:// (Word local path)
         else if (src.startsWith('file://')) {
             img.setAttribute('src', WORD_IMAGE_ERROR_PLACEHOLDER);
-            img.setAttribute('alt', '[LỖI: Trình duyệt chặn ảnh từ file nội bộ Word]');
+            img.setAttribute('alt', '[Lá»–I: TrÃ¬nh duyá»‡t cháº·n áº£nh tá»« file ná»™i bá»™ Word]');
             img.style.border = '2px dashed #f87171';
             img.style.display = 'block';
             img.style.margin = '10px auto';
@@ -368,13 +368,13 @@ const processHtmlImages = async (htmlContent, proName) => {
             if (!window._wordPasteWarningShown) {
                 toast((t) => (
                     <div className="flex flex-col gap-2">
-                        <span className="font-bold text-red-600">⚠️ Chú ý: Có ảnh không thể dán!</span>
+                        <span className="font-bold text-red-600">âš ï¸ ChÃº Ã½: CÃ³ áº£nh khÃ´ng thá»ƒ dÃ¡n!</span>
                         <button onClick={() => toast.dismiss(t.id)} className="text-left text-xs text-slate-600 hover:text-red-500">
-                            Trình duyệt chặn đọc ảnh từ file Word (giao thức file://).<br />
-                            <span className="font-bold">👉 Hãy click chuột phải vào ảnh → Copy, rồi Paste riêng.</span>
+                            TrÃ¬nh duyá»‡t cháº·n Ä‘á»c áº£nh tá»« file Word (giao thá»©c file://).<br />
+                            <span className="font-bold">ðŸ‘‰ HÃ£y click chuá»™t pháº£i vÃ o áº£nh â†’ Copy, rá»“i Paste riÃªng.</span>
                         </button>
                     </div>
-                ), { duration: 10000, icon: '🛑' });
+                ), { duration: 10000, icon: 'ðŸ›‘' });
                 window._wordPasteWarningShown = true;
                 setTimeout(() => window._wordPasteWarningShown = false, 5000);
             }
@@ -421,7 +421,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
     const [localTaskCount, setLocalTaskCount] = useState(0);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
-    // --- [UTILITY] TÍNH TOÁN ĐIỂM SEO & STATS ---
+    // --- [UTILITY] TÃNH TOÃN ÄIá»‚M SEO & STATS ---
     const stats = useMemo(() => {
         const div = document.createElement('div');
         div.innerHTML = value || '';
@@ -433,7 +433,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
         const hTags = div.querySelectorAll('h1, h2, h3');
         const links = div.querySelectorAll('a');
 
-        // --- [NEW] CONTENT AUDIT (PHÁT HIỆN LINK NGOÀI, SỐ ĐT) ---
+        // --- [NEW] CONTENT AUDIT (PHÃT HIá»†N LINK NGOÃ€I, Sá» ÄT) ---
         const audit = { externalLinks: [], phones: [] };
 
         // Scan Links
@@ -451,32 +451,32 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
         const matches = text.match(phoneRegex);
         if (matches) audit.phones = [...new Set(matches)]; // Unique numbers
 
-        // Tính điểm SEO cơ bản (0-100) & Insights
+        // TÃ­nh Ä‘iá»ƒm SEO cÆ¡ báº£n (0-100) & Insights
         let score = 0;
         const insights = [];
 
         if (words > 300) { score += 30; }
-        else { insights.push("Bài viết nên > 300 từ"); score += 10; }
+        else { insights.push("BÃ i viáº¿t nÃªn > 300 tá»«"); score += 10; }
 
         if (imgCount >= 3) { score += 20; }
-        else { insights.push("Cần thêm ít nhất 3 ảnh"); score += 5; }
+        else { insights.push("Cáº§n thÃªm Ã­t nháº¥t 3 áº£nh"); score += 5; }
 
         if (hTags.length >= 2) { score += 20; }
-        else { insights.push("Cần thêm thẻ H2, H3"); }
+        else { insights.push("Cáº§n thÃªm tháº» H2, H3"); }
 
         if (links >= 1) score += 10;
-        else insights.push("Nên có link liên kết");
+        else insights.push("NÃªn cÃ³ link liÃªn káº¿t");
 
         if (text.toLowerCase().includes(proName?.toLowerCase())) score += 20;
-        else insights.push("Chưa có từ khóa tên SP");
+        else insights.push("ChÆ°a cÃ³ tá»« khÃ³a tÃªn SP");
 
-        // Kiểm tra Alt ảnh
+        // Kiá»ƒm tra Alt áº£nh
         const missingAlt = Array.from(imgs).filter(img => !img.getAttribute('alt')).length;
-        if (missingAlt > 0) insights.push(`${missingAlt} ảnh thiếu Alt tag`);
+        if (missingAlt > 0) insights.push(`${missingAlt} áº£nh thiáº¿u Alt tag`);
 
-        // Cảnh báo Audit vào insights
-        if (audit.externalLinks.length > 0) insights.push(`⚠️ Có ${audit.externalLinks.length} link rác (FB/Zalo...)`);
-        if (audit.phones.length > 0) insights.push(`📞 Có ${audit.phones.length} số ĐT trong bài`);
+        // Cáº£nh bÃ¡o Audit vÃ o insights
+        if (audit.externalLinks.length > 0) insights.push(`âš ï¸ CÃ³ ${audit.externalLinks.length} link rÃ¡c (FB/Zalo...)`);
+        if (audit.phones.length > 0) insights.push(`ðŸ“ž CÃ³ ${audit.phones.length} sá»‘ ÄT trong bÃ i`);
 
         return { words, chars, imgCount, hTags: hTags.length, links: links.length, score: Math.min(100, score), insights, audit };
     }, [value, proName]);
@@ -494,7 +494,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
             if (!file) return;
 
             setLocalTaskCount(prev => prev + 1);
-            const tid = toast.loading("Đang tải ảnh lên nội dung...");
+            const tid = toast.loading("Äang táº£i áº£nh lÃªn ná»™i dung...");
             logTrace('UPLOAD', `Direct Image Upload Started: ${file.name}`);
 
             try {
@@ -509,11 +509,11 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                 const quill = quillRef.current.getEditor();
                 const range = quill.getSelection();
                 quill.insertEmbed(range ? range.index : 0, 'image', url);
-                toast.success("Đã chèn ảnh!", { id: tid });
+                toast.success("ÄÃ£ chÃ¨n áº£nh!", { id: tid });
                 logTrace('SUCCESS', `Direct Upload Complete: ${url}`);
             } catch (e) {
                 logTrace('ERROR', `Direct Upload Failed`, e);
-                toast.error("Lỗi upload: " + (e.response?.data?.message || e.message), { id: tid });
+                toast.error("Lá»—i upload: " + (e.response?.data?.message || e.message), { id: tid });
             } finally {
                 setLocalTaskCount(prev => Math.max(0, prev - 1));
             }
@@ -521,7 +521,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
     };
 
     const handleYoutubeEmbed = () => {
-        const url = prompt("Dán link YouTube (VD: https://www.youtube.com/watch?v=...):");
+        const url = prompt("DÃ¡n link YouTube (VD: https://www.youtube.com/watch?v=...):");
         if (!url) return;
 
         let videoId = '';
@@ -536,7 +536,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
             quill.insertEmbed(range ? range.index : 0, 'video', embedUrl);
             logTrace('INFO', `YouTube Embedded: ${embedUrl}`);
         } else {
-            toast.error("Link YouTube không hợp lệ!");
+            toast.error("Link YouTube khÃ´ng há»£p lá»‡!");
         }
     };
 
@@ -563,12 +563,12 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
         });
 
         if (uploadQueue.length === 0) {
-            toast.success("Tất cả ảnh đã là nội bộ!");
+            toast.success("Táº¥t cáº£ áº£nh Ä‘Ã£ lÃ  ná»™i bá»™!");
             return;
         }
 
         quill.root.innerHTML = doc.body.innerHTML;
-        const tid = toast.loading(`Đang xử lý ${uploadQueue.length} ảnh ngoại lai...`);
+        const tid = toast.loading(`Äang xá»­ lÃ½ ${uploadQueue.length} áº£nh ngoáº¡i lai...`);
         logTrace('INFO', `Manual Scan Started. Found ${uploadQueue.length} external images.`);
         setLocalTaskCount(prev => prev + uploadQueue.length);
 
@@ -596,7 +596,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                     targetImg.removeAttribute('data-upload-id');
                     successCount++;
 
-                    // [FIX] Cập nhật ngay lập tức giúp người dùng thấy tiến độ nhảy trên màn hình
+                    // [FIX] Cáº­p nháº­t ngay láº­p tá»©c giÃºp ngÆ°á»i dÃ¹ng tháº¥y tiáº¿n Ä‘á»™ nháº£y trÃªn mÃ n hÃ¬nh
                     onChange(quill.root.innerHTML);
                     logTrace('SUCCESS', `Image Localized: ${newUrl}`);
                 }
@@ -607,44 +607,44 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
             }
         }
 
-        toast.success(`Đã chuyển đổi thành công ${successCount}/${uploadQueue.length} ảnh!`, { id: tid });
+        toast.success(`ÄÃ£ chuyá»ƒn Ä‘á»•i thÃ nh cÃ´ng ${successCount}/${uploadQueue.length} áº£nh!`, { id: tid });
     };
 
-    // [UTILITY] DỌN DẸP SÂU (Deep Clean) nội dung hiện tại
+    // [UTILITY] Dá»ŒN Dáº¸P SÃ‚U (Deep Clean) ná»™i dung hiá»‡n táº¡i
     const handleDeepClean = () => {
         if (!quillRef.current) return;
         const quill = quillRef.current.getEditor();
         const raw = quill.root.innerHTML;
-        const tid = toast.loading("Đang dọn dẹp định dạng rác...");
+        const tid = toast.loading("Äang dá»n dáº¹p Ä‘á»‹nh dáº¡ng rÃ¡c...");
 
-        // Chạy qua bộ dọn dẹp đã tối ưu
+        // Cháº¡y qua bá»™ dá»n dáº¹p Ä‘Ã£ tá»‘i Æ°u
         const cleaned = cleanHtmlForEditor(raw);
 
         quill.root.innerHTML = cleaned;
         onChange(cleaned);
-        toast.success("Đã làm sạch nội dung!", { id: tid });
+        toast.success("ÄÃ£ lÃ m sáº¡ch ná»™i dung!", { id: tid });
         logTrace('INFO', 'Manual Deep Clean executed');
     };
 
-    // [UTILITY] CHUẨN HÓA CẤU TRÚC VĂN BẢN (Typography Fixer)
+    // [UTILITY] CHUáº¨N HÃ“A Cáº¤U TRÃšC VÄ‚N Báº¢N (Typography Fixer)
     const handleFixTypography = () => {
         if (!quillRef.current) return;
         const quill = quillRef.current.getEditor();
         let html = quill.root.innerHTML;
 
-        // 1. Sửa khoảng cách trước dấu câu (chào , bạn -> chào, bạn)
+        // 1. Sá»­a khoáº£ng cÃ¡ch trÆ°á»›c dáº¥u cÃ¢u (chÃ o , báº¡n -> chÃ o, báº¡n)
         html = html.replace(/\s+([,.!?;:])/g, '$1');
-        // 2. Đảm bảo có khoảng cách sau dấu câu (chào,bạn -> chào, bạn)
+        // 2. Äáº£m báº£o cÃ³ khoáº£ng cÃ¡ch sau dáº¥u cÃ¢u (chÃ o,báº¡n -> chÃ o, báº¡n)
         html = html.replace(/([,.!?;:])([^\s\d])/g, '$1 $2');
-        // 3. Xóa dấu cách thừa liên tiếp
+        // 3. XÃ³a dáº¥u cÃ¡ch thá»«a liÃªn tiáº¿p
         html = html.replace(/[ ]{2,}/g, ' ');
 
         quill.root.innerHTML = html;
         onChange(html);
-        toast.success("Đã tối ưu Typograph & Dấu câu!", { icon: '✍️' });
+        toast.success("ÄÃ£ tá»‘i Æ°u Typograph & Dáº¥u cÃ¢u!", { icon: 'âœï¸' });
     };
 
-    // [POWER-PASTE] Quản lý sự kiện Paste cho Editor
+    // [POWER-PASTE] Quáº£n lÃ½ sá»± kiá»‡n Paste cho Editor
     useEffect(() => {
         if (!quillRef.current) return;
         const quill = quillRef.current.getEditor();
@@ -659,12 +659,12 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
 
             const isWord = html && (html.includes('urn:schemas-microsoft-com:office:word') || html.includes('mso-') || html.includes('Microsoft-Word'));
             const hasImageFile = Array.from(items).some(item => item.type.startsWith('image/'));
-            // Tăng cường nhận diện: Nếu HTML có chứa IMG hoặc A hoặc Table/Span style (HTML phức tạp từ web)
+            // TÄƒng cÆ°á»ng nháº­n diá»‡n: Náº¿u HTML cÃ³ chá»©a IMG hoáº·c A hoáº·c Table/Span style (HTML phá»©c táº¡p tá»« web)
             const hasComplexHtml = html && (html.includes('<img') || html.includes('<a') || html.includes('<table') || html.includes('style='));
 
             logTrace('PASTE', `Paste Event Detected. hasImage=${hasImageFile}, isWord=${isWord}, hasHtml=${!!html}, hasComplex=${hasComplexHtml}`);
 
-            // CHÍNH SÁCH CHẶN: Nếu là Word, có Ảnh, hoặc HTML phức tạp cần dọn dẹp bớt rác
+            // CHÃNH SÃCH CHáº¶N: Náº¿u lÃ  Word, cÃ³ áº¢nh, hoáº·c HTML phá»©c táº¡p cáº§n dá»n dáº¹p bá»›t rÃ¡c
             if (hasImageFile || isWord || hasComplexHtml) {
                 if (isProcessingPaste.current) {
                     logTrace('INFO', 'Paste Blocked: Busy processing previous paste');
@@ -680,14 +680,14 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                 return;
             }
 
-            // 1. XỬ LÝ FILE ẢNH (Screenshot / Copy Image File)
+            // 1. Xá»¬ LÃ FILE áº¢NH (Screenshot / Copy Image File)
             if (hasImageFile && !html) {
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf('image/') !== -1) {
                         const file = items[i].getAsFile();
                         if (file) {
                             setLocalTaskCount(prev => prev + 1);
-                            const tid = toast.loading("Đang dán ảnh screenshot...");
+                            const tid = toast.loading("Äang dÃ¡n áº£nh screenshot...");
                             logTrace('UPLOAD', `Direct Paste Upload Started: ${file.name}`);
 
                             try {
@@ -702,11 +702,11 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                                 const quill = quillRef.current.getEditor();
                                 const range = quill.getSelection(true);
                                 quill.insertEmbed(range.index, 'image', url);
-                                toast.success("Đã dán ảnh thành công!", { id: tid });
+                                toast.success("ÄÃ£ dÃ¡n áº£nh thÃ nh cÃ´ng!", { id: tid });
                                 logTrace('SUCCESS', `Paste Upload Complete: ${url}`);
                             } catch (err) {
                                 logTrace('ERROR', 'Paste Upload Failed', err);
-                                toast.error("Lỗi: " + err.message, { id: tid });
+                                toast.error("Lá»—i: " + err.message, { id: tid });
                             } finally {
                                 setLocalTaskCount(prev => Math.max(0, prev - 1));
                                 setTimeout(() => { isProcessingPaste.current = false; }, 500);
@@ -717,14 +717,14 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                 }
             }
 
-            // 2. XỬ LÝ HTML (Word, Excel, Website...) -> CHIẾN THUẬT OPTIMISTIC (Bất đồng bộ)
+            // 2. Xá»¬ LÃ HTML (Word, Excel, Website...) -> CHIáº¾N THUáº¬T OPTIMISTIC (Báº¥t Ä‘á»“ng bá»™)
             if (html || isWord) {
-                const tid = toast.loading(isWord ? "Đang xử lý nội dung Word..." : "Đang dán nội dung...");
+                const tid = toast.loading(isWord ? "Äang xá»­ lÃ½ ná»™i dung Word..." : "Äang dÃ¡n ná»™i dung...");
                 try {
                     const quill = quillRef.current.getEditor();
                     let cleaned = cleanHtmlForEditor(html || text);
 
-                    // Thêm class container nếu dán từ Word để dễ style
+                    // ThÃªm class container náº¿u dÃ¡n tá»« Word Ä‘á»ƒ dá»… style
                     if (isWord) {
                         cleaned = `<div class="word-content">${cleaned}</div>`;
                     }
@@ -741,7 +741,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                             img.setAttribute('data-error', 'word-blocked');
                         }
                         else if (src && !src.includes('qvc.vn') && !src.includes('std.rocks') && !src.startsWith('blob:')) {
-                            // Tự động nhận diện ảnh ngoại lai (bao gồm data:image, http...)
+                            // Tá»± Ä‘á»™ng nháº­n diá»‡n áº£nh ngoáº¡i lai (bao gá»“m data:image, http...)
                             const uploadId = `up-bg-${Date.now()}-${idx}`;
                             img.setAttribute('data-upload-id', uploadId);
                             img.style.opacity = '0.5';
@@ -751,16 +751,16 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                         }
                     });
 
-                    // PASTE NGAY LẬP TỨC (Optimistic)
+                    // PASTE NGAY Láº¬P Tá»¨C (Optimistic)
                     const range = quill.getSelection(true);
                     quill.clipboard.dangerouslyPasteHTML(range.index, doc.body.innerHTML);
-                    toast.success("Đã dán! Đang tối ưu ảnh ngầm...", { id: tid });
+                    toast.success("ÄÃ£ dÃ¡n! Äang tá»‘i Æ°u áº£nh ngáº§m...", { id: tid });
                     logTrace('INFO', `HTML Pasted. Found ${uploadQueue.length} images for localization.`);
 
-                    // Reset lock sớm để user có thể làm việc khác
+                    // Reset lock sá»›m Ä‘á»ƒ user cÃ³ thá»ƒ lÃ m viá»‡c khÃ¡c
                     setTimeout(() => { isProcessingPaste.current = false; }, 500);
 
-                    // Xử lý upload ngầm sau khi đã dán (Parallel Processing - Max 3 at a time)
+                    // Xá»­ lÃ½ upload ngáº§m sau khi Ä‘Ã£ dÃ¡n (Parallel Processing - Max 3 at a time)
                     if (uploadQueue.length > 0) {
                         setLocalTaskCount(prev => prev + uploadQueue.length);
 
@@ -785,7 +785,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                                     const res = await productApi.smartUpload(formDataUpload);
                                     const newUrl = res.data.url || res.data.image_url || res.data.displayUrl;
 
-                                    // Sử dụng selector linh hoạt hơn nếu data-upload-id bị Quill làm mờ
+                                    // Sá»­ dá»¥ng selector linh hoáº¡t hÆ¡n náº¿u data-upload-id bá»‹ Quill lÃ m má»
                                     const targetImg = quill.root.querySelector(`img[data-upload-id="${job.id}"]`) ||
                                         quill.root.querySelector(`img[src="${job.src}"]`);
 
@@ -796,7 +796,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                                         targetImg.classList.remove('animate-pulse');
                                         targetImg.removeAttribute('data-upload-id');
 
-                                        // Cập nhật state ngay lập tức
+                                        // Cáº­p nháº­t state ngay láº­p tá»©c
                                         onChange(quill.root.innerHTML);
                                         logTrace('SUCCESS', `BG Image Localized (${++completed}/${total}): ${newUrl}`);
                                     }
@@ -807,25 +807,25 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                                 }
                             };
 
-                            // Chạy song song giới hạn
+                            // Cháº¡y song song giá»›i háº¡n
                             for (let i = 0; i < uploadQueue.length; i += concurrency) {
                                 const chunk = uploadQueue.slice(i, i + concurrency);
                                 await Promise.all(chunk.map(processJob));
                             }
 
-                            toast.success(`Đã tối ưu xong toàn bộ ${total} ảnh bài viết!`);
+                            toast.success(`ÄÃ£ tá»‘i Æ°u xong toÃ n bá»™ ${total} áº£nh bÃ i viáº¿t!`);
                         })();
                     }
                 } catch (err) {
                     logTrace('ERROR', 'Paste HTML Failed', err);
-                    toast.error("Lỗi paste: " + err.message, { id: tid });
+                    toast.error("Lá»—i paste: " + err.message, { id: tid });
                     isProcessingPaste.current = false;
                 }
             }
             console.groupEnd();
         };
 
-        // Dùng 'true' để lắng nghe ở capture phase, chặn các listener mặc định của Quill hiệu quả hơn
+        // DÃ¹ng 'true' Ä‘á»ƒ láº¯ng nghe á»Ÿ capture phase, cháº·n cÃ¡c listener máº·c Ä‘á»‹nh cá»§a Quill hiá»‡u quáº£ hÆ¡n
         quill.root.addEventListener('paste', handlePaste, true);
         return () => quill.root.removeEventListener('paste', handlePaste, true);
     }, [proName]);
@@ -864,20 +864,20 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                         {/* SEO TOOLTIP INSIGHTS */}
                         <div className="absolute top-full mt-2 left-0 w-80 p-5 bg-white shadow-2xl rounded-2xl border-2 border-gray-100 opacity-0 invisible group-hover/seo:opacity-100 group-hover/seo:visible transition-all z-[200]">
                             <h4 className="text-[10px] font-black text-slate-800 uppercase mb-3 border-b pb-2 flex items-center justify-between">
-                                💡 Gợi ý tối ưu SEO
-                                <span className="text-indigo-600">Stats: {stats.words} từ</span>
+                                ðŸ’¡ Gá»£i Ã½ tá»‘i Æ°u SEO
+                                <span className="text-indigo-600">Stats: {stats.words} tá»«</span>
                             </h4>
 
                             {/* AUDIT ALERTS */}
                             {(stats.audit.externalLinks.length > 0 || stats.audit.phones.length > 0) && (
                                 <div className="mb-4 space-y-2">
                                     <div className="p-3 bg-rose-50 rounded-xl border border-rose-100">
-                                        <p className="text-[9px] font-black text-rose-600 uppercase mb-1">Cảnh báo nhạy cảm:</p>
+                                        <p className="text-[9px] font-black text-rose-600 uppercase mb-1">Cáº£nh bÃ¡o nháº¡y cáº£m:</p>
                                         {stats.audit.externalLinks.map((l, i) => (
-                                            <div key={i} className="text-[8px] text-rose-500 truncate mb-0.5">🔗 Link ngoài: {l}</div>
+                                            <div key={i} className="text-[8px] text-rose-500 truncate mb-0.5">ðŸ”— Link ngoÃ i: {l}</div>
                                         ))}
                                         {stats.audit.phones.map((p, i) => (
-                                            <div key={i} className="text-[8px] text-rose-500 font-bold">📞 Số ĐT: {p}</div>
+                                            <div key={i} className="text-[8px] text-rose-500 font-bold">ðŸ“ž Sá»‘ ÄT: {p}</div>
                                         ))}
                                     </div>
                                 </div>
@@ -886,12 +886,12 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                             <div className="flex flex-col gap-2">
                                 {stats.insights.length > 0 ? stats.insights.map((ins, i) => (
                                     <div key={i} className="flex gap-2 text-[9px] text-slate-500 leading-tight">
-                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${ins.includes('⚠️') || ins.includes('📞') ? 'bg-rose-500 animate-pulse' : 'bg-indigo-400'}`} />
+                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${ins.includes('âš ï¸') || ins.includes('ðŸ“ž') ? 'bg-rose-500 animate-pulse' : 'bg-indigo-400'}`} />
                                         {ins}
                                     </div>
                                 )) : <div className="text-[9px] text-emerald-500 font-bold flex items-center gap-2">
                                     <Icon name="check" className="w-3 h-3" />
-                                    <span>🎉 Nội dung đã chuẩn SEO!</span>
+                                    <span>ðŸŽ‰ Ná»™i dung Ä‘Ã£ chuáº©n SEO!</span>
                                 </div>}
                             </div>
                         </div>
@@ -900,8 +900,8 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                     <div className="h-4 w-[1px] bg-gray-200 mx-1 hidden sm:block" />
 
                     <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 hidden lg:flex">
-                        <span className="flex items-center gap-1.5"><Icon name="file-text" className="w-3 h-3" /> {stats.words} từ</span>
-                        <span className="flex items-center gap-1.5"><Icon name="image" className="w-3 h-3" /> {stats.imgCount} ảnh</span>
+                        <span className="flex items-center gap-1.5"><Icon name="file-text" className="w-3 h-3" /> {stats.words} tá»«</span>
+                        <span className="flex items-center gap-1.5"><Icon name="image" className="w-3 h-3" /> {stats.imgCount} áº£nh</span>
                     </div>
                 </div>
 
@@ -921,10 +921,10 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                             });
                         })}
                         className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-1.5"
-                        title="Chọn ảnh từ Thư viện hệ thống"
+                        title="Chá»n áº£nh tá»« ThÆ° viá»‡n há»‡ thá»‘ng"
                     >
                         <Icon name="image" className="w-3 h-3" />
-                        Thư viện
+                        ThÆ° viá»‡n
                     </button>
 
                     <div className="h-4 w-[1px] bg-gray-200" />
@@ -933,20 +933,20 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                     <button
                         onClick={handleFixTypography}
                         className="p-2 transition-all hover:bg-gray-100 text-slate-500 rounded-xl"
-                        title="Tự động sửa lỗi dấu câu và khoảng cách"
+                        title="Tá»± Ä‘á»™ng sá»­a lá»—i dáº¥u cÃ¢u vÃ  khoáº£ng cÃ¡ch"
                     >
                         <Icon name="type" className="w-4 h-4" />
                     </button>
 
                     <div className="h-4 w-[1px] bg-gray-200" />
 
-                    {/* NÚT HỖ TRỢ PASTE CHUYÊN DỤNG (QUAY LẠI THEO YÊU CẦU) */}
+                    {/* NÃšT Há»– TRá»¢ PASTE CHUYÃŠN Dá»¤NG (QUAY Láº I THEO YÃŠU Cáº¦U) */}
                     <button
                         onClick={() => {
-                            const input = prompt("Dán URL ảnh hoặc Mã HTML vào đây để xử lý cưỡng bức:");
+                            const input = prompt("DÃ¡n URL áº£nh hoáº·c MÃ£ HTML vÃ o Ä‘Ã¢y Ä‘á»ƒ xá»­ lÃ½ cÆ°á»¡ng bá»©c:");
                             if (input) {
                                 if (input.trim().startsWith('<')) {
-                                    // Xử lý như HTML paste
+                                    // Xá»­ lÃ½ nhÆ° HTML paste
                                     processHtmlImages(input.trim(), proName).then(finalHtml => {
                                         const quill = quillRef.current.getEditor();
                                         const range = quill.getSelection(true);
@@ -954,33 +954,33 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                                         onChange(quill.root.innerHTML);
                                     });
                                 } else {
-                                    // Xử lý như URL đơn lẻ
+                                    // Xá»­ lÃ½ nhÆ° URL Ä‘Æ¡n láº»
                                     smartUploadHandler(input.trim(), 'editor');
                                 }
                             }
                         }}
                         className="px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
-                        title="Dán cưỡng bức HTML hoặc Link ảnh"
+                        title="DÃ¡n cÆ°á»¡ng bá»©c HTML hoáº·c Link áº£nh"
                     >
                         <Icon name="plus" className="w-3 h-3" />
-                        Hỗ Trợ Dán
+                        Há»— Trá»£ DÃ¡n
                     </button>
                     <button
                         onClick={handleDeepClean}
                         className="px-3 py-1.5 bg-white text-rose-600 border border-rose-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95"
-                        title="Xóa mọi background color, font rác, link social..."
+                        title="XÃ³a má»i background color, font rÃ¡c, link social..."
                     >
                         <Icon name="trash" className="w-3 h-3 inline mr-1.5" />
-                        Dọn Rác
+                        Dá»n RÃ¡c
                     </button>
 
                     <button
                         onClick={scanAndLocalizeImages}
                         className="px-3 py-1.5 bg-white text-emerald-600 border border-emerald-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95"
-                        title="Tự động đưa toàn bộ ảnh ngoại lai về website"
+                        title="Tá»± Ä‘á»™ng Ä‘Æ°a toÃ n bá»™ áº£nh ngoáº¡i lai vá» website"
                     >
                         <Icon name="refresh" className="w-3 h-3 inline mr-1.5" />
-                        Link Ảnh
+                        Link áº¢nh
                     </button>
 
                     <button
@@ -996,7 +996,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                     <button
                         onClick={() => setIsFullScreen(!isFullScreen)}
                         className={`p-2 transition-all hover:bg-gray-100 rounded-xl ${isFullScreen ? 'text-indigo-600' : 'text-slate-400'}`}
-                        title={isFullScreen ? "Thu nhỏ" : "Toàn màn hình (Zen Mode)"}
+                        title={isFullScreen ? "Thu nhá»" : "ToÃ n mÃ n hÃ¬nh (Zen Mode)"}
                     >
                         <Icon name={isFullScreen ? 'minimize' : 'maximize'} className="w-4 h-4" />
                     </button>
@@ -1010,7 +1010,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                         <div className="absolute inset-0 w-20 h-20 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin shadow-xl" />
                     </div>
                     <div className="bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl animate-pulse flex items-center gap-3">
-                        Đang tối ưu {localTaskCount} ảnh ngầm...
+                        Äang tá»‘i Æ°u {localTaskCount} áº£nh ngáº§m...
                     </div>
                 </div>
             )}
@@ -1027,7 +1027,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                             onChange={(e) => onChange(e.target.value)}
                             className={`w-full p-8 pl-12 font-mono text-xs leading-[2] outline-none border-none bg-transparent text-indigo-300 min-h-[500px] selection:bg-indigo-500 selection:text-white custom-scrollbar ${className}`}
                             spellCheck={false}
-                            placeholder="<!-- Dán mã HTML hoặc chỉnh sửa trực tiếp tại đây -->"
+                            placeholder="<!-- DÃ¡n mÃ£ HTML hoáº·c chá»‰nh sá»­a trá»±c tiáº¿p táº¡i Ä‘Ã¢y -->"
                         />
                         <div className="absolute bottom-4 right-4 bg-slate-800/80 px-4 py-2 rounded-xl text-[10px] font-mono text-slate-500">
                             MODE: HTML_UTF8_STRICT
@@ -1054,7 +1054,7 @@ const RichTextEditor = ({ value, onChange, placeholder, proName, className, onTa
                         <span className="flex items-center gap-1.5 text-indigo-400"><div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" /> RICHTEXT_V2_AUTO_CLEAN</span>
                     </div>
                     <div className="flex gap-4 items-center">
-                        <span>{stats.chars} Ký tự</span>
+                        <span>{stats.chars} KÃ½ tá»±</span>
                         <div className="h-3 w-[1px] bg-gray-200" />
                         <span className="text-slate-300">UTILITY: WORD_CLEAN_ENABLED</span>
                     </div>
@@ -1088,8 +1088,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     const [fullImages, setFullImages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [mediaFilter, setMediaFilter] = useState('all'); // 'all' hoặc 'legacy'
-    const [seoOpen, setSeoOpen] = useState(false); // Cho giao diện Standard
+    const [mediaFilter, setMediaFilter] = useState('all'); // 'all' hoáº·c 'legacy'
+    const [seoOpen, setSeoOpen] = useState(false); // Cho giao diá»‡n Standard
     const [showAllStandardImages, setShowAllStandardImages] = useState(false);
     const [tempBrand, setTempBrand] = useState(null); // Fallback for brand display if not in dictionary
     const [showUrlInput, setShowUrlInput] = useState(false);
@@ -1162,9 +1162,9 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         }
     }, [product, currentMode, currentId]);
 
-    // 1. [UPDATE] Mở rộng sự kiện Paste cho cả tab 'standard'
+    // 1. [UPDATE] Má»Ÿ rá»™ng sá»± kiá»‡n Paste cho cáº£ tab 'standard'
     useEffect(() => {
-        // Thêm 'standard' vào điều kiện check
+        // ThÃªm 'standard' vÃ o Ä‘iá»u kiá»‡n check
         if (!isOpen || (activeTab !== 'media' && activeTab !== 'common' && activeTab !== 'standard')) return;
 
         const handlePaste = async (e) => {
@@ -1173,7 +1173,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             console.log("-> Target is Input/Editor:", !!isInput);
 
             if (isProcessingPaste.current) {
-                console.warn("🛑 [GLOBAL_PASTE_LOG] BLOCKED: System is busy processing another paste.");
+                console.warn("ðŸ›‘ [GLOBAL_PASTE_LOG] BLOCKED: System is busy processing another paste.");
                 console.groupEnd();
                 return;
             }
@@ -1183,21 +1183,21 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 return;
             }
 
-            // A. Xử lý File (Screenshot, Copy Image)
+            // A. Xá»­ lÃ½ File (Screenshot, Copy Image)
             if (e.clipboardData.files.length > 0) {
                 e.preventDefault();
                 const file = e.clipboardData.files[0];
                 if (file.type.startsWith('image/')) {
                     console.log("[DEBUG] Paste Image File:", file.name, file.type, file.size);
-                    smartUploadHandler(file); // Chuyển sang dùng smartUploadHandler
+                    smartUploadHandler(file); // Chuyá»ƒn sang dÃ¹ng smartUploadHandler
                 }
             }
-            // B. Xử lý URL (Copy Image Address)
+            // B. Xá»­ lÃ½ URL (Copy Image Address)
             else {
                 const text = e.clipboardData.getData('text');
                 if (text && (text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || text.startsWith('http'))) {
                     console.log("[DEBUG] Paste Image URL detected:", text);
-                    if (window.confirm(`Bạn muốn tải ảnh từ liên kết này?\n${text}`)) {
+                    if (window.confirm(`Báº¡n muá»‘n táº£i áº£nh tá»« liÃªn káº¿t nÃ y?\n${text}`)) {
                         uploadUrlHandler(text);
                     }
                 }
@@ -1254,7 +1254,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 updated_at: d.updated_at
             });
         } catch (e) {
-            toast.error("Không nạp được dữ liệu");
+            toast.error("KhÃ´ng náº¡p Ä‘Æ°á»£c dá»¯ liá»‡u");
         } finally {
             setIsLoading(false);
         }
@@ -1264,13 +1264,13 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (!file || !product?.id) return;
         const form = new FormData();
         form.append('image', file);
-        const tid = toast.loading("Đang tải ảnh...");
+        const tid = toast.loading("Äang táº£i áº£nh...");
         try {
             await productApi.uploadImage(product.id, form);
-            toast.success("Đã thêm ảnh!", { id: tid });
+            toast.success("ÄÃ£ thÃªm áº£nh!", { id: tid });
             fetchDetail(product.id);
         } catch (e) {
-            toast.error("Lỗi upload: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i upload: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
@@ -1282,18 +1282,18 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (!fileOrUrl) return;
 
         setGlobalTaskCount(prev => prev + 1);
-        const tid = toast.loading("Đang xử lý ảnh...");
+        const tid = toast.loading("Äang xá»­ lÃ½ áº£nh...");
         const isUrl = typeof fileOrUrl === 'string';
         logTrace('UPLOAD', `SmartUpload Start. targetMode=${targetMode}, isUrl=${isUrl}`, fileOrUrl);
 
         try {
             let fileToUpload = fileOrUrl;
 
-            // Nếu là URL, tải về trước để biến thành File
+            // Náº¿u lÃ  URL, táº£i vá» trÆ°á»›c Ä‘á»ƒ biáº¿n thÃ nh File
             if (isUrl) {
                 try {
                     const response = await fetch(fileOrUrl);
-                    if (!response.ok) throw new Error("Không thể tải ảnh từ URL");
+                    if (!response.ok) throw new Error("KhÃ´ng thá»ƒ táº£i áº£nh tá»« URL");
                     const blob = await response.blob();
 
                     const urlPath = new URL(fileOrUrl).pathname;
@@ -1313,11 +1313,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             if (fileToUpload instanceof File) {
                 formDataUpload.append('image', fileToUpload);
             } else if (isUrl) {
-                // Trường hợp URL nhưng client không tải được -> Gửi URL lên
+                // TrÆ°á»ng há»£p URL nhÆ°ng client khÃ´ng táº£i Ä‘Æ°á»£c -> Gá»­i URL lÃªn
                 formDataUpload.append('image_url', fileOrUrl);
             }
 
-            // Gửi context tên SP để backend đặt tên file SEO
+            // Gá»­i context tÃªn SP Ä‘á»ƒ backend Ä‘áº·t tÃªn file SEO
             formDataUpload.append('temp_context', getShortProName(formData.proName));
             formDataUpload.append('source', 'mobile_form_unified');
 
@@ -1328,10 +1328,10 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             // console.log("[DEBUG] Upload Success:", newImage);
 
             if (targetMode === 'editor') {
-                // Mode EDITOR: Chèn HTML vào nội dung
+                // Mode EDITOR: ChÃ¨n HTML vÃ o ná»™i dung
                 const field = targetField || standardContentSubTab; // 'description', 'spec', 'specialOffer'
                 if (field === 'summary') {
-                    toast.error("Mô tả ngắn chỉ hỗ trợ văn bản.", { id: tid });
+                    toast.error("MÃ´ táº£ ngáº¯n chá»‰ há»— trá»£ vÄƒn báº£n.", { id: tid });
                     return;
                 }
                 const html = `<p><img src="${finalUrl}" alt="${newImage.original_name}" /></p>`;
@@ -1348,32 +1348,32 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     setFormData(prev => ({ ...prev, [field]: (prev[field] || '') + html }));
                 }
 
-                toast.success("Đã chèn ảnh vào nội dung!", { id: tid });
+                toast.success("ÄÃ£ chÃ¨n áº£nh vÃ o ná»™i dung!", { id: tid });
             } else {
-                // Mode GALLERY: Thêm vào danh sách ảnh sản phẩm
-                // Lưu ID để tí nữa bấm "Lưu sản phẩm" thì gửi lên gán
+                // Mode GALLERY: ThÃªm vÃ o danh sÃ¡ch áº£nh sáº£n pháº©m
+                // LÆ°u ID Ä‘á»ƒ tÃ­ ná»¯a báº¥m "LÆ°u sáº£n pháº©m" thÃ¬ gá»­i lÃªn gÃ¡n
                 setTempUploadedIds(prev => [...prev, newImage.id]);
 
-                // Hiển thị ảnh giả (preview) vào giao diện ngay lập tức
+                // Hiá»ƒn thá»‹ áº£nh giáº£ (preview) vÃ o giao diá»‡n ngay láº­p tá»©c
                 setFullImages(prev => [...prev, {
                     id: newImage.id,
                     url: finalUrl,
                     displayUrl: finalUrl,
-                    is_temp: true // Đánh dấu để hiển thị visual "Chờ gán"
+                    is_temp: true // ÄÃ¡nh dáº¥u Ä‘á»ƒ hiá»ƒn thá»‹ visual "Chá» gÃ¡n"
                 }]);
-                toast.success("Xong! Bấm lưu để hoàn tất", { id: tid });
+                toast.success("Xong! Báº¥m lÆ°u Ä‘á»ƒ hoÃ n táº¥t", { id: tid });
                 logTrace('SUCCESS', `SmartUpload Complete: ${finalUrl}`);
                 if (isUrl) setShowUrlInput(false);
             }
         } catch (e) {
             logTrace('ERROR', 'SmartUpload Failed', e);
-            toast.error("Lỗi: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setGlobalTaskCount(prev => Math.max(0, prev - 1));
         }
     };
 
-    // [POWER-PASTE] Xử lý paste thông minh: Word, Excel, Mixed HTML, Images cho Textarea
+    // [POWER-PASTE] Xá»­ lÃ½ paste thÃ´ng minh: Word, Excel, Mixed HTML, Images cho Textarea
     const handlePasteForField = async (e, fieldName) => {
         const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
         if (!clipboardData) return;
@@ -1393,17 +1393,17 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         // console.log("-> Text Length:", textPlain?.length || 0);
         // console.log("-> Has Images/Complex:", hasHtmlImages || hasImageFile || hasComplexHtml);
 
-        // NẾU LÀ WORD HOẶC CÓ ẢNH HOẶC HTML PHỨC TẠP -> TA CHẶN VÀ XỬ LÝ RIÊNG ĐỂ DỌN RÁC
+        // Náº¾U LÃ€ WORD HOáº¶C CÃ“ áº¢NH HOáº¶C HTML PHá»¨C Táº P -> TA CHáº¶N VÃ€ Xá»¬ LÃ RIÃŠNG Äá»‚ Dá»ŒN RÃC
         if (isWord || hasImageFile || hasHtmlImages || hasComplexHtml) {
             if (isProcessingPaste.current) {
-                // console.warn(`🛑 [FIELD_PASTE_LOG] BLOCKED: Lock active for ${fieldName}`);
+                // console.warn(`ðŸ›‘ [FIELD_PASTE_LOG] BLOCKED: Lock active for ${fieldName}`);
                 e.preventDefault();
                 e.stopPropagation();
                 // console.groupEnd();
                 return;
             }
 
-            // console.log("🔓 [FIELD_PASTE_LOG] TAKING CONTROL...");
+            // console.log("ðŸ”“ [FIELD_PASTE_LOG] TAKING CONTROL...");
             isProcessingPaste.current = true;
             e.preventDefault();
             e.stopPropagation();
@@ -1413,26 +1413,26 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             return;
         }
 
-        const tid = toast.loading("Đang dán nội dung...");
+        const tid = toast.loading("Äang dÃ¡n ná»™i dung...");
         try {
-            // CHIẾN THUẬT: PASTE TRƯỚC (Cleaned), Sau đó xử lý ảnh sau (nếu có)
+            // CHIáº¾N THUáº¬T: PASTE TRÆ¯á»šC (Cleaned), Sau Ä‘Ã³ xá»­ lÃ½ áº£nh sau (náº¿u cÃ³)
             let contentToPaste = "";
 
             if (isWord || htmlData) {
-                // Nếu là Word/HTML, dọn dẹp junk trước khi đưa vào textarea
+                // Náº¿u lÃ  Word/HTML, dá»n dáº¹p junk trÆ°á»›c khi Ä‘Æ°a vÃ o textarea
                 contentToPaste = cleanHtmlForEditor(htmlData || textPlain);
 
-                // Nếu là textarea và Word, có thể user chỉ muốn text?
-                // Nhưng ta đã hứa hỗ trợ HTML cơ bản, nên ta giữ HTML đã dọn dẹp.
+                // Náº¿u lÃ  textarea vÃ  Word, cÃ³ thá»ƒ user chá»‰ muá»‘n text?
+                // NhÆ°ng ta Ä‘Ã£ há»©a há»— trá»£ HTML cÆ¡ báº£n, nÃªn ta giá»¯ HTML Ä‘Ã£ dá»n dáº¹p.
                 if (isWord && !hasHtmlImages && !htmlData.includes('<b>') && !htmlData.includes('<i>')) {
-                    // Nếu là Word nhưng ko có format gì đặc biệt, lấy text plain cho sạch
+                    // Náº¿u lÃ  Word nhÆ°ng ko cÃ³ format gÃ¬ Ä‘áº·c biá»‡t, láº¥y text plain cho sáº¡ch
                     contentToPaste = textPlain;
                 }
             } else {
                 contentToPaste = textPlain;
             }
 
-            // Paste Optimistic vào field
+            // Paste Optimistic vÃ o field
             const activeEl = document.activeElement;
             if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
                 const start = activeEl.selectionStart;
@@ -1444,28 +1444,28 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 setFormData(prev => ({ ...prev, [fieldName]: (prev[fieldName] || '') + contentToPaste }));
             }
 
-            toast.success("Đã dán!", { id: tid });
+            toast.success("ÄÃ£ dÃ¡n!", { id: tid });
             setTimeout(() => { isProcessingPaste.current = false; }, 500);
 
-            // Xử lý ảnh ngầm nếu có HTML Images
+            // Xá»­ lÃ½ áº£nh ngáº§m náº¿u cÃ³ HTML Images
             if (hasHtmlImages) {
                 console.log("[FIELD_PASTE] Processing images in background...");
-                // Note: Với textarea, việc replace URL sau khi user đã paste là khá khó vì ko có DOM ID.
-                // Nên với textarea, ta có thể chấp nhận để processHtmlImages chạy xong rồi mới cập nhật state.
-                // HOẶC dùng regex replace.
+                // Note: Vá»›i textarea, viá»‡c replace URL sau khi user Ä‘Ã£ paste lÃ  khÃ¡ khÃ³ vÃ¬ ko cÃ³ DOM ID.
+                // NÃªn vá»›i textarea, ta cÃ³ thá»ƒ cháº¥p nháº­n Ä‘á»ƒ processHtmlImages cháº¡y xong rá»“i má»›i cáº­p nháº­t state.
+                // HOáº¶C dÃ¹ng regex replace.
                 (async () => {
                     const finalHtml = await processHtmlImages(htmlData, formData.proName);
-                    // Cập nhật lại state với ảnh đã upload
+                    // Cáº­p nháº­t láº¡i state vá»›i áº£nh Ä‘Ã£ upload
                     setFormData(prev => {
                         const currentVal = prev[fieldName] || '';
-                        // Replace nội dung cũ bằng nội dung đã có ảnh upload (nếu nội dung chưa bị sửa quá nhiều)
-                        // Đây là một tradeoff.
+                        // Replace ná»™i dung cÅ© báº±ng ná»™i dung Ä‘Ã£ cÃ³ áº£nh upload (náº¿u ná»™i dung chÆ°a bá»‹ sá»­a quÃ¡ nhiá»u)
+                        // ÄÃ¢y lÃ  má»™t tradeoff.
                         return { ...prev, [fieldName]: currentVal.replace(contentToPaste, finalHtml) };
                     });
                 })();
             }
 
-            // Xử lý Image File (Screenshot)
+            // Xá»­ lÃ½ Image File (Screenshot)
             if (hasImageFile && !htmlData) {
                 for (let i = 0; i < itemsList.length; i++) {
                     const item = itemsList[i];
@@ -1478,7 +1478,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
         } catch (err) {
             console.error(err);
-            toast.error("Lỗi: " + err.message, { id: tid });
+            toast.error("Lá»—i: " + err.message, { id: tid });
             isProcessingPaste.current = false;
         }
         console.groupEnd();
@@ -1490,99 +1490,99 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
 
     const handleSetMain = async (idOrName) => {
-        if (!idOrName) return toast.error("Không có thông tin ảnh");
-        const tid = toast.loading("Đang thiết lập ảnh chính...");
+        if (!idOrName) return toast.error("KhÃ´ng cÃ³ thÃ´ng tin áº£nh");
+        const tid = toast.loading("Äang thiáº¿t láº­p áº£nh chÃ­nh...");
         try {
-            // [V1 FIX] Backend mong đợi MediaUsage ID (usage_id)
+            // [V1 FIX] Backend mong Ä‘á»£i MediaUsage ID (usage_id)
             await productApi.setMainImage(product.id, idOrName);
-            toast.success("Đã đổi ảnh chính đồng bộ sang Web QVC!", { id: tid });
+            toast.success("ÄÃ£ Ä‘á»•i áº£nh chÃ­nh Ä‘á»“ng bá»™ sang Web QVC!", { id: tid });
             fetchDetail(product.id);
         } catch (e) {
-            toast.error("Lỗi thiết lập ảnh chính: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i thiáº¿t láº­p áº£nh chÃ­nh: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
     const handleDeleteImage = async (img) => {
-        if (!window.confirm("Xóa ảnh này viễn vĩnh khỏi hệ thống?")) return;
+        if (!window.confirm("XÃ³a áº£nh nÃ y viá»…n vÄ©nh khá»i há»‡ thá»‘ng?")) return;
 
-        console.log(`🗑️ [V1 DEBUG] Bấm xóa ảnh ID: ${img.id}, UsageID: ${img.usage_id}, Name: ${img.name || img.image_name}`);
+        console.log(`ðŸ—‘ï¸ [V1 DEBUG] Báº¥m xÃ³a áº£nh ID: ${img.id}, UsageID: ${img.usage_id}, Name: ${img.name || img.image_name}`);
 
         try {
-            // Ưu tiên xóa bằng usage_id (vì backend mong đợi usage_id)
+            // Æ¯u tiÃªn xÃ³a báº±ng usage_id (vÃ¬ backend mong Ä‘á»£i usage_id)
             if (img.usage_id) {
                 await productApi.deleteImage(product.id, img.usage_id);
             } else if (img.id && !img.is_temp) {
-                // Fallback nếu chỉ có id (file id)
+                // Fallback náº¿u chá»‰ cÃ³ id (file id)
                 await productApi.deleteImage(product.id, img.id);
             } else if (img.name || img.image_name) {
                 const nameToDelete = img.name || img.image_name;
                 await productApi.deleteOldImageByName(product.id, nameToDelete);
             }
 
-            toast.success("Đã xóa khỏi hệ thống");
+            toast.success("ÄÃ£ xÃ³a khá»i há»‡ thá»‘ng");
 
-            // Xóa local trong state
+            // XÃ³a local trong state
             setFullImages(prev => prev.filter(f => {
                 if (img.usage_id && f.usage_id) return f.usage_id !== img.usage_id;
                 if (img.id) return f.id !== img.id;
                 return (f.name || f.image_name) !== (img.name || img.image_name);
             }));
 
-            // Fetch lại để đồng bộ
+            // Fetch láº¡i Ä‘á»ƒ Ä‘á»“ng bá»™
             fetchDetail(product.id);
         } catch (e) {
             console.error("Delete Error:", e);
-            toast.error("Lỗi xóa: " + (e.response?.data?.message || e.message));
+            toast.error("Lá»—i xÃ³a: " + (e.response?.data?.message || e.message));
         }
     };
 
     const handlePushToQvc = async (mediaId) => {
-        const tid = toast.loading("Đang đẩy ảnh lên QVC...");
+        const tid = toast.loading("Äang Ä‘áº©y áº£nh lÃªn QVC...");
         try {
-            // Sử dụng syncOne để đồng bộ dữ liệu sản phẩm (bao gồm Media) lên QVC
+            // Sá»­ dá»¥ng syncOne Ä‘á»ƒ Ä‘á»“ng bá»™ dá»¯ liá»‡u sáº£n pháº©m (bao gá»“m Media) lÃªn QVC
             await productApi.syncOne(product.id);
-            toast.success("Đã hoàn tất đồng bộ!", { id: tid });
+            toast.success("ÄÃ£ hoÃ n táº¥t Ä‘á»“ng bá»™!", { id: tid });
             fetchDetail(product.id);
         } catch (e) {
-            toast.error("Lỗi đồng bộ: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i Ä‘á»“ng bá»™: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
     const handleLocalizeImages = async () => {
-        const tid = toast.loading("Đang Localize ảnh về server...");
+        const tid = toast.loading("Äang Localize áº£nh vá» server...");
         try {
             await axios.post(`/api/v1/products/${product.id}/localize-images`);
-            toast.success("Đã Localize thành công!", { id: tid });
+            toast.success("ÄÃ£ Localize thÃ nh cÃ´ng!", { id: tid });
             fetchDetail(product.id);
         } catch (e) {
-            toast.error("Lỗi localize: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i localize: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
     const handleSave = async (shouldClose = true) => {
-        // --- [BẮT ĐẦU CODE DEBUG V1] ---
-        console.group("🛠️ [V1 VIEW] BẤM NÚT LƯU");
+        // --- [Báº®T Äáº¦U CODE DEBUG V1] ---
+        console.group("ðŸ› ï¸ [V1 VIEW] Báº¤M NÃšT LÆ¯U");
 
-        // 1. Kiểm tra danh sách ảnh đang hiển thị trên màn hình (Visual)
-        console.log("👀 Ảnh đang thấy (fullImages):", fullImages);
+        // 1. Kiá»ƒm tra danh sÃ¡ch áº£nh Ä‘ang hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh (Visual)
+        console.log("ðŸ‘€ áº¢nh Ä‘ang tháº¥y (fullImages):", fullImages);
 
-        // 2. Kiểm tra xem code có lấy được ID ra không?
-        // (Đây là logic quan trọng nhất: Map từ Object ảnh sang mảng ID)
+        // 2. Kiá»ƒm tra xem code cÃ³ láº¥y Ä‘Æ°á»£c ID ra khÃ´ng?
+        // (ÄÃ¢y lÃ  logic quan trá»ng nháº¥t: Map tá»« Object áº£nh sang máº£ng ID)
         const debugMediaIds = fullImages?.map(img => img.id).filter(id => id);
-        console.log("🔢 ID Ảnh trích xuất được (media_ids):", debugMediaIds);
+        console.log("ðŸ”¢ ID áº¢nh trÃ­ch xuáº¥t Ä‘Æ°á»£c (media_ids):", debugMediaIds);
 
-        // 3. Kiểm tra danh mục
-        console.log("📂 Danh mục (catId):", formData.catId);
+        // 3. Kiá»ƒm tra danh má»¥c
+        console.log("ðŸ“‚ Danh má»¥c (catId):", formData.catId);
 
         console.groupEnd();
-        // --- [KẾT THÚC CODE DEBUG V1] ---
+        // --- [Káº¾T THÃšC CODE DEBUG V1] ---
 
         const currentMediaIds = (fullImages || []).map(img => img.id).filter(id => id);
 
         const catIdArray = Array.isArray(formData.catId) ? formData.catId : [];
         const catIdString = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
 
-        // Tạo payload mới nhất
+        // Táº¡o payload má»›i nháº¥t
         const finalData = {
             ...formData,
             proSummary: escapeHtml(formData.proSummary || ''),
@@ -1595,8 +1595,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             is_sale_off: formData.is_sale_off ? 1 : 0,
             is_student_support: formData.is_student_support ? 1 : 0,
             is_installment_0: formData.is_installment_0 ? 1 : 0,
-            media_ids: currentMediaIds, // <--- QUAN TRỌNG: Gửi cái này thì Backend mới link ảnh dc
-            catId: catIdArray.length > 0 ? catIdArray[0] : formData.catId, // Gửi item đầu tiên làm đại diện nếu backend cần số
+            media_ids: currentMediaIds, // <--- QUAN TRá»ŒNG: Gá»­i cÃ¡i nÃ y thÃ¬ Backend má»›i link áº£nh dc
+            catId: catIdArray.length > 0 ? catIdArray[0] : formData.catId, // Gá»­i item Ä‘áº§u tiÃªn lÃ m Ä‘áº¡i diá»‡n náº¿u backend cáº§n sá»‘
             marketing_flags: [
                 formData.is_hot ? 'hot' : null,
                 formData.is_new ? 'new' : null,
@@ -1605,19 +1605,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             ].filter(Boolean)
         };
 
-        console.log("📸 Danh sách ảnh (Visual):", fullImages);
-        console.log("🔢 Danh sách ID gửi đi (media_ids):", finalData.media_ids);
-        console.log("📦 Full Payload:", finalData);
+        console.log("ðŸ“¸ Danh sÃ¡ch áº£nh (Visual):", fullImages);
+        console.log("ðŸ”¢ Danh sÃ¡ch ID gá»­i Ä‘i (media_ids):", finalData.media_ids);
+        console.log("ðŸ“¦ Full Payload:", finalData);
         console.groupEnd();
-        // --- [DEBUG V1] KẾT THÚC ---
+        // --- [DEBUG V1] Káº¾T THÃšC ---
 
         setIsSaving(true);
-        const tid = toast.loading("Đang lưu dữ liệu...");
+        const tid = toast.loading("Äang lÆ°u dá»¯ liá»‡u...");
 
         try {
             if (currentMode === 'create') {
                 const res = await productApi.create(finalData);
-                toast.success("Tạo mới thành công!", { id: tid });
+                toast.success("Táº¡o má»›i thÃ nh cÃ´ng!", { id: tid });
                 setTempUploadedIds([]);
                 onRefresh && onRefresh();
 
@@ -1640,7 +1640,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             } else {
                 const res = await productApi.update(currentId || product?.id, finalData);
                 console.log("[DEBUG] Update Response:", res.data);
-                toast.success("Cập nhật thành công!", { id: tid });
+                toast.success("Cáº­p nháº­t thÃ nh cÃ´ng!", { id: tid });
                 setTempUploadedIds([]);
                 onRefresh && onRefresh();
 
@@ -1652,7 +1652,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             if (shouldClose) onClose();
         } catch (e) {
             console.error("Save Error:", e);
-            toast.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i lÆ°u dá»¯ liá»‡u: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -1664,7 +1664,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             return;
         }
 
-        const tid = toast.loading("Đang cập nhật trạng thái...");
+        const tid = toast.loading("Äang cáº­p nháº­t tráº¡ng thÃ¡i...");
         try {
             const res = await productApi.toggleStatus(currentId || product.id);
             if (res.data.success) {
@@ -1672,48 +1672,48 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 toast.success(res.data.message, { id: tid });
                 if (onRefresh) onRefresh();
             } else {
-                toast.error(res.data.message || "Lỗi cập nhật", { id: tid });
+                toast.error(res.data.message || "Lá»—i cáº­p nháº­t", { id: tid });
             }
         } catch (e) {
-            toast.error("Lỗi: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
     const handleDeleteProduct = async () => {
         if (!currentId && !product?.id) return;
 
-        const confirmMsg = "BẠN CÓ CHẮC CHẮN MUỐN XÓA SẢN PHẨM NÀY?\n\n- Hệ thống sẽ gọi lệnh xóa trên Web QVC.\n- Nếu chưa có LIÊN KẾT KHO, dữ liệu CRM sẽ bị xóa sạch.\n- Nếu đã có LIÊN KẾT KHO, chỉ xóa trên Web và ẩn bài ở CRM.";
+        const confirmMsg = "Báº N CÃ“ CHáº®C CHáº®N MUá»N XÃ“A Sáº¢N PHáº¨M NÃ€Y?\n\n- Há»‡ thá»‘ng sáº½ gá»i lá»‡nh xÃ³a trÃªn Web QVC.\n- Náº¿u chÆ°a cÃ³ LIÃŠN Káº¾T KHO, dá»¯ liá»‡u CRM sáº½ bá»‹ xÃ³a sáº¡ch.\n- Náº¿u Ä‘Ã£ cÃ³ LIÃŠN Káº¾T KHO, chá»‰ xÃ³a trÃªn Web vÃ  áº©n bÃ i á»Ÿ CRM.";
 
         if (window.confirm(confirmMsg)) {
             setIsSaving(true);
             try {
                 const res = await productApi.delete(currentId || product.id);
-                toast.success(res.data.message || "Đã xử lý xóa thành công");
+                toast.success(res.data.message || "ÄÃ£ xá»­ lÃ½ xÃ³a thÃ nh cÃ´ng");
                 onRefresh();
                 onClose();
             } catch (e) {
-                toast.error("Lỗi xóa: " + (e.response?.data?.message || e.message));
+                toast.error("Lá»—i xÃ³a: " + (e.response?.data?.message || e.message));
             } finally {
                 setIsSaving(false);
             }
         }
     };
 
-    // Logic gộp ảnh thông minh để tránh hiện 2-4 cái giống nhau
+    // Logic gá»™p áº£nh thÃ´ng minh Ä‘á»ƒ trÃ¡nh hiá»‡n 2-4 cÃ¡i giá»‘ng nhau
     const unifiedImages = useMemo(() => {
         const map = new Map();
         const mediaMeta = Array.isArray(formData.media) ? formData.media : [];
 
         fullImages.forEach(img => {
-            // Lấy metadata từ mảng media gốc nếu có để biết trạng thái sync QVC
+            // Láº¥y metadata tá»« máº£ng media gá»‘c náº¿u cÃ³ Ä‘á»ƒ biáº¿t tráº¡ng thÃ¡i sync QVC
             const meta = mediaMeta.find(m => m.id === img.id || m.media_file_id === img.id);
 
             // [FIX DUPLICATE] Normalize Key generation
-            // Loại bỏ các tiền tố ID lặp lại và chuẩn hóa dấu phân cách
+            // Loáº¡i bá» cÃ¡c tiá»n tá»‘ ID láº·p láº¡i vÃ  chuáº©n hÃ³a dáº¥u phÃ¢n cÃ¡ch
             const rawName = img.name || img.image_name || '';
-            let normName = rawName.toLowerCase().replace(/[-_ ]/g, ''); // Xóa hết dấu
+            let normName = rawName.toLowerCase().replace(/[-_ ]/g, ''); // XÃ³a háº¿t dáº¥u
 
-            // Xóa prefix ID nếu có (lặp lại)
+            // XÃ³a prefix ID náº¿u cÃ³ (láº·p láº¡i)
             if (currentId) {
                 const pid = String(currentId);
                 while (normName.startsWith(pid)) {
@@ -1721,19 +1721,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 }
             }
 
-            // Nếu không có tên, dùng URL làm fallback unique
+            // Náº¿u khÃ´ng cÃ³ tÃªn, dÃ¹ng URL lÃ m fallback unique
             const key = normName || `temp_${img.id || img.url}`;
 
-            // Logic cũ: Ưu tiên ảnh có ID (CRM) hơn ảnh legacy (không ID)
+            // Logic cÅ©: Æ¯u tiÃªn áº£nh cÃ³ ID (CRM) hÆ¡n áº£nh legacy (khÃ´ng ID)
             const isCRMReference = !!img.id;
 
             if (!map.has(key)) {
                 map.set(key, {
                     ...img,
                     onCRM: isCRMReference,
-                    // Ưu tiên path nội bộ từ backend mới
+                    // Æ¯u tiÃªn path ná»™i bá»™ tá»« backend má»›i
                     internalPath: meta?.master_file?.paths?.original || img.master_file?.paths?.original,
-                    // Nếu là ảnh CRM (có ID), ưu tiên lấy sync status từ meta, nếu không có meta thì coi như là true nếu không phải temp
+                    // Náº¿u lÃ  áº£nh CRM (cÃ³ ID), Æ°u tiÃªn láº¥y sync status tá»« meta, náº¿u khÃ´ng cÃ³ meta thÃ¬ coi nhÆ° lÃ  true náº¿u khÃ´ng pháº£i temp
                     onQVC: img.id ? (meta ? meta.qvc_sync_status === 'synced' : true) : (img.is_temp ? false : true),
                     onThienDuc: false,
                     qvc_sync_status: meta?.qvc_sync_status || img.qvc_sync_status
@@ -1741,12 +1741,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             } else {
                 const existing = map.get(key);
 
-                // Merge logic: Nếu ảnh mới xịn hơn (có ID) thì override
-                // Hoặc nếu ảnh mới có internalPath chuẩn hơn
+                // Merge logic: Náº¿u áº£nh má»›i xá»‹n hÆ¡n (cÃ³ ID) thÃ¬ override
+                // Hoáº·c náº¿u áº£nh má»›i cÃ³ internalPath chuáº©n hÆ¡n
                 const newInternalPath = meta?.master_file?.paths?.original || img.master_file?.paths?.original;
 
                 if (isCRMReference && !existing.onCRM) {
-                    // Thay thế hoàn toàn legacy bằng CRM image
+                    // Thay tháº¿ hoÃ n toÃ n legacy báº±ng CRM image
                     map.set(key, {
                         ...img,
                         onCRM: true,
@@ -1787,43 +1787,43 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             list = list.filter(img => !img.id);
         }
 
-        // CHUẨN HÓA URL (Hỗ trợ đa định dạng: đầy đủ domain, relative, storage, media...)
+        // CHUáº¨N HÃ“A URL (Há»— trá»£ Ä‘a Ä‘á»‹nh dáº¡ng: Ä‘áº§y Ä‘á»§ domain, relative, storage, media...)
         const result = list.map(img => {
-            // [FIX] Ưu tiên lấy URL đầy đủ từ API trước để tránh resolve sai ở client
+            // [FIX] Æ¯u tiÃªn láº¥y URL Ä‘áº§y Ä‘á»§ tá»« API trÆ°á»›c Ä‘á»ƒ trÃ¡nh resolve sai á»Ÿ client
             let src = img.url || img.internalPath || img.relative_path || img.displayUrl || '';
             let displayUrl = src;
             let resolveMethod = "Original Source";
 
             if (src) {
-                // 1. Nếu đã có http/https -> Giữ nguyên
+                // 1. Náº¿u Ä‘Ã£ cÃ³ http/https -> Giá»¯ nguyÃªn
                 if (src.startsWith('http')) {
                     displayUrl = src;
                     resolveMethod = "Full URL (Preserved)";
                 }
-                // 2. Nếu bắt đầu bằng // -> Thêm https:
+                // 2. Náº¿u báº¯t Ä‘áº§u báº±ng // -> ThÃªm https:
                 else if (src.startsWith('//')) {
                     displayUrl = `https:${src}`;
                     resolveMethod = "Protocol-less (Added https:)";
                 }
-                // 3. Nếu là đường dẫn storage Local (Relative /storage/...)
+                // 3. Náº¿u lÃ  Ä‘Æ°á»ng dáº«n storage Local (Relative /storage/...)
                 else if (src.startsWith('/storage')) {
                     const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
                     displayUrl = crmHost + src;
                     resolveMethod = "Local Storage Path";
                 }
-                // 4. Nếu là đường dẫn media/upload mà thiếu /storage/ (Legacy hoặc internalPath)
+                // 4. Náº¿u lÃ  Ä‘Æ°á»ng dáº«n media/upload mÃ  thiáº¿u /storage/ (Legacy hoáº·c internalPath)
                 else if (src.startsWith('uploads/') || src.startsWith('media/')) {
                     const crmHost = window.location.origin.includes('maytinhquocviet.com') ? window.location.origin : 'https://crm.maytinhquocviet.com';
                     displayUrl = `${crmHost}/storage/${src}`;
                     resolveMethod = "Fix Missing Storage Prefix";
                 }
-                // 5. Nếu là đường dẫn media của QVC (thường không có ID CRM)
+                // 5. Náº¿u lÃ  Ä‘Æ°á»ng dáº«n media cá»§a QVC (thÆ°á»ng khÃ´ng cÃ³ ID CRM)
                 else if (src.startsWith('/media')) {
                     displayUrl = `https://qvc.vn${src}`;
                     resolveMethod = "Legacy QVC Path";
                 }
 
-                // 6. Fix lỗi URL bị double slash hoặc thoát ký tự (trừ protocol)
+                // 6. Fix lá»—i URL bá»‹ double slash hoáº·c thoÃ¡t kÃ½ tá»± (trá»« protocol)
                 const protocol = displayUrl.startsWith('https://') ? 'https://' : (displayUrl.startsWith('http://') ? 'http://' : '');
                 if (protocol) {
                     const rest = displayUrl.substring(protocol.length).replace(/\\/g, '/').replace(/\/+/g, '/');
@@ -1842,8 +1842,8 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
         if (showAllStandardImages) {
             list = unifiedImages;
         } else {
-            // [FIX] V1 trước đây lọc gắt (chỉ hiện onQVC), khiến user tưởng mất ảnh khi vừa upload
-            // Giờ ta cho hiện hết giống V2 để tránh gây hiểu lầm, onQVC sẽ chỉ dùng để hiện Badge trạng thái
+            // [FIX] V1 trÆ°á»›c Ä‘Ã¢y lá»c gáº¯t (chá»‰ hiá»‡n onQVC), khiáº¿n user tÆ°á»Ÿng máº¥t áº£nh khi vá»«a upload
+            // Giá» ta cho hiá»‡n háº¿t giá»‘ng V2 Ä‘á»ƒ trÃ¡nh gÃ¢y hiá»ƒu láº§m, onQVC sáº½ chá»‰ dÃ¹ng Ä‘á»ƒ hiá»‡n Badge tráº¡ng thÃ¡i
             list = unifiedImages;
         }
         // console.log("[DEBUG] Standard Tab Images Count:", list.length, "showAll:", showAllStandardImages);
@@ -1851,12 +1851,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     }, [unifiedImages, showAllStandardImages]);
 
     const tabs = [
-        { id: 'common', label: '📊 Tổng quan', icon: 'info' },
-        { id: 'content', label: '📝 Nội dung', icon: 'file-text' },
-        { id: 'media', label: '🖼️ Hình ảnh', icon: 'image' },
-        { id: 'seo', label: '🔍 SEO & Ads', icon: 'search' },
-        { id: 'stats', label: '📈 Hệ thống', icon: 'bar-chart' },
-        { id: 'standard', label: '💎 Giao diện Chuẩn', icon: 'layout' },
+        { id: 'common', label: 'ðŸ“Š Tá»•ng quan', icon: 'info' },
+        { id: 'content', label: 'ðŸ“ Ná»™i dung', icon: 'file-text' },
+        { id: 'media', label: 'ðŸ–¼ï¸ HÃ¬nh áº£nh', icon: 'image' },
+        { id: 'seo', label: 'ðŸ” SEO & Ads', icon: 'search' },
+        { id: 'stats', label: 'ðŸ“ˆ Há»‡ thá»‘ng', icon: 'bar-chart' },
+        { id: 'standard', label: 'ðŸ’Ž Giao diá»‡n Chuáº©n', icon: 'layout' },
     ];
 
     const [brandManager, setBrandManager] = useState({ open: false, mode: 'list', selected: null });
@@ -1865,7 +1865,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
     const downloadImage = async (url) => {
         if (!url) return;
-        const tid = toast.loading("Đang chuẩn bị tải...");
+        const tid = toast.loading("Äang chuáº©n bá»‹ táº£i...");
         try {
             const response = await fetch(url, { mode: 'cors' });
             const blob = await response.blob();
@@ -1877,7 +1877,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
-            toast.success("Đã tải xuống!", { id: tid });
+            toast.success("ÄÃ£ táº£i xuá»‘ng!", { id: tid });
         } catch (e) {
             window.open(url, '_blank');
             toast.dismiss(tid);
@@ -1885,10 +1885,10 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
     };
 
     if (isLoading) return (
-        <Modal isOpen={isOpen} onClose={onClose} isFullScreen={true} title="Đang tải...">
+        <Modal isOpen={isOpen} onClose={onClose} isFullScreen={true} title="Äang táº£i...">
             <div className="flex flex-col items-center justify-center h-full gap-4">
                 <div className="w-16 h-16 border-8 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Vui lòng chờ...</p>
+                <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Vui lÃ²ng chá»...</p>
             </div>
         </Modal>
     );
@@ -1902,7 +1902,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex-1 max-w-4xl py-1">
                         <div className="flex items-center gap-2 text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5">
-                            <span>Sản phẩm</span>
+                            <span>Sáº£n pháº©m</span>
                             <Icon name="chevronRight" className="w-2 h-2" />
                             <span className="text-indigo-600">#{product?.id || 'NEW'}</span>
                             {formData.storeSKU && (
@@ -1917,23 +1917,23 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             value={formData.proName}
                             onChange={(e) => setFormData(p => ({ ...p, proName: e.target.value }))}
                             className="text-base md:text-lg font-black text-gray-900 bg-transparent border-none focus:ring-0 p-0 w-full placeholder-gray-300"
-                            placeholder="Nhập tên sản phẩm..."
+                            placeholder="Nháº­p tÃªn sáº£n pháº©m..."
                         />
                     </div>
                     <div className="flex items-center gap-2">
                         {onSwitchVersion && (
                             <button onClick={onSwitchVersion} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100">
-                                <Icon name="refresh" className="w-3 h-3" /> THỬ NGHIỆM V2
+                                <Icon name="refresh" className="w-3 h-3" /> THá»¬ NGHIá»†M V2
                             </button>
                         )}
                         {formData.request_path && (
                             <a href={`https://qvc.vn${formData.request_path}`} target="_blank" className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all">
-                                <Icon name="external-link" className="w-3 h-3" /> XEM TRÊN QVC
+                                <Icon name="external-link" className="w-3 h-3" /> XEM TRÃŠN QVC
                             </a>
                         )}
                         {mode === 'edit' && (
                             <button onClick={handleDeleteProduct} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all">
-                                <Icon name="trash" className="w-3 h-3" /> XÓA SẢN PHẨM
+                                <Icon name="trash" className="w-3 h-3" /> XÃ“A Sáº¢N PHáº¨M
                             </button>
                         )}
                     </div>
@@ -1941,10 +1941,10 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
             }
             footer={
                 <div className="flex items-center gap-2 w-full">
-                    <Button variant="ghost" onClick={onClose} className="flex-1 h-10 text-[10px] font-black uppercase tracking-widest">Đóng</Button>
-                    <Button variant="secondary" onClick={() => handleSave(false)} disabled={isSaving} className="flex-1 h-10 text-[10px] font-black border-indigo-600 text-indigo-600 uppercase tracking-widest bg-white">Lưu ngay</Button>
+                    <Button variant="ghost" onClick={onClose} className="flex-1 h-10 text-[10px] font-black uppercase tracking-widest">ÄÃ³ng</Button>
+                    <Button variant="secondary" onClick={() => handleSave(false)} disabled={isSaving} className="flex-1 h-10 text-[10px] font-black border-indigo-600 text-indigo-600 uppercase tracking-widest bg-white">LÆ°u ngay</Button>
                     <Button variant="primary" onClick={() => handleSave(true)} disabled={isSaving} className="flex-[2] h-10 text-[10px] font-black bg-indigo-600 uppercase tracking-widest">
-                        <Icon name="check" className="w-3.5 h-3.5 mr-2" /> Lưu & Đóng
+                        <Icon name="check" className="w-3.5 h-3.5 mr-2" /> LÆ°u & ÄÃ³ng
                     </Button>
                 </div>
             }
@@ -1977,12 +1977,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                                             <Icon name="tag" className="w-4 h-4" />
                                         </div>
-                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Định danh & Phân loại</h3>
+                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Äá»‹nh danh & PhÃ¢n loáº¡i</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-6">
                                         <FormField
-                                            label="URL Index (Đường dẫn tĩnh)"
+                                            label="URL Index (ÄÆ°á»ng dáº«n tÄ©nh)"
                                             value={formData.request_path}
                                             onChange={v => setFormData(p => ({ ...p, request_path: v }))}
                                             placeholder="/ten-san-pham.html"
@@ -1990,7 +1990,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <FormField
-                                                label="Thương hiệu"
+                                                label="ThÆ°Æ¡ng hiá»‡u"
                                                 type="select"
                                                 isBrand={true}
                                                 options={dictionary?.brands}
@@ -1999,7 +1999,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 onManage={() => window.open('/admin/brands', '_blank')}
                                             />
                                             <FormField
-                                                label="Mã kho (SKU)"
+                                                label="MÃ£ kho (SKU)"
                                                 value={formData.storeSKU}
                                                 onChange={v => setFormData(p => ({ ...p, storeSKU: v }))}
                                                 placeholder="VD: SKU-123"
@@ -2007,7 +2007,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         </div>
 
                                         <FormField
-                                            label="Danh mục sản phẩm"
+                                            label="Danh má»¥c sáº£n pháº©m"
                                             type="select"
                                             multiple={true}
                                             options={dictionary?.categories}
@@ -2017,11 +2017,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         />
 
                                         <FormField
-                                            label="Tóm tắt đặc tính (Spec Summary)"
+                                            label="TÃ³m táº¯t Ä‘áº·c tÃ­nh (Spec Summary)"
                                             type="textarea"
                                             value={formData.proSummary}
                                             onChange={v => setFormData(p => ({ ...p, proSummary: v }))}
-                                            placeholder="- Chipset hiệu năng cao...&#10;- Màn hình sắc nét...&#10;- Bảo hành tin cậy..."
+                                            placeholder="- Chipset hiá»‡u nÄƒng cao...&#10;- MÃ n hÃ¬nh sáº¯c nÃ©t...&#10;- Báº£o hÃ nh tin cáº­y..."
                                         />
                                     </div>
                                 </div>
@@ -2033,7 +2033,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
                                             <Icon name="tag" className="w-4 h-4" />
                                         </div>
-                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Thông tin bán hàng</h3>
+                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">ThÃ´ng tin bÃ¡n hÃ ng</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-8">
@@ -2041,11 +2041,11 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                             <div>
                                                 <div className="bg-green-50/50 rounded-2xl p-4 border border-green-100 space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="text-xs font-black text-green-800 uppercase tracking-widest">Giá bán Website</label>
+                                                        <label className="text-xs font-black text-green-800 uppercase tracking-widest">GiÃ¡ bÃ¡n Website</label>
                                                         <div className="text-right">
                                                             <span className="text-2xl font-black text-green-600 block leading-none">
                                                                 {new Intl.NumberFormat('vi-VN').format(formData.price || 0)}
-                                                                <span className="text-xs text-green-400 ml-1">₫</span>
+                                                                <span className="text-xs text-green-400 ml-1">â‚«</span>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -2054,16 +2054,16 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                         value={formData.price}
                                                         onChange={e => setFormData(p => ({ ...p, price: e.target.value }))}
                                                         className="w-full bg-white border border-green-200 rounded-xl py-3 px-4 text-lg font-bold font-mono text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all outline-none placeholder:text-gray-300"
-                                                        placeholder="Nhập giá bán..."
+                                                        placeholder="Nháº­p giÃ¡ bÃ¡n..."
                                                     />
                                                     <div className="flex justify-end">
-                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Nếu bằng 0 sẽ hiện "Liên hệ"</span>
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Náº¿u báº±ng 0 sáº½ hiá»‡n "LiÃªn há»‡"</span>
                                                     </div>
                                                 </div>
                                                 {[
-                                                    { v: 0, l: 'Không hiển thị VAT' },
-                                                    { v: 1, l: 'Đã có VAT' },
-                                                    { v: 2, l: 'Chưa bao gồm VAT' }
+                                                    { v: 0, l: 'KhÃ´ng hiá»ƒn thá»‹ VAT' },
+                                                    { v: 1, l: 'ÄÃ£ cÃ³ VAT' },
+                                                    { v: 2, l: 'ChÆ°a bao gá»“m VAT' }
                                                 ].map(opt => (
                                                     <label key={opt.v} className="flex items-center gap-3 cursor-pointer group">
                                                         <input
@@ -2080,12 +2080,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
-                                            {/* Giá thị trường */}
+                                            {/* GiÃ¡ thá»‹ trÆ°á»ng */}
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-end px-1">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Giá thị trường (Gạch ngang)</label>
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">GiÃ¡ thá»‹ trÆ°á»ng (Gáº¡ch ngang)</label>
                                                     <span className="text-xs font-black text-gray-400 font-mono">
-                                                        {new Intl.NumberFormat('vi-VN').format(formData.market_price || 0)} ₫
+                                                        {new Intl.NumberFormat('vi-VN').format(formData.market_price || 0)} â‚«
                                                     </span>
                                                 </div>
                                                 <input
@@ -2097,12 +2097,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 />
                                             </div>
 
-                                            {/* Giá nhập */}
+                                            {/* GiÃ¡ nháº­p */}
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-end px-1">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Giá nhập hàng (Vốn)</label>
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">GiÃ¡ nháº­p hÃ ng (Vá»‘n)</label>
                                                     <span className="text-xs font-black text-gray-400 font-mono">
-                                                        {new Intl.NumberFormat('vi-VN').format(formData.purchase_price_web || 0)} ₫
+                                                        {new Intl.NumberFormat('vi-VN').format(formData.purchase_price_web || 0)} â‚«
                                                     </span>
                                                 </div>
                                                 <input
@@ -2117,7 +2117,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest px-1">Inventory (Tồn kho Web)</label>
+                                                <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest px-1">Inventory (Tá»“n kho Web)</label>
                                                 <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border focus-within:border-indigo-100 focus-within:bg-white transition-all">
                                                     <input
                                                         type="number"
@@ -2125,14 +2125,14 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                         onChange={e => setFormData(p => ({ ...p, quantity: e.target.value }))}
                                                         className="w-20 bg-transparent text-lg font-black text-indigo-600 outline-none"
                                                     />
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Sản phẩm có sẵn</span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Sáº£n pháº©m cÃ³ sáºµn</span>
                                                 </div>
                                             </div>
                                             <FormField
-                                                label="Chế độ bảo hành"
+                                                label="Cháº¿ Ä‘á»™ báº£o hÃ nh"
                                                 value={formData.warranty}
                                                 onChange={v => setFormData(p => ({ ...p, warranty: v }))}
-                                                placeholder="VD: 24 tháng chính hãng"
+                                                placeholder="VD: 24 thÃ¡ng chÃ­nh hÃ£ng"
                                             />
                                         </div>
                                     </div>
@@ -2144,9 +2144,9 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                 {/* Status Card */}
                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                                    <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-3">Trạng thái vận hành</h3>
+                                    <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-3">Tráº¡ng thÃ¡i váº­n hÃ nh</h3>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                        <span className="text-[10px] font-black text-gray-600">HIỂN THỊ WEB</span>
+                                        <span className="text-[10px] font-black text-gray-600">HIá»‚N THá»Š WEB</span>
                                         <button
                                             onClick={handleToggleStatus}
                                             className={`relative w-12 h-6 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-green-500' : 'bg-gray-200'}`}
@@ -2169,7 +2169,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                             rel="noopener noreferrer"
                                             className="group flex items-center justify-between p-4 bg-indigo-50 text-indigo-600 rounded-[1.75rem] border-2 border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all duration-300"
                                         >
-                                            <span className="text-xs font-black uppercase tracking-widest">Xem thực tế</span>
+                                            <span className="text-xs font-black uppercase tracking-widest">Xem thá»±c táº¿</span>
                                             <Icon name="external-link" className="w-4 h-4 group-hover:scale-125 transition-transform" />
                                         </a>
                                     )}
@@ -2177,7 +2177,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                 {/* Main Image Preview */}
                                 <div className="bg-white rounded-[3rem] border-2 border-gray-100 shadow-sm p-6 space-y-5 overflow-hidden">
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4 px-2">Ảnh đại diện chính</h3>
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4 px-2">áº¢nh Ä‘áº¡i diá»‡n chÃ­nh</h3>
                                     <div className="aspect-square bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100 flex items-center justify-center p-8 relative group cursor-pointer overflow-hidden" onClick={() => setActiveTab('media')}>
                                         {unifiedImages.length > 0 ? (
                                             <img
@@ -2198,18 +2198,18 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     <Icon name="bar-chart" className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10 rotate-12" />
                                     <div className="relative z-10 space-y-4">
                                         <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">Lượt xem</span>
+                                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">LÆ°á»£t xem</span>
                                             <span className="text-sm font-black text-indigo-400">{formData.view_count || 0}</span>
                                         </div>
 
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Cập nhật lần cuối</span>
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Cáº­p nháº­t láº§n cuá»‘i</span>
                                             <span className="text-xs font-black text-white/90">{formData.updated_at ? new Date(formData.updated_at).toLocaleString('vi-VN') : '---'}</span>
                                         </div>
 
                                         {formData.last_modified_info?.editor_name && (
                                             <div className="flex flex-col gap-0.5 border-t border-white/5 pt-3">
-                                                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Người sửa cuối</span>
+                                                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">NgÆ°á»i sá»­a cuá»‘i</span>
                                                 <span className="text-[11px] font-bold text-indigo-300">{formData.last_modified_info.editor_name}</span>
                                                 {formData.last_modified_info.ip_address && (
                                                     <span className="text-[8px] text-white/20 font-mono">IP: {formData.last_modified_info.ip_address}</span>
@@ -2218,7 +2218,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         )}
 
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Ngày tạo hệ thống</span>
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">NgÃ y táº¡o há»‡ thá»‘ng</span>
                                             <span className="text-xs font-black text-white/90">{formData.created_at ? new Date(formData.created_at).toLocaleString('vi-VN') : '---'}</span>
                                         </div>
                                     </div>
@@ -2230,16 +2230,16 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                     {activeTab === 'content' && (
                         <div className="space-y-8 animate-fadeIn">
-                            <SectionHeader title="Nội dung chi tiết" icon="file-text" color="purple" />
+                            <SectionHeader title="Ná»™i dung chi tiáº¿t" icon="file-text" color="purple" />
                             <div className="space-y-12">
                                 <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 overflow-hidden shadow-sm">
                                     <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mô tả sản phẩm (Description)</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">MÃ´ táº£ sáº£n pháº©m (Description)</label>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => setFullEditor({ open: true, type: 'description' })} className="p-1.5 text-indigo-500 hover:bg-white rounded-lg transition-colors">
                                                 <Icon name="maximize" className="w-4 h-4" />
                                             </button>
-                                            <span className="text-[8px] font-bold text-indigo-400 uppercase">Hỗ trợ Paste & Youtube</span>
+                                            <span className="text-[8px] font-bold text-indigo-400 uppercase">Há»— trá»£ Paste & Youtube</span>
                                         </div>
                                     </div>
                                     <RichTextEditor
@@ -2256,12 +2256,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 overflow-hidden shadow-sm">
                                     <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thông số kỹ thuật chi tiết (SPEC)</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ThÃ´ng sá»‘ ká»¹ thuáº­t chi tiáº¿t (SPEC)</label>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => setFullEditor({ open: true, type: 'spec' })} className="p-1.5 text-gray-400 hover:bg-white rounded-lg transition-colors">
                                                 <Icon name="maximize" className="w-4 h-4" />
                                             </button>
-                                            <span className="text-[8px] font-bold text-gray-400 uppercase">Bảng biểu, Youtube</span>
+                                            <span className="text-[8px] font-bold text-gray-400 uppercase">Báº£ng biá»ƒu, Youtube</span>
                                         </div>
                                     </div>
                                     <RichTextEditor
@@ -2280,7 +2280,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             {/* NEW: Special Offer Block */}
                             <div className="bg-white rounded-[2.5rem] border-2 border-gray-100 overflow-hidden shadow-sm mt-8">
                                 <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chương trình khuyến mại (Special Offer)</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ChÆ°Æ¡ng trÃ¬nh khuyáº¿n máº¡i (Special Offer)</label>
                                     <div className="flex items-center gap-2">
                                         <button onClick={() => setFullEditor({ open: true, type: 'specialOffer' })} className="p-1.5 text-rose-500 hover:bg-white rounded-lg transition-colors">
                                             <Icon name="maximize" className="w-4 h-4" />
@@ -2297,7 +2297,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         setIsMediaManagerOpen(true);
                                     }}
                                     className="bg-white quill-mobile"
-                                    placeholder="Nhập khuyến mãi..."
+                                    placeholder="Nháº­p khuyáº¿n mÃ£i..."
                                 />
                             </div>
                             <style>{`
@@ -2311,26 +2311,26 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     {activeTab === 'media' && (
                         <div className="space-y-8 animate-fadeIn">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                <SectionHeader title="Thư viện Media Hybrid" icon="image" color="purple" />
+                                <SectionHeader title="ThÆ° viá»‡n Media Hybrid" icon="image" color="purple" />
 
-                                {/* THANH ĐIỀU KHIỂN BẬT TẮT CHẾ ĐỘ XEM */}
+                                {/* THANH ÄIá»€U KHIá»‚N Báº¬T Táº®T CHáº¾ Äá»˜ XEM */}
                                 <div className="bg-gray-100 p-1.5 rounded-[1.8rem] flex items-center shadow-inner border border-gray-50">
                                     <button
                                         onClick={() => setMediaFilter('all')}
                                         className={`px-6 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${mediaFilter === 'all' ? 'bg-white text-indigo-600 shadow-lg scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                     >
-                                        Tất cả ({fullImages.length})
+                                        Táº¥t cáº£ ({fullImages.length})
                                     </button>
                                     <button
                                         onClick={() => setMediaFilter('legacy')}
                                         className={`px-6 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${mediaFilter === 'legacy' ? 'bg-orange-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                     >
-                                        Chỉ ảnh Web ({fullImages.filter(i => !i.id).length})
+                                        Chá»‰ áº£nh Web ({fullImages.filter(i => !i.id).length})
                                     </button>
                                     <button
                                         onClick={handleLocalizeImages}
                                         className="px-6 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-all border border-emerald-200 ml-2"
-                                        title="Tải tất cả ảnh từ Web QVC về Server CRM"
+                                        title="Táº£i táº¥t cáº£ áº£nh tá»« Web QVC vá» Server CRM"
                                     >
                                         <Icon name="cloud-download" className="w-4 h-4 inline mr-2" />
                                         Localize
@@ -2339,7 +2339,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             </div>
 
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                                {/* Chỉ hiện nút Upload khi xem "Tất cả" */}
+                                {/* Chá»‰ hiá»‡n nÃºt Upload khi xem "Táº¥t cáº£" */}
                                 {mediaFilter === 'all' && (
                                     <label className="border-4 border-dashed border-gray-100 rounded-[3rem] aspect-square flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all group bg-gray-50/50 shadow-inner">
                                         <input type="file" className="hidden" onChange={(e) => {
@@ -2349,21 +2349,21 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center group-hover:scale-110 transition-all border border-gray-100 shadow-xl">
                                             <Icon name="plus" className="w-8 h-8 text-indigo-500" />
                                         </div>
-                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Tải lên ảnh mới</span>
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Táº£i lÃªn áº£nh má»›i</span>
                                     </label>
                                 )}
 
                                 {unifiedImages.map((img, idx) => (
                                     <div key={img.id || img.image_name || img.name || idx} className={`relative aspect-square bg-white rounded-[3rem] border-4 overflow-hidden shadow-xl group hover:scale-[1.02] transition-all ${img.is_main ? 'border-indigo-600 ring-8 ring-indigo-50' : 'border-white'}`}>
-                                        {/* Dùng displayUrl đã được fix domain */}
+                                        {/* DÃ¹ng displayUrl Ä‘Ã£ Ä‘Æ°á»£c fix domain */}
                                         <img src={img.displayUrl} className="w-full h-full object-contain p-4 transition-transform group-hover:scale-110" alt="" />
 
-                                        {/* BỘ HUY HIỆU TRẠNG THÁI (Domain Badges) */}
+                                        {/* Bá»˜ HUY HIá»†U TRáº NG THÃI (Domain Badges) */}
                                         <div className="absolute top-4 left-4 flex flex-col gap-1.5">
                                             {img.is_main && (
                                                 <div className="bg-indigo-600 text-white text-[7px] font-black px-3 py-1.5 rounded-full uppercase shadow-lg flex items-center gap-1 animate-bounce-subtle">
                                                     <Icon name="check" className="w-2.5 h-2.5" />
-                                                    <span>ẢNH ĐẠI DIỆN</span>
+                                                    <span>áº¢NH Äáº I DIá»†N</span>
                                                 </div>
                                             )}
                                             <span className={`px-3 py-1 rounded-full text-[7px] font-black uppercase shadow-sm ${img.onCRM ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
@@ -2382,7 +2382,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 <button
                                                     onClick={() => handleSetMain(img.usage_id || img.id || img.name || img.image_name)}
                                                     className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-2xl active:scale-90 transition-all"
-                                                    title="Đặt làm ảnh bìa (Đồng bộ QVC)"
+                                                    title="Äáº·t lÃ m áº£nh bÃ¬a (Äá»“ng bá»™ QVC)"
                                                 >
                                                     <Icon name="heart" className="w-6 h-6" />
                                                 </button>
@@ -2393,7 +2393,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     onClick={() => handlePushToQvc(img.id)}
                                                     className="w-full py-3 bg-orange-500 text-white text-[9px] font-black rounded-xl shadow-lg active:scale-95 transition-all uppercase tracking-widest"
                                                 >
-                                                    Đẩy lên QVC.VN
+                                                    Äáº©y lÃªn QVC.VN
                                                 </button>
                                             )}
 
@@ -2401,18 +2401,18 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 onClick={() => handleDeleteImage(img)}
                                                 className="w-full py-3 bg-white/10 hover:bg-red-500 text-white text-[9px] font-black rounded-xl transition-all border border-white/20 uppercase tracking-widest"
                                             >
-                                                Xóa ảnh này
+                                                XÃ³a áº£nh nÃ y
                                             </button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Trạng thái trống khi lọc */}
+                            {/* Tráº¡ng thÃ¡i trá»‘ng khi lá»c */}
                             {unifiedImages.length === 0 && (
                                 <div className="py-20 bg-gray-50 rounded-[3rem] border-4 border-dashed border-gray-100 flex flex-col items-center justify-center gap-4">
                                     <Icon name="image" className="w-16 h-16 text-gray-200" />
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Không có ảnh nào trong mục này</p>
+                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">KhÃ´ng cÃ³ áº£nh nÃ o trong má»¥c nÃ y</p>
                                 </div>
                             )}
                         </div>
@@ -2420,12 +2420,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                     {activeTab === 'stats' && (
                         <div className="space-y-10 animate-fadeIn">
-                            <SectionHeader title="Phân tích & Thống kê" icon="bar-chart" color="indigo" />
+                            <SectionHeader title="PhÃ¢n tÃ­ch & Thá»‘ng kÃª" icon="bar-chart" color="indigo" />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {[
-                                    { label: 'Tổng số lượt xem', value: formData.view_count, icon: 'eye', color: 'blue' },
-                                    { label: 'Số lượng đã bán', value: formData.sold_count, icon: 'shopping-bag', color: 'green' },
-                                    { label: 'Số lượt yêu thích', value: formData.like_count, icon: 'heart', color: 'red' }
+                                    { label: 'Tá»•ng sá»‘ lÆ°á»£t xem', value: formData.view_count, icon: 'eye', color: 'blue' },
+                                    { label: 'Sá»‘ lÆ°á»£ng Ä‘Ã£ bÃ¡n', value: formData.sold_count, icon: 'shopping-bag', color: 'green' },
+                                    { label: 'Sá»‘ lÆ°á»£t yÃªu thÃ­ch', value: formData.like_count, icon: 'heart', color: 'red' }
                                 ].map((s, idx) => (
                                     <div key={idx} className="bg-white p-8 rounded-[2.5rem] border-2 border-gray-50 shadow-sm flex flex-col items-center justify-center gap-3 group hover:border-indigo-100 transition-colors">
                                         <div className={`w-12 h-12 rounded-2xl bg-${s.color}-50 flex items-center justify-center text-${s.color}-600 group-hover:scale-110 transition-transform`}>
@@ -2440,31 +2440,31 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             <div className="bg-gray-900 rounded-[3rem] p-10 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
                                 <Icon name="activity" className="absolute -right-10 -bottom-10 w-60 h-60 text-white/5 opacity-10" />
                                 <div className="space-y-2 relative z-10 text-center md:text-left">
-                                    <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Thời gian đồng bộ cuối cùng</span>
+                                    <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Thá»i gian Ä‘á»“ng bá»™ cuá»‘i cÃ¹ng</span>
                                     <h3 className="text-2xl font-black text-white">{formData.updated_at ? new Date(formData.updated_at).toLocaleString('vi-VN') : '---'}</h3>
-                                    <p className="text-[11px] text-gray-500 font-bold italic">Dữ liệu được làm mới mỗi khi bạn thực hiện Đồng bộ (Sync) lên Web QVC.</p>
+                                    <p className="text-[11px] text-gray-500 font-bold italic">Dá»¯ liá»‡u Ä‘Æ°á»£c lÃ m má»›i má»—i khi báº¡n thá»±c hiá»‡n Äá»“ng bá»™ (Sync) lÃªn Web QVC.</p>
                                 </div>
-                                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 border-none text-white font-black uppercase tracking-widest text-[10px] px-8 py-4 rounded-2xl relative z-10 transition-all active:scale-95">Xem log lịch sử</Button>
+                                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 border-none text-white font-black uppercase tracking-widest text-[10px] px-8 py-4 rounded-2xl relative z-10 transition-all active:scale-95">Xem log lá»‹ch sá»­</Button>
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'seo' && (
                         <div className="space-y-8 animate-fadeIn">
-                            <SectionHeader title="Tối ưu hóa SEO" icon="search" color="blue" />
+                            <SectionHeader title="Tá»‘i Æ°u hÃ³a SEO" icon="search" color="blue" />
                             <div className="bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100 mb-8 flex items-start gap-4">
                                 <Icon name="globe" className="w-6 h-6 text-blue-500 mt-1" />
                                 <div className="space-y-1">
                                     <p className="text-xs font-black text-blue-900 uppercase tracking-widest">Google Search Preview</p>
                                     <p className="text-sm font-bold text-blue-700 leading-snug line-clamp-1">{formData.meta_title || formData.proName}</p>
                                     <p className="text-xs text-green-600 font-bold truncate">https://qvc.vn{formData.request_path}</p>
-                                    <p className="text-[11px] text-gray-500 font-medium line-clamp-2 leading-relaxed">{formData.meta_description || 'Chưa nội dung mô tả SEO...'}</p>
+                                    <p className="text-[11px] text-gray-500 font-medium line-clamp-2 leading-relaxed">{formData.meta_description || 'ChÆ°a ná»™i dung mÃ´ táº£ SEO...'}</p>
                                 </div>
                             </div>
                             <div className="space-y-6">
-                                <FormField label="Tiêu đề trang (Meta Title)" value={formData.meta_title} onChange={v => setFormData(p => ({ ...p, meta_title: v }))} placeholder="Mặc định lấy tên sản phẩm..." />
-                                <FormField label="Từ khóa (Meta Keywords)" type="textarea" value={formData.meta_keyword} onChange={v => setFormData(p => ({ ...p, meta_keyword: v }))} placeholder="Ngăn cách các cụm từ bởi dấu phẩy..." />
-                                <FormField label="Mô tả tìm kiếm (Meta Description)" type="textarea" value={formData.meta_description} onChange={v => setFormData(p => ({ ...p, meta_description: v }))} placeholder="Nội dung hiển thị trên kết quả tìm kiếm..." />
+                                <FormField label="TiÃªu Ä‘á» trang (Meta Title)" value={formData.meta_title} onChange={v => setFormData(p => ({ ...p, meta_title: v }))} placeholder="Máº·c Ä‘á»‹nh láº¥y tÃªn sáº£n pháº©m..." />
+                                <FormField label="Tá»« khÃ³a (Meta Keywords)" type="textarea" value={formData.meta_keyword} onChange={v => setFormData(p => ({ ...p, meta_keyword: v }))} placeholder="NgÄƒn cÃ¡ch cÃ¡c cá»¥m tá»« bá»Ÿi dáº¥u pháº©y..." />
+                                <FormField label="MÃ´ táº£ tÃ¬m kiáº¿m (Meta Description)" type="textarea" value={formData.meta_description} onChange={v => setFormData(p => ({ ...p, meta_description: v }))} placeholder="Ná»™i dung hiá»ƒn thá»‹ trÃªn káº¿t quáº£ tÃ¬m kiáº¿m..." />
                             </div>
                         </div>
                     )}
@@ -2474,12 +2474,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             {/* LEFT COLUMN (2/3) */}
                             <div className="lg:col-span-2 space-y-6">
 
-                                {/* 1. THÔNG TIN CHUNG */}
+                                {/* 1. THÃ”NG TIN CHUNG */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <Icon name="info" className="text-slate-400 w-5 h-5" />
-                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Thông tin chung</h2>
+                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">ThÃ´ng tin chung</h2>
                                         </div>
                                         {formData.request_path && (
                                             <a
@@ -2495,19 +2495,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                     <div className="p-6 space-y-5">
                                         <div>
-                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Tên sản phẩm *</label>
+                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">TÃªn sáº£n pháº©m *</label>
                                             <input
                                                 type="text"
                                                 value={formData.proName}
                                                 onChange={e => setFormData(p => ({ ...p, proName: e.target.value }))}
                                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition outline-none font-bold text-slate-900"
-                                                placeholder="Nhập tên sản phẩm..."
+                                                placeholder="Nháº­p tÃªn sáº£n pháº©m..."
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
-                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Mã SKU (Store SKU)</label>
+                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">MÃ£ SKU (Store SKU)</label>
                                                 <div className="relative">
                                                     <Icon name="tag" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                                     <input
@@ -2515,12 +2515,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                         value={formData.storeSKU}
                                                         onChange={e => setFormData(p => ({ ...p, storeSKU: e.target.value }))}
                                                         className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:border-blue-500 transition outline-none font-mono font-bold text-blue-600"
-                                                        placeholder="Mã quản lý kho"
+                                                        placeholder="MÃ£ quáº£n lÃ½ kho"
                                                     />
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Model / Mã NSX</label>
+                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Model / MÃ£ NSX</label>
                                                 <input
                                                     type="text"
                                                     value={formData.productModel}
@@ -2544,7 +2544,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Trọng lượng (gram)</label>
+                                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Trá»ng lÆ°á»£ng (gram)</label>
                                                 <input
                                                     type="number"
                                                     value={formData.weight}
@@ -2556,32 +2556,32 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                 </div>
 
-                                {/* 2. NỘI DUNG CHI TIẾT */}
+                                {/* 2. Ná»˜I DUNG CHI TIáº¾T */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-sm scroll-target-content">
                                     <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
                                         <Icon name="file-text" className="text-slate-400 w-4 h-4" />
-                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Nội dung sản phẩm</h2>
+                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Ná»™i dung sáº£n pháº©m</h2>
                                         <div className="ml-auto flex items-center gap-2">
                                             {/* --- EDITOR TOOLS (COPY FROM GALLERY STYLE) --- */}
                                             {standardContentSubTab !== 'summary' && (
                                                 <div className="flex items-center gap-2">
-                                                    {/* 1. Chọn từ kho */}
+                                                    {/* 1. Chá»n tá»« kho */}
                                                     <button
                                                         onClick={() => {
                                                             setMediaManagerMode('editor');
                                                             setIsMediaManagerOpen(true);
                                                         }}
                                                         className="h-8 px-3 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1.5"
-                                                        title="Chèn từ kho ảnh"
+                                                        title="ChÃ¨n tá»« kho áº£nh"
                                                     >
                                                         <Icon name="image" className="w-3.5 h-3.5" />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest">Kho ảnh</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-widest">Kho áº£nh</span>
                                                     </button>
 
                                                     {/* 2. Upload nhanh */}
-                                                    <label className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer flex items-center gap-1.5" title="Tải ảnh mới lên và chèn ngay">
+                                                    <label className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer flex items-center gap-1.5" title="Táº£i áº£nh má»›i lÃªn vÃ  chÃ¨n ngay">
                                                         <Icon name="cloud-upload" className="w-3.5 h-3.5" />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest">Tải lên</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-widest">Táº£i lÃªn</span>
                                                         <input
                                                             type="file"
                                                             className="hidden"
@@ -2599,7 +2599,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     onClick={() => setFullEditor({ open: true, type: standardContentSubTab })}
                                                     className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center gap-1 ml-2"
                                                 >
-                                                    <Icon name="maximize" className="w-3 h-3" /> Mở rộng
+                                                    <Icon name="maximize" className="w-3 h-3" /> Má»Ÿ rá»™ng
                                                 </button>
                                             )}
                                         </div>
@@ -2607,9 +2607,9 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     <div className="p-4 space-y-4">
                                         <div className="flex gap-4 border-b border-slate-100 overflow-x-auto no-scrollbar">
                                             {[
-                                                { id: 'summary', label: 'Mô tả ngắn', icon: 'file-text' },
-                                                { id: 'description', label: 'Chi tiết sản phẩm', icon: 'align-left' },
-                                                { id: 'spec', label: 'Thông số kỹ thuật', icon: 'list' }
+                                                { id: 'summary', label: 'MÃ´ táº£ ngáº¯n', icon: 'file-text' },
+                                                { id: 'description', label: 'Chi tiáº¿t sáº£n pháº©m', icon: 'align-left' },
+                                                { id: 'spec', label: 'ThÃ´ng sá»‘ ká»¹ thuáº­t', icon: 'list' }
                                             ].map(tab => (
                                                 <button
                                                     key={tab.id}
@@ -2635,7 +2635,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     }}
                                                     rows="10"
                                                     className="w-full px-5 py-4 outline-none text-sm font-medium leading-relaxed bg-slate-50/10 focus:bg-white transition-colors min-h-[300px]"
-                                                    placeholder="Nhập tóm tắt đặc điểm nổi bật của sản phẩm..."
+                                                    placeholder="Nháº­p tÃ³m táº¯t Ä‘áº·c Ä‘iá»ƒm ná»•i báº­t cá»§a sáº£n pháº©m..."
                                                 ></textarea>
                                             ) : (
                                                 <RichTextEditor
@@ -2660,14 +2660,14 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                     </div>
                                 </div>
 
-                                {/* 3. THƯ VIỆN HÌNH ẢNH (ĐÃ NÂNG CẤP UPLOAD) */}
+                                {/* 3. THÆ¯ VIá»†N HÃŒNH áº¢NH (ÄÃƒ NÃ‚NG Cáº¤P UPLOAD) */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative group/card">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                         <div className="flex items-center gap-3">
                                             <Icon name="image" className="text-slate-400 w-5 h-5" />
-                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Thư viện ảnh ({standardImages.length})</h2>
+                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">ThÆ° viá»‡n áº£nh ({standardImages.length})</h2>
 
-                                            {/* Toggle xem tất cả/chỉ QVC */}
+                                            {/* Toggle xem táº¥t cáº£/chá»‰ QVC */}
                                             <div className="hidden sm:flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:bg-slate-50 transition-all" onClick={() => setShowAllStandardImages(!showAllStandardImages)}>
                                                 <div className={`w-2.5 h-2.5 rounded-full ${showAllStandardImages ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>
                                                 <span className="text-[10px] font-black uppercase text-slate-500">
@@ -2676,35 +2676,35 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                             </div>
                                         </div>
 
-                                        {/* CỤM NÚT UPLOAD COMPACT */}
+                                        {/* Cá»¤M NÃšT UPLOAD COMPACT */}
                                         <div className="flex items-center gap-3">
-                                            {/* Nút Chọn từ Kho (Mới) */}
+                                            {/* NÃºt Chá»n tá»« Kho (Má»›i) */}
                                             <button
                                                 onClick={() => {
                                                     setMediaManagerMode('gallery');
                                                     setIsMediaManagerOpen(true);
                                                 }}
                                                 className="h-11 px-4 rounded-xl border-2 border-indigo-100 bg-indigo-50 text-indigo-600 flex items-center gap-2 transition-all shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600"
-                                                title="Chọn ảnh có sẵn từ kho Media"
+                                                title="Chá»n áº£nh cÃ³ sáºµn tá»« kho Media"
                                             >
                                                 <Icon name="image" className="w-4 h-4" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Chọn từ kho</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Chá»n tá»« kho</span>
                                             </button>
 
-                                            {/* Nút Dán Link - Cải thiện rõ ràng hơn */}
+                                            {/* NÃºt DÃ¡n Link - Cáº£i thiá»‡n rÃµ rÃ ng hÆ¡n */}
                                             <button
                                                 onClick={() => setShowUrlInput(!showUrlInput)}
                                                 className={`h-11 px-4 rounded-xl border-2 flex items-center gap-2 transition-all shadow-sm ${showUrlInput ? 'bg-pink-600 text-white border-pink-600' : 'bg-white border-slate-100 text-slate-500 hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50/30'}`}
-                                                title="Dán đường dẫn ảnh (URL)"
+                                                title="DÃ¡n Ä‘Æ°á»ng dáº«n áº£nh (URL)"
                                             >
                                                 <Icon name="link" className="w-4 h-4" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">{showUrlInput ? 'Đóng' : 'URL'}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{showUrlInput ? 'ÄÃ³ng' : 'URL'}</span>
                                             </button>
 
-                                            {/* Nút Upload File */}
+                                            {/* NÃºt Upload File */}
                                             <label className="h-11 px-5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer flex items-center gap-2 shadow-lg shadow-blue-100 active:scale-95 border-2 border-blue-600">
                                                 <Icon name="cloud-upload" className="w-5 h-5" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Tải lên</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Táº£i lÃªn</span>
                                                 <input
                                                     type="file"
                                                     className="hidden"
@@ -2715,13 +2715,13 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 />
                                             </label>
 
-                                            {/* Nút Scroll xuống Content */}
+                                            {/* NÃºt Scroll xuá»‘ng Content */}
                                             <button
                                                 onClick={() => {
                                                     document.querySelector('.scroll-target-content')?.scrollIntoView({ behavior: 'smooth' });
                                                 }}
                                                 className="h-11 w-11 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                                title="Viết nội dung"
+                                                title="Viáº¿t ná»™i dung"
                                             >
                                                 <Icon name="arrow-down" className="w-4 h-4" />
                                             </button>
@@ -2729,16 +2729,16 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                     </div>
 
-                                    {/* Drop Zone Visual (Hiển thị khi kéo thả file vào - Optional hoặc ẩn hiện) */}
+                                    {/* Drop Zone Visual (Hiá»ƒn thá»‹ khi kÃ©o tháº£ file vÃ o - Optional hoáº·c áº©n hiá»‡n) */}
                                     <div className="p-6 min-h-[160px]">
-                                        {/* Popup nhập URL nhanh */}
+                                        {/* Popup nháº­p URL nhanh */}
                                         {showUrlInput && (
                                             <div className="mb-6 animate-slideDown">
                                                 <div className="flex gap-2 p-1 bg-slate-50 border border-slate-200 rounded-2xl focus-within:ring-4 focus-within:ring-pink-50 focus-within:border-pink-200 transition-all">
                                                     <input
                                                         type="text"
                                                         autoFocus
-                                                        placeholder="Dán link ảnh (https://...jpg, png...)"
+                                                        placeholder="DÃ¡n link áº£nh (https://...jpg, png...)"
                                                         className="flex-1 bg-transparent px-4 py-2.5 outline-none text-sm font-bold text-slate-700 placeholder:text-slate-300"
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
@@ -2750,28 +2750,28 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                         onClick={(e) => uploadUrlHandler(e.currentTarget.previousSibling.value)}
                                                         className="px-6 bg-pink-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-pink-600 transition shadow-lg shadow-pink-100"
                                                     >
-                                                        Tải ảnh
+                                                        Táº£i áº£nh
                                                     </button>
                                                 </div>
-                                                <p className="mt-2 text-[9px] text-slate-400 font-bold px-2">Hỗ trợ các định dạng: JPG, PNG, WEBP, GIF...</p>
+                                                <p className="mt-2 text-[9px] text-slate-400 font-bold px-2">Há»— trá»£ cÃ¡c Ä‘á»‹nh dáº¡ng: JPG, PNG, WEBP, GIF...</p>
                                             </div>
                                         )}
 
-                                        {/* Thông báo Paste Hint */}
+                                        {/* ThÃ´ng bÃ¡o Paste Hint */}
                                         {standardImages.length === 0 && (
                                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-50">
                                                 <Icon name="copy" className="w-12 h-12 text-slate-200 mb-2" />
-                                                <p className="text-xs font-black text-slate-300 uppercase">Ctrl+V để dán ảnh</p>
+                                                <p className="text-xs font-black text-slate-300 uppercase">Ctrl+V Ä‘á»ƒ dÃ¡n áº£nh</p>
                                             </div>
                                         )}
 
-                                        {/* Lưới ảnh */}
+                                        {/* LÆ°á»›i áº£nh */}
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 relative z-10">
                                             {standardImages.map((img, idx) => (
                                                 <div key={img.id || img.image_name || img.name || idx} className={`group relative aspect-square rounded-[1.5rem] overflow-hidden bg-white border-2 transition-all duration-300 shadow-sm hover:shadow-md ${img.is_main ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-100 hover:border-indigo-200'}`}>
                                                     <img src={img.displayUrl} alt="" className="w-full h-full object-contain p-3 transition-transform group-hover:scale-105" />
 
-                                                    {/* Badge Ảnh đại diện */}
+                                                    {/* Badge áº¢nh Ä‘áº¡i diá»‡n */}
                                                     {img.is_main && (
                                                         <div className="absolute top-2 left-2 bg-indigo-600 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-sm flex items-center gap-1">
                                                             <Icon name="check" className="w-2.5 h-2.5" /> MAIN
@@ -2787,7 +2787,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                                 onClick={() => handleSetMain(img.usage_id || img.id || img.name)}
                                                             >
                                                                 <Icon name="heart" className="w-4 h-4" />
-                                                                <span>Đặt làm chính</span>
+                                                                <span>Äáº·t lÃ m chÃ­nh</span>
                                                             </button>
                                                         )}
                                                         <button
@@ -2796,7 +2796,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                             onClick={() => setPreviewImage(img.displayUrl)}
                                                         >
                                                             <Icon name="eye" className="w-4 h-4" />
-                                                            <span>Xem ảnh lớn</span>
+                                                            <span>Xem áº£nh lá»›n</span>
                                                         </button>
                                                         <button
                                                             type="button"
@@ -2804,7 +2804,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                             onClick={() => handleDeleteImage(img)}
                                                         >
                                                             <Icon name="trash" className="w-4 h-4" />
-                                                            <span>Xóa ảnh</span>
+                                                            <span>XÃ³a áº£nh</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -2812,20 +2812,20 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         </div>
                                     </div>
 
-                                    {/* Footer nhỏ nhắc tính năng */}
+                                    {/* Footer nhá» nháº¯c tÃ­nh nÄƒng */}
                                     <div className="bg-slate-50 px-6 py-2 border-t border-slate-100 flex justify-end">
                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                            <Icon name="command" className="w-3 h-3" /> Hỗ trợ Paste & Kéo thả
+                                            <Icon name="command" className="w-3 h-3" /> Há»— trá»£ Paste & KÃ©o tháº£
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* 4. SPECIAL OFFER (Khuyến mãi) */}
+                                {/* 4. SPECIAL OFFER (Khuyáº¿n mÃ£i) */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <Icon name="gift" className="text-rose-500 w-5 h-5" />
-                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Khuyến mãi đặc biệt</h2>
+                                            <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Khuyáº¿n mÃ£i Ä‘áº·c biá»‡t</h2>
                                         </div>
                                     </div>
                                     <div className="p-6">
@@ -2838,15 +2838,15 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                             }}
                                             rows="5"
                                             className="w-full px-6 py-4 outline-none text-sm font-medium leading-relaxed bg-rose-50/10 border border-rose-100 rounded-xl focus:bg-white focus:border-rose-500 transition-all placeholder:text-rose-200 text-slate-700"
-                                            placeholder="Nhập nội dung khuyến mãi đặc biệt (Hỗ trợ HTML cơ bản)..."
+                                            placeholder="Nháº­p ná»™i dung khuyáº¿n mÃ£i Ä‘áº·c biá»‡t (Há»— trá»£ HTML cÆ¡ báº£n)..."
                                         ></textarea>
                                         <div className="mt-3 flex items-center justify-between">
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Hiển thị nổi bật dưới phần giá bán</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Hiá»ƒn thá»‹ ná»•i báº­t dÆ°á»›i pháº§n giÃ¡ bÃ¡n</p>
                                             <button
                                                 onClick={() => setFullEditor({ open: true, type: 'specialOffer' })}
                                                 className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline"
                                             >
-                                                Soạn thảo nâng cao
+                                                Soáº¡n tháº£o nÃ¢ng cao
                                             </button>
                                         </div>
                                     </div>
@@ -2856,7 +2856,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 cursor-pointer group" onClick={() => setSeoOpen(!seoOpen)}>
                                         <Icon name="search" className="text-slate-400 w-5 h-5" />
-                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Cấu hình SEO Search</h2>
+                                        <h2 className="font-bold text-slate-700 uppercase tracking-wider text-sm">Cáº¥u hÃ¬nh SEO Search</h2>
                                         <Icon name={seoOpen ? "chevronUp" : "chevronDown"} className="ml-auto text-slate-300 group-hover:text-blue-500 transition-colors w-4 h-4" />
                                     </div>
                                     {seoOpen && (
@@ -2868,7 +2868,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     value={formData.meta_title}
                                                     onChange={e => setFormData(p => ({ ...p, meta_title: e.target.value }))}
                                                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-bold text-sm"
-                                                    placeholder="Tiêu đề hiển thị trên Google..."
+                                                    placeholder="TiÃªu Ä‘á» hiá»ƒn thá»‹ trÃªn Google..."
                                                 />
                                             </div>
                                             <div>
@@ -2878,7 +2878,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     onChange={e => setFormData(p => ({ ...p, meta_description: e.target.value }))}
                                                     rows="3"
                                                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-blue-500 outline-none text-sm font-medium"
-                                                    placeholder="Mô tả nội dung khi tìm kiếm..."
+                                                    placeholder="MÃ´ táº£ ná»™i dung khi tÃ¬m kiáº¿m..."
                                                 ></textarea>
                                             </div>
                                             <div>
@@ -2888,7 +2888,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     value={formData.meta_keyword}
                                                     onChange={e => setFormData(p => ({ ...p, meta_keyword: e.target.value }))}
                                                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-blue-500 outline-none text-sm"
-                                                    placeholder="Từ khóa 1, từ khóa 2..."
+                                                    placeholder="Tá»« khÃ³a 1, tá»« khÃ³a 2..."
                                                 />
                                             </div>
                                         </div>
@@ -2900,41 +2900,41 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             {/* RIGHT COLUMN (1/3) */}
                             <div className="lg:col-span-1 space-y-6 pb-32">
 
-                                {/* 1. PHÂN LOẠI */}
+                                {/* 1. PHÃ‚N LOáº I */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-5 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/30 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700"></div>
                                     <h3 className="font-bold text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2 relative z-10">
-                                        <Icon name="folder" className="w-4 h-4 text-blue-500" /> Danh mục & Thương hiệu
+                                        <Icon name="folder" className="w-4 h-4 text-blue-500" /> Danh má»¥c & ThÆ°Æ¡ng hiá»‡u
                                     </h3>
 
                                     <div className="space-y-6 relative z-10">
                                         {/* Premium Brand Picker */}
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-1">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thương hiệu</label>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ThÆ°Æ¡ng hiá»‡u</label>
                                                 <button
                                                     onClick={() => setBrandManager({ open: true, mode: 'list' })}
                                                     className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
                                                 >
-                                                    Tùy chỉnh
+                                                    TÃ¹y chá»‰nh
                                                 </button>
                                             </div>
                                             <div
                                                 onClick={() => setBrandManager({ open: true, mode: 'list' })}
                                                 className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-transparent hover:border-blue-500 hover:bg-white transition-all rounded-2xl cursor-pointer group/item shadow-sm"
                                             >
-                                                {/* Logic xác định hiển thị Brand: Priority Dictionary -> TempBrand -> Placeholder */}
+                                                {/* Logic xÃ¡c Ä‘á»‹nh hiá»ƒn thá»‹ Brand: Priority Dictionary -> TempBrand -> Placeholder */}
                                                 {(() => {
                                                     const dictBrand = dictionary?.brands?.find(b => String(b.id || b.code) === String(formData.brandId));
                                                     const displayBrand = dictBrand || (String(tempBrand?.id || tempBrand?.code) === String(formData.brandId) ? tempBrand : null);
 
-                                                    // Helper xử lý ảnh: Ưu tiên image_url (API full) -> image -> prepend domain nếu cần
+                                                    // Helper xá»­ lÃ½ áº£nh: Æ¯u tiÃªn image_url (API full) -> image -> prepend domain náº¿u cáº§n
                                                     const getImgUrl = (b) => {
                                                         if (!b) return null;
                                                         let src = b.image_url || b.image;
                                                         if (!src) return null;
                                                         if (src.startsWith('http')) return src;
-                                                        // Fallback domain nếu API trả về relative path (như trường hợp ID 156)
+                                                        // Fallback domain náº¿u API tráº£ vá» relative path (nhÆ° trÆ°á»ng há»£p ID 156)
                                                         return `https://qvc.vn/${src.replace(/^\//, '')}`;
                                                     };
 
@@ -2949,9 +2949,9 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="text-sm font-black text-slate-900 truncate">
-                                                                    {displayBrand?.name || 'Chưa chọn thương hiệu'}
+                                                                    {displayBrand?.name || 'ChÆ°a chá»n thÆ°Æ¡ng hiá»‡u'}
                                                                 </div>
-                                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Bấm để thay đổi</div>
+                                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Báº¥m Ä‘á»ƒ thay Ä‘á»•i</div>
                                                             </div>
                                                         </>
                                                     );
@@ -2963,12 +2963,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                         {/* Premium Category Picker */}
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-1">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh mục sản phẩm</label>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh má»¥c sáº£n pháº©m</label>
                                                 <button
                                                     onClick={() => setCatManager({ open: true, mode: 'list' })}
                                                     className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
                                                 >
-                                                    Quản lý
+                                                    Quáº£n lÃ½
                                                 </button>
                                             </div>
 
@@ -2999,7 +2999,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 ) : (
                                                     <div className="flex items-center gap-2 text-slate-400">
                                                         <Icon name="plus" className="w-5 h-5" />
-                                                        <span className="text-sm font-bold">Chọn danh mục</span>
+                                                        <span className="text-sm font-bold">Chá»n danh má»¥c</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -3010,12 +3010,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 {/* 2. STATUS & PUBLISH */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="font-bold text-slate-700 uppercase text-xs tracking-widest">Trạng thái</h3>
+                                        <h3 className="font-bold text-slate-700 uppercase text-xs tracking-widest">Tráº¡ng thÃ¡i</h3>
                                         <span className="text-[10px] font-mono font-black text-slate-300">ID: #{product?.id || 'NEW'}</span>
                                     </div>
 
                                     <div className="flex items-center justify-between bg-slate-50 p-5 rounded-2xl border border-slate-100 group hover:border-blue-100 hover:bg-blue-50/10 transition-all">
-                                        <span className="text-xs font-black text-slate-600 uppercase tracking-widest">Hiển thị Web</span>
+                                        <span className="text-xs font-black text-slate-600 uppercase tracking-widest">Hiá»ƒn thá»‹ Web</span>
                                         <button
                                             onClick={handleToggleStatus}
                                             className={`relative w-12 h-6 rounded-full transition-all duration-300 ${formData.isOn ? 'bg-emerald-500 shadow-lg shadow-emerald-100' : 'bg-slate-200'}`}
@@ -3026,12 +3026,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                                     <div className="pt-6 border-t border-slate-100 grid grid-cols-2 gap-4">
                                         <div>
-                                            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Ngày tạo</span>
+                                            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">NgÃ y táº¡o</span>
                                             <span className="text-[10px] font-bold text-slate-600">{formData.created_at ? new Date(formData.created_at).toLocaleDateString('vi-VN') : '---'}</span>
                                         </div>
                                         <div>
-                                            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Cập nhật</span>
-                                            <span className="text-[10px] font-bold text-blue-600">{formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('vi-VN') : 'Vừa xong'}</span>
+                                            <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Cáº­p nháº­t</span>
+                                            <span className="text-[10px] font-bold text-blue-600">{formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('vi-VN') : 'Vá»«a xong'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -3039,12 +3039,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 {/* 3. PRICE & STOCK */}
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 space-y-6">
                                     <h3 className="font-bold text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2">
-                                        <Icon name="tag" className="w-4 h-4 text-blue-500" /> Giá bán & Kho
+                                        <Icon name="tag" className="w-4 h-4 text-blue-500" /> GiÃ¡ bÃ¡n & Kho
                                     </h3>
 
                                     <div className="space-y-6">
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Giá bán lẻ (Web)</label>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GiÃ¡ bÃ¡n láº» (Web)</label>
                                             <div className="relative">
                                                 <input
                                                     type="number"
@@ -3053,13 +3053,13 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                     className="w-full pl-4 pr-12 py-3 border border-slate-200 rounded-xl font-black text-slate-900 focus:border-blue-500 outline-none text-right text-lg"
                                                     placeholder="0"
                                                 />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">đ</span>
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">Ä‘</span>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Giá vốn</label>
+                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GiÃ¡ vá»‘n</label>
                                                 <input
                                                     type="number"
                                                     value={formData.purchase_price_web}
@@ -3069,19 +3069,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Bảo hành</label>
+                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Báº£o hÃ nh</label>
                                                 <input
                                                     type="text"
                                                     value={formData.warranty}
                                                     onChange={e => setFormData(p => ({ ...p, warranty: e.target.value }))}
                                                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600"
-                                                    placeholder="12 tháng"
+                                                    placeholder="12 thÃ¡ng"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="pt-4 border-t border-dashed border-slate-100">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Số lượng tồn web</label>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sá»‘ lÆ°á»£ng tá»“n web</label>
                                             <div className="flex items-center gap-3">
                                                 <input
                                                     type="number"
@@ -3098,13 +3098,13 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 {/* 4. MARKETING FLAGS */}
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 space-y-4">
                                     <h3 className="font-bold text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2 mb-2">
-                                        <Icon name="tag" className="w-4 h-4 text-orange-500" /> Nhãn Marketing
+                                        <Icon name="tag" className="w-4 h-4 text-orange-500" /> NhÃ£n Marketing
                                     </h3>
                                     {[
-                                        { label: 'Sản phẩm HOT 🔥', key: 'is_hot', color: 'red' },
-                                        { label: 'Sản phẩm Mới (New)', key: 'is_new', color: 'blue' },
-                                        { label: 'Bán chạy (Best)', key: 'is_best_sell', color: 'purple' },
-                                        { label: 'Giảm giá (Sale)', key: 'is_sale_off', color: 'orange' },
+                                        { label: 'Sáº£n pháº©m HOT ðŸ”¥', key: 'is_hot', color: 'red' },
+                                        { label: 'Sáº£n pháº©m Má»›i (New)', key: 'is_new', color: 'blue' },
+                                        { label: 'BÃ¡n cháº¡y (Best)', key: 'is_best_sell', color: 'purple' },
+                                        { label: 'Giáº£m giÃ¡ (Sale)', key: 'is_sale_off', color: 'orange' },
                                     ].map(flag => (
                                         <label key={flag.key} className="flex items-center gap-4 p-4 border border-slate-50 rounded-2xl hover:bg-slate-50 cursor-pointer transition group">
                                             <input
@@ -3124,7 +3124,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                             onChange={e => setFormData(p => ({ ...p, is_installment_0: e.target.checked }))}
                                             className="w-4 h-4 text-slate-600 rounded border-slate-300"
                                         />
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Hỗ trợ trả góp 0%</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Há»— trá»£ tráº£ gÃ³p 0%</span>
                                     </label>
                                 </div>
                             </div>
@@ -3135,13 +3135,13 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                 {/* Footer Actions */}
                 <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/95 backdrop-blur-2xl border-t-2 border-slate-100 z-[70] flex flex-col md:flex-row gap-4 md:px-20 lg:px-40">
                     <div className="flex-1 flex gap-3">
-                        <button onClick={onClose} className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition-all outline-none">Đóng</button>
+                        <button onClick={onClose} className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition-all outline-none">ÄÃ³ng</button>
                         <button
                             onClick={() => handleSave(false)}
                             disabled={isSaving}
                             className="flex-1 py-4 rounded-xl bg-white border-2 border-indigo-600 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 active:scale-95 transition-all disabled:opacity-50 outline-none"
                         >
-                            Lưu Ngay
+                            LÆ°u Ngay
                         </button>
                     </div>
 
@@ -3153,19 +3153,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                         {isSaving ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                <span>ĐANG XỬ LÝ...</span>
+                                <span>ÄANG Xá»¬ LÃ...</span>
                             </>
                         ) : (
                             <>
                                 <Icon name="save" className="w-4 h-4" />
-                                <span>{mode === 'create' ? 'TẠO MỚI & ĐẨY WEB' : 'LƯU & ĐÓNG'}</span>
+                                <span>{mode === 'create' ? 'Táº O Má»šI & Äáº¨Y WEB' : 'LÆ¯U & ÄÃ“NG'}</span>
                             </>
                         )}
                     </button>
                 </div>
 
-                {/* MODALS QUẢN LÝ NÂNG CAO */}
-                {/* MODALS QUẢN LÝ NÂNG CAO */}
+                {/* MODALS QUáº¢N LÃ NÃ‚NG CAO */}
+                {/* MODALS QUáº¢N LÃ NÃ‚NG CAO */}
                 <BrandSelectionModal
                     isOpen={brandManager.open}
                     onClose={() => setBrandManager(p => ({ ...p, open: false }))}
@@ -3190,7 +3190,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     multiple={true}
                 />
 
-                {/* MODAL TRÌNH SOẠN THẢO RỘNG */}
+                {/* MODAL TRÃŒNH SOáº N THáº¢O Rá»˜NG */}
                 <Modal
                     isOpen={fullEditor.open}
                     onClose={() => setFullEditor(p => ({ ...p, open: false }))}
@@ -3199,7 +3199,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                         <div className="flex items-center gap-3">
                             <Icon name="file-text" className="w-5 h-5 text-indigo-500" />
                             <span className="uppercase tracking-widest font-black text-sm">
-                                CHỈNH SỬA {fullEditor.type === 'description' ? 'MÔ TẢ CHI TIẾT' : (fullEditor.type === 'spec' ? 'THÔNG SỐ KỸ THUẬT' : 'KHUYẾN MÃI')}
+                                CHá»ˆNH Sá»¬A {fullEditor.type === 'description' ? 'MÃ” Táº¢ CHI TIáº¾T' : (fullEditor.type === 'spec' ? 'THÃ”NG Sá» Ká»¸ THUáº¬T' : 'KHUYáº¾N MÃƒI')}
                             </span>
                         </div>
                     }
@@ -3224,7 +3224,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 onClick={() => setFullEditor(p => ({ ...p, open: false }))}
                                 className="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all active:scale-95"
                             >
-                                XONG & QUAY LẠI
+                                XONG & QUAY Láº I
                             </button>
                         </div>
                         <style>{`
@@ -3236,16 +3236,16 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                     </div>
                 </Modal>
 
-                {/* MODAL MEDIA MANAGER CHÍNH THỨC */}
+                {/* MODAL MEDIA MANAGER CHÃNH THá»¨C */}
                 <MediaManagerModal
-                    key={mediaManagerMode} // [FIX] Force Log lại component để tránh Closure cũ
+                    key={mediaManagerMode} // [FIX] Force Log láº¡i component Ä‘á»ƒ trÃ¡nh Closure cÅ©
                     isOpen={isMediaManagerOpen}
-                    title={mediaManagerMode === 'editor' ? "CHÈN ẢNH VÀO BÀI VIẾT" : "QUẢN LÝ THƯ VIỆN ẢNH"}
+                    title={mediaManagerMode === 'editor' ? "CHÃˆN áº¢NH VÃ€O BÃ€I VIáº¾T" : "QUáº¢N LÃ THÆ¯ VIá»†N áº¢NH"}
                     onClose={() => setIsMediaManagerOpen(false)}
                     multiple={true}
                     onSelect={(selectedItems) => {
                         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
-                        console.log("📸 [V1 DEBUG] Đã chọn ảnh từ thư viện:", items);
+                        console.log("ðŸ“¸ [V1 DEBUG] ÄÃ£ chá»n áº£nh tá»« thÆ° viá»‡n:", items);
 
                         if (mediaManagerMode === 'editor') {
                             if (mediaLibraryCallback) {
@@ -3262,7 +3262,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
 
                             const field = standardContentSubTab;
                             if (field === 'summary') {
-                                toast.error("Không thể chèn ảnh vào Môt tả ngắn (Chỉ văn bản)");
+                                toast.error("KhÃ´ng thá»ƒ chÃ¨n áº£nh vÃ o MÃ´t táº£ ngáº¯n (Chá»‰ vÄƒn báº£n)");
                                 return;
                             }
 
@@ -3270,12 +3270,12 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 ...p,
                                 [field]: (p[field] || '') + htmlToInsert
                             }));
-                            toast.success(`Đã chèn ${items.length} ảnh vào nội dung!`);
+                            toast.success(`ÄÃ£ chÃ¨n ${items.length} áº£nh vÃ o ná»™i dung!`);
                             setIsMediaManagerOpen(false);
                             return;
                         }
 
-                        // LOGIC THÊM VÀO THƯ VIỆN ẢNH (GALLERY)
+                        // LOGIC THÃŠM VÃ€O THÆ¯ VIá»†N áº¢NH (GALLERY)
                         const newImages = items.map(i => ({
                             id: i.id,
                             url: i.path ? i.path : (i.url || i.displayUrl || i.preview_url),
@@ -3291,19 +3291,19 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             return [...prev, ...filteredNew];
                         });
 
-                        // Cập nhật luôn vào formData để chắc ăn
+                        // Cáº­p nháº­t luÃ´n vÃ o formData Ä‘á»ƒ cháº¯c Äƒn
                         const newIds = items.map(i => i.id);
                         setFormData(prev => ({
                             ...prev,
                             media_ids: [...new Set([...(prev.media_ids || []), ...newIds])]
                         }));
 
-                        toast.success(`Đã lấy ${items.length} file từ kho!`);
+                        toast.success(`ÄÃ£ láº¥y ${items.length} file tá»« kho!`);
                         setIsMediaManagerOpen(false);
                     }}
                 />
 
-                {/* [GLOBAL_TASK_INDICATOR] BÓNG NỔI NHÁY KHI ĐANG XỬ LÝ BACKGROUND */}
+                {/* [GLOBAL_TASK_INDICATOR] BÃ“NG Ná»”I NHÃY KHI ÄANG Xá»¬ LÃ BACKGROUND */}
                 {globalTaskCount > 0 && (
                     <div className="fixed top-10 right-10 z-[2000] animate-bounce">
                         <div className="bg-indigo-600 text-white rounded-full p-6 shadow-[0_0_50px_rgba(79,70,229,0.4)] flex items-center gap-4 border-2 border-white/20 backdrop-blur-md">
@@ -3312,21 +3312,21 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                                 <div className="absolute inset-0 w-5 h-5 bg-white/20 rounded-full animate-ping"></div>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-indigo-100">Đang xử lý ngầm</span>
-                                <span className="text-sm font-black tracking-tighter">{globalTaskCount} tác vụ hình ảnh...</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-indigo-100">Äang xá»­ lÃ½ ngáº§m</span>
+                                <span className="text-sm font-black tracking-tighter">{globalTaskCount} tÃ¡c vá»¥ hÃ¬nh áº£nh...</span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* [IMAGE_LIGHTBOX] Xem ảnh lớn */}
+                {/* [IMAGE_LIGHTBOX] Xem áº£nh lá»›n */}
                 {previewImage && (
                     <div className="fixed inset-0 z-[3000] bg-black/95 flex items-center justify-center p-4 md:p-10 animate-fadeIn" onClick={() => setPreviewImage(null)}>
                         <div className="absolute top-6 right-6 flex gap-3">
                             <button
                                 className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
                                 onClick={(e) => { e.stopPropagation(); downloadImage(previewImage); }}
-                                title="Tải ảnh"
+                                title="Táº£i áº£nh"
                             >
                                 <Icon name="download" className="w-6 h-6" />
                             </button>
@@ -3341,7 +3341,7 @@ const ProductMobileDetail = ({ isOpen, onClose, product, mode, onRefresh, dictio
                             src={previewImage}
                             alt="Preview"
                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scaleIn"
-                            onClick={(e) => e.stopPropagation()} // Click ảnh không đóng modal
+                            onClick={(e) => e.stopPropagation()} // Click áº£nh khÃ´ng Ä‘Ã³ng modal
                         />
                     </div>
                 )}

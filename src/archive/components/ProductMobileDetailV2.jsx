@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast'; // Ensure single import
 import { productApi } from '../../api/admin/productApi';
 import { metaApi } from '../../api/admin/metaApi';
@@ -7,9 +7,9 @@ import { SectionHeader, FormField, ToggleField } from '../../components/Product/
 import ProductSeoSection from '../../components/Product/ProductSeoSection';
 import ProductContentSection from '../../components/Product/ProductContentSection';
 
-import BrandSelectionModal from '../../components/Modals/BrandSelectionModal';
-import CategorySelectionModal from '../../components/Modals/CategorySelectionModal';
-import MediaManagerModal from '../../components/Modals/MediaManagerModal';
+import BrandSelectionModal from '../../components/modals/BrandSelectionModal';
+import CategorySelectionModal from '../../components/modals/CategorySelectionModal';
+import MediaManagerModal from '../../components/modals/MediaManagerModal';
 import RichTextEditor, { cleanHtmlForEditor, processHtmlImages, getShortProName, logTrace } from '../../components/Core/RichTextEditor';
 import { PLACEHOLDER_NO_IMAGE_SQUARE } from '../../constants/placeholders';
 
@@ -102,10 +102,10 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             const isInput = e.target.closest('input, textarea, [contenteditable]');
             if (isProcessingPaste.current) return;
 
-            // Nếu paste vào input/textarea, để handler riêng hoặc browser lo
+            // Náº¿u paste vÃ o input/textarea, Ä‘á»ƒ handler riÃªng hoáº·c browser lo
             if (isInput) return;
 
-            // A. Xử lý File (Screenshot, Copy Image)
+            // A. Xá»­ lÃ½ File (Screenshot, Copy Image)
             if (e.clipboardData.files.length > 0) {
                 e.preventDefault();
                 const file = e.clipboardData.files[0];
@@ -113,11 +113,11 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     smartUploadHandler(file);
                 }
             }
-            // B. Xử lý URL (Copy Image Address)
+            // B. Xá»­ lÃ½ URL (Copy Image Address)
             else {
                 const text = e.clipboardData.getData('text');
                 if (text && (text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || text.startsWith('http'))) {
-                    if (window.confirm(`Bạn muốn tải ảnh từ liên kết này?\n${text}`)) {
+                    if (window.confirm(`Báº¡n muá»‘n táº£i áº£nh tá»« liÃªn káº¿t nÃ y?\n${text}`)) {
                         smartUploadHandler(text, 'gallery');
                     }
                 }
@@ -174,7 +174,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 media_ids: formData.media_ids || [] // Preserve current pending media_ids
             });
         } catch (e) {
-            toast.error("Không nạp được dữ liệu");
+            toast.error("KhÃ´ng náº¡p Ä‘Æ°á»£c dá»¯ liá»‡u");
         } finally {
             setIsLoading(false);
         }
@@ -182,7 +182,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
     const handleSave = async (shouldClose = true) => {
         setIsSaving(true);
-        const tid = toast.loading("Đang lưu dữ liệu...");
+        const tid = toast.loading("Äang lÆ°u dá»¯ liá»‡u...");
         try {
             const catIdArray = Array.isArray(formData.catId) ? formData.catId : [];
             const catIdString = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
@@ -209,7 +209,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
             if (currentMode === 'create') {
                 const res = await productApi.create(payload);
-                toast.success("Tạo mới thành công!", { id: tid });
+                toast.success("Táº¡o má»›i thÃ nh cÃ´ng!", { id: tid });
                 setFormData(prev => ({ ...prev, media_ids: [] }));
                 onRefresh && onRefresh();
                 if (onSuccess) { onSuccess(res.data); onClose(); return; }
@@ -220,13 +220,13 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 }
             } else {
                 await productApi.update(currentId || product?.id, payload);
-                toast.success("Cập nhật thành công!", { id: tid });
+                toast.success("Cáº­p nháº­t thÃ nh cÃ´ng!", { id: tid });
                 setFormData(prev => ({ ...prev, media_ids: [] }));
                 onRefresh && onRefresh();
                 shouldClose ? onClose() : fetchDetail(currentId || product?.id);
             }
         } catch (e) {
-            toast.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i lÆ°u dá»¯ liá»‡u: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -234,7 +234,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
     // --- IMAGE HANDLERS ---
     const smartUploadHandler = async (fileOrUrl, targetMode = 'gallery', targetField = null) => {
-        const tid = toast.loading("Đang xử lý ảnh...");
+        const tid = toast.loading("Äang xá»­ lÃ½ áº£nh...");
         try {
             const formDataUpload = new FormData();
             if (fileOrUrl instanceof File) formDataUpload.append('image', fileOrUrl);
@@ -249,78 +249,78 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
             if (targetMode === 'editor') {
                 const field = targetField || standardContentSubTab;
-                if (field === 'summary') { toast.error("Mô tả ngắn không hỗ trợ ảnh", { id: tid }); return; }
+                if (field === 'summary') { toast.error("MÃ´ táº£ ngáº¯n khÃ´ng há»— trá»£ áº£nh", { id: tid }); return; }
                 const html = `<p><img src="${finalUrl}" alt="image" /></p>`;
                 setFormData(prev => ({ ...prev, [field]: (prev[field] || '') + html }));
-                toast.success("Đã chèn ảnh!", { id: tid });
+                toast.success("ÄÃ£ chÃ¨n áº£nh!", { id: tid });
             } else {
                 setFormData(prev => ({ ...prev, media_ids: [...(prev.media_ids || []), newImage.id] }));
                 setFullImages(prev => [...prev, { id: newImage.id, url: finalUrl, displayUrl: finalUrl, is_temp: true }]);
-                toast.success("Đã thêm vào thư viện!", { id: tid });
+                toast.success("ÄÃ£ thÃªm vÃ o thÆ° viá»‡n!", { id: tid });
                 if (typeof fileOrUrl === 'string') setShowUrlInput(false);
             }
         } catch (e) {
-            toast.error("Lỗi upload: " + e.message, { id: tid });
+            toast.error("Lá»—i upload: " + e.message, { id: tid });
         }
     };
 
     const handleDeleteImage = async (img) => {
-        if (!window.confirm("Xóa ảnh này?")) return;
-        const tid = toast.loading("Đang xóa...");
+        if (!window.confirm("XÃ³a áº£nh nÃ y?")) return;
+        const tid = toast.loading("Äang xÃ³a...");
         try {
             if (img.id) {
-                console.log("🖱️ [FE_V2] Bấm xóa ảnh ID:", img.id);
-                console.log("Danh sách ảnh hiện tại (IDs):", fullImages.map(f => f.id));
+                console.log("ðŸ–±ï¸ [FE_V2] Báº¥m xÃ³a áº£nh ID:", img.id);
+                console.log("Danh sÃ¡ch áº£nh hiá»‡n táº¡i (IDs):", fullImages.map(f => f.id));
                 await productApi.deleteImage(product.id, img.id);
             } else if (img.name || img.image_name) {
                 // Delete legacy/QVC image 
                 const nameToDelete = img.name || img.image_name;
-                console.log("🖱️ [FE_V2] Bấm xóa ảnh Name (Legacy):", nameToDelete);
+                console.log("ðŸ–±ï¸ [FE_V2] Báº¥m xÃ³a áº£nh Name (Legacy):", nameToDelete);
                 await productApi.deleteOldImageByName(product.id, nameToDelete);
             }
-            toast.success("Đã xóa", { id: tid });
+            toast.success("ÄÃ£ xÃ³a", { id: tid });
             fetchDetail(product.id);
         } catch (e) {
-            toast.error("Lỗi xóa: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i xÃ³a: " + (e.response?.data?.message || e.message), { id: tid });
         }
     };
 
     const handleSetMain = async (id) => {
         try {
             await productApi.setMainImage(product.id, id);
-            toast.success("Đã đặt làm ảnh chính");
+            toast.success("ÄÃ£ Ä‘áº·t lÃ m áº£nh chÃ­nh");
             fetchDetail(product.id);
-        } catch (e) { toast.error("Lỗi: " + e.message); }
+        } catch (e) { toast.error("Lá»—i: " + e.message); }
     };
 
     // [HANDLERS EXTENDED: DELETE & TOGGLE]
     const handleDeleteProduct = async () => {
-        if (!window.confirm("CẢNH BÁO: Bạn chắc chắn muốn XÓA sản phẩm này?\nHành động này không thể hoàn tác!")) return;
-        const tid = toast.loading("Đang xóa sản phẩm...");
+        if (!window.confirm("Cáº¢NH BÃO: Báº¡n cháº¯c cháº¯n muá»‘n XÃ“A sáº£n pháº©m nÃ y?\nHÃ nh Ä‘á»™ng nÃ y khÃ´ng thá»ƒ hoÃ n tÃ¡c!")) return;
+        const tid = toast.loading("Äang xÃ³a sáº£n pháº©m...");
         try {
             await productApi.delete(product.id);
-            toast.success("Đã xóa sản phẩm thành công!", { id: tid });
+            toast.success("ÄÃ£ xÃ³a sáº£n pháº©m thÃ nh cÃ´ng!", { id: tid });
             onRefresh && onRefresh();
             onClose();
         } catch (e) {
-            toast.error("Lỗi xóa: " + e.message, { id: tid });
+            toast.error("Lá»—i xÃ³a: " + e.message, { id: tid });
         }
     };
 
     const handleToggleStatus = async () => {
         const newStatus = !formData.isOn;
         setFormData(prev => ({ ...prev, isOn: newStatus })); // Optimistic UI
-        // Nếu cần gọi API ngay:
+        // Náº¿u cáº§n gá»i API ngay:
         // try {
         //     await productApi.toggleStatus(product.id);
-        //     toast.success(newStatus ? "Đã bật hiển thị" : "Đã ẩn sản phẩm");
+        //     toast.success(newStatus ? "ÄÃ£ báº­t hiá»ƒn thá»‹" : "ÄÃ£ áº©n sáº£n pháº©m");
         // } catch (e) {
         //     setFormData(prev => ({ ...prev, isOn: !newStatus }));
-        //     toast.error("Lỗi cập nhật trạng thái");
+        //     toast.error("Lá»—i cáº­p nháº­t tráº¡ng thÃ¡i");
         // }
     };
 
-    // [POWER-PASTE] Xử lý paste thông minh cho Textarea (Summary)
+    // [POWER-PASTE] Xá»­ lÃ½ paste thÃ´ng minh cho Textarea (Summary)
     const handlePasteForField = async (e, fieldName) => {
         const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
         if (!clipboardData) return;
@@ -329,7 +329,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
         const textPlain = clipboardData.getData('text/plain');
         const isWord = htmlData && (htmlData.includes('urn:schemas-microsoft-com:office:word') || htmlData.includes('mso-'));
 
-        // Chỉ can thiệp nếu là Word hoặc có HTML cần dọn
+        // Chá»‰ can thiá»‡p náº¿u lÃ  Word hoáº·c cÃ³ HTML cáº§n dá»n
         if (isWord || htmlData) {
             if (isProcessingPaste.current) {
                 e.preventDefault(); return;
@@ -339,12 +339,12 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             e.preventDefault();
             e.stopPropagation();
 
-            const tid = toast.loading("Đang dán và làm sạch nội dung...");
+            const tid = toast.loading("Äang dÃ¡n vÃ  lÃ m sáº¡ch ná»™i dung...");
             try {
-                // Sử dụng hàm dọn dẹp import từ RichTextEditor
+                // Sá»­ dá»¥ng hÃ m dá»n dáº¹p import tá»« RichTextEditor
                 let contentToPaste = isWord ? cleanHtmlForEditor(htmlData || textPlain) : textPlain;
 
-                // Nếu là word nhưng clean ra rỗng hoặc quá phức tạp, fallback về text
+                // Náº¿u lÃ  word nhÆ°ng clean ra rá»—ng hoáº·c quÃ¡ phá»©c táº¡p, fallback vá» text
                 if (!contentToPaste) contentToPaste = textPlain;
 
                 const activeEl = document.activeElement;
@@ -356,10 +356,10 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     setFormData(prev => ({ ...prev, [fieldName]: newVal }));
                 }
 
-                toast.success("Đã dán (Clean Mode)", { id: tid });
+                toast.success("ÄÃ£ dÃ¡n (Clean Mode)", { id: tid });
             } catch (err) {
                 console.error(err);
-                toast.error("Lỗi paste: " + err.message, { id: tid });
+                toast.error("Lá»—i paste: " + err.message, { id: tid });
             } finally {
                 setTimeout(() => { isProcessingPaste.current = false; }, 500);
             }
@@ -369,7 +369,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
     // [HELPER] Download Image
     const downloadImage = async (url) => {
         if (!url) return;
-        const tid = toast.loading("Đang chuẩn bị tải...");
+        const tid = toast.loading("Äang chuáº©n bá»‹ táº£i...");
         try {
             const response = await fetch(url, { mode: 'cors' });
             const blob = await response.blob();
@@ -381,7 +381,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
-            toast.success("Đã tải xuống!", { id: tid });
+            toast.success("ÄÃ£ táº£i xuá»‘ng!", { id: tid });
         } catch (e) {
             // Fallback
             window.open(url, '_blank');
@@ -398,7 +398,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
             if (url) {
                 if (url.startsWith('https://qvc.vn/Storage/')) {
-                    // [FIX] Nếu bị gán nhầm qvc.vn cho /Storage, chuyển nó về CRM
+                    // [FIX] Náº¿u bá»‹ gÃ¡n nháº§m qvc.vn cho /Storage, chuyá»ƒn nÃ³ vá» CRM
                     url = url.replace('https://qvc.vn/Storage/', `${crmHost}/storage/`);
                 } else if (!url.startsWith('http')) {
                     if (url.startsWith('/storage/') || url.startsWith('storage/')) {
@@ -421,13 +421,13 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
     const handleSync = async () => {
         if (!currentId) return;
         setIsLoading(true);
-        const tid = toast.loading("Đang đồng bộ dữ liệu từ Web...");
+        const tid = toast.loading("Äang Ä‘á»“ng bá»™ dá»¯ liá»‡u tá»« Web...");
         try {
             await productApi.syncOne(currentId);
-            toast.success("Đồng bộ thành công!", { id: tid });
+            toast.success("Äá»“ng bá»™ thÃ nh cÃ´ng!", { id: tid });
             fetchDetail(currentId);
         } catch (e) {
-            toast.error("Lỗi đồng bộ: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lá»—i Ä‘á»“ng bá»™: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsLoading(false);
         }
@@ -440,7 +440,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             <div className="px-5 py-4 bg-white border-b flex justify-between items-center shadow-sm z-50">
                 <div>
                     <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest leading-tight">
-                        {currentMode === 'create' ? 'TẠO SẢN PHẨM MỚI (V2)' : 'CHỈNH SỬA SẢN PHẨM (V2)'}
+                        {currentMode === 'create' ? 'Táº O Sáº¢N PHáº¨M Má»šI (V2)' : 'CHá»ˆNH Sá»¬A Sáº¢N PHáº¨M (V2)'}
                     </h2>
                     <p className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded inline-block mt-1">PRO VERSION - HIGH PERFORMANCE</p>
                 </div>
@@ -449,7 +449,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <button
                             onClick={handleSync}
                             className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100"
-                            title="Lấy dữ liệu mới nhất từ QVC.vn"
+                            title="Láº¥y dá»¯ liá»‡u má»›i nháº¥t tá»« QVC.vn"
                         >
                             <Icon name="refresh-cw" className="w-3 h-3" />
                             <span>Sync Web</span>
@@ -485,16 +485,16 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-[2]">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tên sản phẩm</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">TÃªn sáº£n pháº©m</label>
                                 <input
                                     value={formData.proName}
                                     onChange={e => setFormData({ ...formData, proName: e.target.value })}
                                     className="w-full font-bold text-lg text-slate-800 border-b-2 border-transparent hover:border-slate-100 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-200"
-                                    placeholder="Nhập tên sản phẩm..."
+                                    placeholder="Nháº­p tÃªn sáº£n pháº©m..."
                                 />
                             </div>
                             <div className="flex-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Đường dẫn (Slug)</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">ÄÆ°á»ng dáº«n (Slug)</label>
                                 <input
                                     value={formData.request_path}
                                     onChange={e => setFormData({ ...formData, request_path: e.target.value })}
@@ -512,23 +512,23 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <div className="xl:col-span-3 space-y-4">
                             {/* BLOCK: CLASS / BRAND */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                                <SectionHeader title="Phân loại" icon="hash" color="indigo" />
+                                <SectionHeader title="PhÃ¢n loáº¡i" icon="hash" color="indigo" />
                                 <div className="space-y-3 mt-4">
-                                    <FormField type="select" label="Thương hiệu" options={dictionary?.brands} value={formData.brandId} onChange={v => setFormData({ ...formData, brandId: v })} isBrand={true} onManage={() => setBrandManager({ open: true, mode: 'list' })} />
-                                    <FormField type="select" label="Danh mục" options={dictionary?.categories} value={formData.catId} onChange={v => setFormData({ ...formData, catId: v })} multiple={true} onManage={() => setCatManager({ open: true, mode: 'list' })} />
+                                    <FormField type="select" label="ThÆ°Æ¡ng hiá»‡u" options={dictionary?.brands} value={formData.brandId} onChange={v => setFormData({ ...formData, brandId: v })} isBrand={true} onManage={() => setBrandManager({ open: true, mode: 'list' })} />
+                                    <FormField type="select" label="Danh má»¥c" options={dictionary?.categories} value={formData.catId} onChange={v => setFormData({ ...formData, catId: v })} multiple={true} onManage={() => setCatManager({ open: true, mode: 'list' })} />
                                 </div>
                             </div>
 
                             {/* BLOCK: IDENTITY */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                                <SectionHeader title="Định danh" icon="tag" color="blue" />
+                                <SectionHeader title="Äá»‹nh danh" icon="tag" color="blue" />
                                 <div className="space-y-3 mt-4">
-                                    <FormField label="Mã SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} />
+                                    <FormField label="MÃ£ SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} />
                                     <FormField label="Model / NSX" value={formData.productModel} onChange={v => setFormData({ ...formData, productModel: v })} />
                                     <div className="grid grid-cols-2 gap-3">
                                         <FormField label="Weight (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} />
                                         <div className="flex items-end pb-1">
-                                            <ToggleField label="Hiện Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" />
+                                            <ToggleField label="Hiá»‡n Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" />
                                         </div>
                                     </div>
                                 </div>
@@ -539,9 +539,9 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <div className="xl:col-span-5 space-y-4 h-full">
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col">
                                 <div className="flex justify-between items-center mb-4">
-                                    <SectionHeader title={`Thư viện ảnh (${standardImages.length})`} icon="image" color="orange" />
+                                    <SectionHeader title={`ThÆ° viá»‡n áº£nh (${standardImages.length})`} icon="image" color="orange" />
                                     <div className="flex gap-2">
-                                        <button onClick={() => { setMediaManagerMode('gallery'); setIsMediaManagerOpen(true); }} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Kho ảnh</button>
+                                        <button onClick={() => { setMediaManagerMode('gallery'); setIsMediaManagerOpen(true); }} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Kho áº£nh</button>
                                         <label className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all cursor-pointer">
                                             Upload
                                             <input type="file" className="hidden" onChange={e => e.target.files[0] && smartUploadHandler(e.target.files[0], 'gallery')} />
@@ -556,9 +556,9 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                     <img src={img.displayUrl} className="w-full h-full object-contain p-1.5" />
                                                     {img.is_main && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg shadow-sm">MAIN</div>}
                                                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-all backdrop-blur-[1px]">
-                                                        {!img.is_main && <button onClick={() => handleSetMain(img.id)} className="w-8 h-8 bg-white text-indigo-600 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="Đặt làm chính"><Icon name="check" className="w-4 h-4" /></button>}
-                                                        <button onClick={() => setPreviewImage(img.displayUrl)} className="w-8 h-8 bg-white text-blue-500 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="Xem chi tiết"><Icon name="eye" className="w-4 h-4" /></button>
-                                                        <button onClick={() => handleDeleteImage(img)} className="w-8 h-8 bg-white text-rose-500 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="Xóa"><Icon name="trash" className="w-4 h-4" /></button>
+                                                        {!img.is_main && <button onClick={() => handleSetMain(img.id)} className="w-8 h-8 bg-white text-indigo-600 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="Äáº·t lÃ m chÃ­nh"><Icon name="check" className="w-4 h-4" /></button>}
+                                                        <button onClick={() => setPreviewImage(img.displayUrl)} className="w-8 h-8 bg-white text-blue-500 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="Xem chi tiáº¿t"><Icon name="eye" className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleDeleteImage(img)} className="w-8 h-8 bg-white text-rose-500 rounded-lg flex items-center justify-center hover:scale-110 shadow-lg transition-transform" title="XÃ³a"><Icon name="trash" className="w-4 h-4" /></button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -566,7 +566,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center opacity-40 gap-3">
                                             <Icon name="image" className="w-12 h-12 text-slate-300" />
-                                            <span className="text-xs font-black uppercase text-slate-400">Chưa có ảnh</span>
+                                            <span className="text-xs font-black uppercase text-slate-400">ChÆ°a cÃ³ áº£nh</span>
                                         </div>
                                     )}
                                 </div>
@@ -577,25 +577,25 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <div className="xl:col-span-4 space-y-4">
                             {/* PRICE & SALES */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                                <SectionHeader title="Giá bán & Kho vận" icon="dollar-sign" color="red" />
+                                <SectionHeader title="GiÃ¡ bÃ¡n & Kho váº­n" icon="dollar-sign" color="red" />
                                 <div className="mt-4 grid grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Giá bán lẻ (Web)</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">GiÃ¡ bÃ¡n láº» (Web)</label>
                                         <div className="relative">
                                             <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full font-black text-xl text-red-600 border-b border-slate-200 focus:border-red-500 outline-none pb-1" />
-                                            <span className="absolute right-0 bottom-1 text-xs font-bold text-red-400">VNĐ</span>
+                                            <span className="absolute right-0 bottom-1 text-xs font-bold text-red-400">VNÄ</span>
                                         </div>
                                     </div>
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tồn kho</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tá»“n kho</label>
                                         <input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className="w-full font-black text-xl text-slate-800 border-b border-slate-200 focus:border-indigo-500 outline-none pb-1" />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Giá vốn</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">GiÃ¡ vá»‘n</label>
                                         <input type="number" value={formData.purchase_price_web} onChange={e => setFormData({ ...formData, purchase_price_web: e.target.value })} className="w-full font-bold text-sm text-slate-600 border-b border-slate-200 outline-none pb-1" />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Bảo hành</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Báº£o hÃ nh</label>
                                         <input value={formData.warranty} onChange={e => setFormData({ ...formData, warranty: e.target.value })} className="w-full font-bold text-sm text-slate-600 border-b border-slate-200 outline-none pb-1" />
                                     </div>
                                 </div>
@@ -603,26 +603,26 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
                             {/* SHORT DESCRIPTION (ALWAYS VISIBLE) */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col">
-                                <SectionHeader title="Mô tả - Nội dung" icon="file-text" color="purple" />
+                                <SectionHeader title="MÃ´ táº£ - Ná»™i dung" icon="file-text" color="purple" />
 
                                 <div className="mt-4 mb-2">
-                                    <label className="text-[9px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded uppercase tracking-widest mb-2 inline-block">Mô tả ngắn (Hiển thị ngay)</label>
+                                    <label className="text-[9px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded uppercase tracking-widest mb-2 inline-block">MÃ´ táº£ ngáº¯n (Hiá»ƒn thá»‹ ngay)</label>
                                     <textarea
                                         value={formData.proSummary}
                                         onChange={e => setFormData({ ...formData, proSummary: e.target.value })}
                                         onPaste={e => handlePasteForField(e, 'proSummary')} // [ATTACH PASTE HANDLER]
                                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-purple-500 transition-all min-h-[140px] resize-none"
-                                        placeholder="Nhập tóm tắt đặc điểm nổi bật của sản phẩm..."
+                                        placeholder="Nháº­p tÃ³m táº¯t Ä‘áº·c Ä‘iá»ƒm ná»•i báº­t cá»§a sáº£n pháº©m..."
                                     ></textarea>
                                 </div>
 
                                 <div className="mt-2 pt-2 border-t border-dashed border-slate-100">
                                     <div className="flex gap-2">
                                         <button onClick={() => setFullEditor({ open: true, type: 'description' })} className="flex-1 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2">
-                                            <Icon name="edit" className="w-3 h-3" /> Chi tiết bài viết
+                                            <Icon name="edit" className="w-3 h-3" /> Chi tiáº¿t bÃ i viáº¿t
                                         </button>
                                         <button onClick={() => setFullEditor({ open: true, type: 'spec' })} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                                            <Icon name="list" className="w-3 h-3" /> Thông số KT
+                                            <Icon name="list" className="w-3 h-3" /> ThÃ´ng sá»‘ KT
                                         </button>
                                     </div>
                                 </div>
@@ -667,10 +667,10 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <Icon name="trash" className="w-5 h-5" />
                     </button>
                 )}
-                <button onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Đóng</button>
-                <button onClick={() => handleSave(false)} className="flex-1 py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-all">Lưu & Tiếp tục</button>
+                <button onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">ÄÃ³ng</button>
+                <button onClick={() => handleSave(false)} className="flex-1 py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-all">LÆ°u & Tiáº¿p tá»¥c</button>
                 <button onClick={() => handleSave(true)} disabled={isSaving} className="flex-[2] py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
-                    {isSaving ? 'ĐANG LƯU...' : 'LƯU & ĐÓNG'}
+                    {isSaving ? 'ÄANG LÆ¯U...' : 'LÆ¯U & ÄÃ“NG'}
                 </button>
             </div>
 
@@ -695,7 +695,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         setFullImages(prev => [...prev, ...newImages]);
                         // [FIX] Add library selection to media_ids so they get saved
                         setFormData(prev => ({ ...prev, media_ids: [...(prev.media_ids || []), ...items.map(m => m.id)] }));
-                        toast.success(`Đã thêm ${items.length} ảnh`);
+                        toast.success(`ÄÃ£ thÃªm ${items.length} áº£nh`);
                     }
                     setMediaLibraryCallback(null);
                 }}
@@ -704,7 +704,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
             />
 
             {/* Full Editor Modal (Legacy/Fallback if needed) */}
-            <Modal isOpen={fullEditor.open} onClose={() => setFullEditor({ ...fullEditor, open: false })} title={fullEditor.type === 'description' ? 'Chi tiết bài viết' : 'Thông số kỹ thuật'}>
+            <Modal isOpen={fullEditor.open} onClose={() => setFullEditor({ ...fullEditor, open: false })} title={fullEditor.type === 'description' ? 'Chi tiáº¿t bÃ i viáº¿t' : 'ThÃ´ng sá»‘ ká»¹ thuáº­t'}>
                 <RichTextEditor
                     value={fullEditor.type === 'description' ? formData.description : formData.spec}
                     onChange={v => setFormData({ ...formData, [fullEditor.type]: v })}
@@ -722,7 +722,7 @@ const ProductMobileDetailV2 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <button
                             className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all text-white backdrop-blur-md"
                             onClick={(e) => { e.stopPropagation(); downloadImage(previewImage); }}
-                            title="Tải ảnh về máy"
+                            title="Táº£i áº£nh vá» mÃ¡y"
                         >
                             <Icon name="download" className="w-6 h-6" />
                         </button>

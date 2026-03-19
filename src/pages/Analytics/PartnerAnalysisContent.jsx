@@ -1,11 +1,11 @@
-// src/pages/PartnerAnalysisContent.jsx
+﻿// src/pages/PartnerAnalysisContent.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, Area, AreaChart, Treemap } from 'recharts';
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
 import { Tabs } from '../../components/analysis/Tabs.jsx';
 import { PartnerAnalysisDataTable } from '../../components/analysis/PartnerAnalysisDataTable.jsx';
-import { SupplierDetailModal } from '../../components/Modals/SupplierDetailModal.jsx';
-import { CustomerDetailModal } from '../../components/Modals/CustomerDetailModal.jsx';
+import { SupplierDetailModal } from '../../components/modals/SupplierDetailModal.jsx';
+import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
 import { ProductDetailModal as ProductReconcileModal } from '../../components/Core/InventoryViews.jsx';
 import { ProductDetailModal as ProductHistoryModal } from '../../components/modals/ProductDetailModal.jsx';
 import { Button, Icon } from '../../components/ui.jsx';
@@ -31,7 +31,7 @@ const MultiDrop = ({ label, opts = [], val = [], setVal, k = 'code', n = 'name' 
         <div className="relative" ref={ref}>
             <div onClick={() => setOpen(!open)} className={`flex justify-between items-center min-w-[140px] max-w-[220px] px-3 py-2 text-sm border rounded cursor-pointer shadow-sm ${val.length ? 'border-blue-500 ring-1 ring-blue-200 text-blue-700 font-bold' : 'border-gray-300 bg-white'}`}>
                 <span className="truncate mr-2">{val.length === 0 ? label : `${label} (${val.length})`}</span>
-                <div className="flex items-center gap-1">{val.length > 0 && <span onClick={(e) => { e.stopPropagation(); setVal([]) }} className="hover:text-red-500 font-bold px-1">✕</span>}<span className="text-[10px] text-gray-400">▼</span></div>
+                <div className="flex items-center gap-1">{val.length > 0 && <span onClick={(e) => { e.stopPropagation(); setVal([]) }} className="hover:text-red-500 font-bold px-1">✖</span>}<span className="text-[10px] text-gray-400">▼</span></div>
             </div>
             {open && (
                 <div className="absolute z-50 mt-1 w-80 bg-white border rounded-lg shadow-xl max-h-[400px] flex flex-col overflow-hidden left-0 animate-fadeIn">
@@ -146,7 +146,7 @@ export const PartnerAnalysisContent = ({ setAppTitle }) => {
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
                                 />
-                                {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-1 top-1 text-gray-400 hover:text-red-500 font-bold text-xs">✕</button>}
+                                {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-1 top-1 text-gray-400 hover:text-red-500 font-bold text-xs">✖</button>}
                             </div>
                             <button onClick={onReset} className="text-xs text-red-500 hover:underline whitespace-nowrap">Đặt lại</button>
                         </div>

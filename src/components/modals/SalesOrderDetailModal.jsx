@@ -1,12 +1,12 @@
-// src/components/Modals/SalesOrderDetailModal.jsx
+﻿// src/components/modals/SalesOrderDetailModal.jsx
 
 import React, { useState, useEffect, Fragment } from 'react';
 import axios from 'axios';
 import { Modal, Button, Icon } from '../ui.jsx';
 
 // Import các modal con
-import { CustomerDetailModal } from '../Modals/CustomerDetailModal.jsx';
-import { ProductDetailModal } from '../Modals/ProductDetailModal.jsx';
+import { CustomerDetailModal } from '../modals/CustomerDetailModal.jsx';
+import { ProductDetailModal } from '../modals/ProductDetailModal.jsx';
 import { SalesOrderForm } from '../Trading/SalesOrderForm.jsx';
 
 const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('vi-VN') : '';
@@ -16,7 +16,7 @@ const StatusBadge = ({ status }) => {
     // Mặc định cho đơn bán hàng nếu không có field hien_trang cụ thể từ JSON
     const s = status ? status.toLowerCase() : 'hoàn thành';
     let colorClass = 'bg-green-50 text-green-700 border-green-200';
-    
+
     if (s.includes('hủy')) colorClass = 'bg-red-50 text-red-700 border-red-200';
     else if (s.includes('chưa') || s.includes('chờ')) colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
 
@@ -50,9 +50,9 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
             setIsLoading(false);
         }
     };
-    
+
     useEffect(() => { fetchOrder(); }, [orderIdentifier]);
-    
+
     const handleFormSaveSuccess = () => {
         setIsEditing(false);
         if (onSaveSuccess) onSaveSuccess();
@@ -70,9 +70,9 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
 
     return (
         <Fragment>
-            <Modal 
-                isOpen={true} 
-                onClose={onClose} 
+            <Modal
+                isOpen={true}
+                onClose={onClose}
                 title={<span className="text-gray-700 font-bold uppercase text-base">Chi tiết Đơn Bán Hàng</span>}
                 maxWidthClass={maxWidthClass}
                 footer={!isEditing && order && (
@@ -80,7 +80,7 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                         <div className="text-gray-500 text-sm italic">ID: {order.unique_order_key}</div>
                         <div className="flex gap-2">
                             <Button variant="secondary" onClick={() => setIsEditing(true)} className="flex items-center gap-1">
-                                <Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.283-8.283z" className="w-4 h-4"/>
+                                <Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.283-8.283z" className="w-4 h-4" />
                                 Sửa Đổi
                             </Button>
                             <Button variant="secondary" onClick={onClose}>Đóng</Button>
@@ -89,7 +89,7 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                 )}
             >
                 {isLoading && <div className="p-20 text-center text-blue-500 animate-pulse">Đang tải thông tin đơn hàng...</div>}
-                
+
                 {order && !isEditing && (
                     <div className="bg-white">
                         {/* SECTION 1: TOP INFO CARDS */}
@@ -103,7 +103,7 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                                         <p className="text-xs text-gray-500 font-mono">{order.ma_khncc}</p>
                                     </div>
                                     <button onClick={() => setViewingCustomer(order.ma_khncc)} className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition-colors border border-blue-100">
-                                        <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-4 h-4"/>
+                                        <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -162,15 +162,22 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                                             <Fragment key={index}>
                                                 <tr className="hover:bg-blue-50/30 transition-colors">
                                                     <td className="px-4 py-4 text-xs text-gray-400">{index + 1}</td>
-                                                    <td className="px-4 py-4 font-mono text-xs text-blue-600 font-medium">{item.ma_mat_hang}</td>
+                                                    <td className="px-4 py-4 font-mono text-xs">
+                                                        <button
+                                                            onClick={() => setViewingProduct(item.ma_mat_hang)}
+                                                            className="text-blue-600 font-bold hover:underline hover:text-blue-800 transition-all active:scale-95"
+                                                        >
+                                                            {item.ma_mat_hang}
+                                                        </button>
+                                                    </td>
                                                     <td className="px-4 py-4">
                                                         <div className="text-sm text-gray-800 font-medium leading-tight mb-1">{item.ten_mat_hang}</div>
                                                         {serials.length > 0 && (
-                                                            <button 
-                                                                onClick={() => toggleSerial(index)} 
+                                                            <button
+                                                                onClick={() => toggleSerial(index)}
                                                                 className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[10px] text-gray-600 transition-colors"
                                                             >
-                                                                <Icon path="M3.75 12h16.5m-16.5-3.75h16.5m-16.5-3.75h16.5m-16.5 11.25h16.5" className="w-3 h-3"/>
+                                                                <Icon path="M3.75 12h16.5m-16.5-3.75h16.5m-16.5-3.75h16.5m-16.5 11.25h16.5" className="w-3 h-3" />
                                                                 {isExpanded ? 'Thu gọn' : `Xem ${serials.length} Serial`}
                                                             </button>
                                                         )}
@@ -180,7 +187,7 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                                                     <td className="px-4 py-4 text-right font-bold text-gray-900">{formatPrice(item.so_tien_truoc_thue)}</td>
                                                     <td className="px-4 py-4 text-center">
                                                         <button onClick={() => setViewingProduct(item.ma_mat_hang)} className="text-gray-300 hover:text-blue-500 transition-colors">
-                                                            <Icon path="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" className="w-5 h-5"/>
+                                                            <Icon path="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" className="w-5 h-5" />
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -208,17 +215,17 @@ export const SalesOrderDetailModal = ({ orderIdentifier, onClose, onSaveSuccess,
                         <div className="p-6 bg-white flex justify-end border-t">
                             <div className="text-right">
                                 <span className="text-gray-500 text-sm mr-4 uppercase tracking-wider font-medium">Tổng tiền thanh toán:</span>
-                                <span className="text-2xl font-black text-blue-700">{formatPrice(order.tong_cong)} <span className="text-lg underline decoration-2">đ</span></span>
+                                <span className="text-2xl font-black text-blue-700">{formatPrice(order.tong_cong)} <span className="text-lg underline decoration-2">₫</span></span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {isEditing && order && (
-                    <SalesOrderForm 
-                        order={order} 
-                        onSaveSuccess={handleFormSaveSuccess} 
-                        onCancel={() => setIsEditing(false)} 
+                    <SalesOrderForm
+                        order={order}
+                        onSaveSuccess={handleFormSaveSuccess}
+                        onCancel={() => setIsEditing(false)}
                     />
                 )}
             </Modal>

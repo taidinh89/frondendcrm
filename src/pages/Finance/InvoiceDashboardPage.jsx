@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
-import { InvoiceModal } from '../../components/Modals/InvoiceModal';
+import { InvoiceModal } from '../../components/modals/InvoiceModal';
 
 // --- UTILS ---
 const formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);

@@ -1,230 +1,340 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { 
-    Plus, Search, Copy, Edit, Printer, Trash2 
+﻿// src/pages/Business/QuotationList.jsx
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    Table, Button, Input, Tag,
+    Space, Card, Tooltip, Modal,
+    Popconfirm, message, Badge,
+    Dropdown, Menu, Spin, Empty
+} from 'antd';
+import {
+    Search, Plus, FileText,
+    Printer, MoreVertical, Trash2,
+    Edit, Copy, Filter,
+    Eye, Download, DownloadCloud,
+    Calendar, User, CheckCircle2,
+    Clock, AlertCircle, RefreshCw,
+    X, FileDown
 } from 'lucide-react';
+import dayjs from 'dayjs';
+import axios from 'axios';
+import { useApiData } from '../../hooks/useApiData.jsx';
+import { QuotationFormNew } from './QuotationFormNew.jsx';
+import { exportToExcel } from '../../utils/exportUtils.js';
 
-// Import Component Modal In (Đã có tính năng xuất Excel)
-import { PrintPreviewModal } from '../../components/Modals/PrintPreviewModal';
+// --- UTILS ---
+const formatCurrency = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v || 0);
+const formatDate = (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-';
 
-// --- HÀM TÌM THÔNG TIN SẢN PHẨM (Sử dụng API mới tối ưu) ---
-const fetchProductInfo = async (sku) => {
-    if (!sku) return null;
-    try {
-        // Gọi API lookup mới đã viết ở Backend
-        const res = await axios.get('/api/v1/productqvc/lookup', { params: { sku } });
-        
-        // API trả về: { data: { image, warranty, name, ... } }
-        // Backend đã xử lý logic ghép link ảnh và chọn bảo hành rồi, Frontend chỉ việc dùng.
-        return res.data.data;
-    } catch (e) {
-        return null;
-    }
-};
+export const QuotationList = ({ setAppTitle }) => {
+    // --- STATE ---
+    const [search, setSearch] = useState('');
+    const [pageState, setPageState] = useState('LIST'); // LIST | ADD | EDIT
+    const [selectedId, setSelectedId] = useState(null);
+    const [filters, setFilters] = useState({
+        q: '',
+        date_from: dayjs().startOf('month').format('YYYY-MM-DD'),
+        date_to: dayjs().endOf('month').format('YYYY-MM-DD'),
+    });
 
-export const QuotationList = () => {
-    const navigate = useNavigate();
-    
-    // State dữ liệu
-    const [quotes, setQuotes] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    
-    // State Modal
-    const [previewData, setPreviewData] = useState(null);
-    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-    const [isPreparing, setIsPreparing] = useState(false); // Loading khi đang làm giàu dữ liệu
+    // --- API DATA ---
+    const { data: qData, isLoading, refresh } = useApiData('/api/v2/quotations', filters, 300);
+    const quotations = qData?.data || [];
 
-    // --- 1. LOAD DATA ---
-    useEffect(() => { 
-        fetchQuotes(); 
-    }, []);
+    useEffect(() => {
+        setAppTitle('Danh sách Báo Giá');
+    }, [setAppTitle]);
 
-    const fetchQuotes = async () => {
-        setLoading(true);
-        try {
-            const res = await axios.get('/api/v2/quotations', { params: { code: searchTerm } }); 
-            setQuotes(res.data.data || []);
-        } catch (error) { 
-            console.error("Lỗi tải danh sách:", error); 
-        } finally { 
-            setLoading(false); 
-        }
-    };
-
-    // --- 2. XỬ LÝ KHI BẤM NÚT IN / XEM ---
-    const handlePrintPreview = async (id) => {
-        setIsPreparing(true); // Bật loading overlay
-        try {
-            // Bước 1: Lấy chi tiết báo giá từ Database
-            const res = await axios.get(`/api/v2/quotations/${id}`);
-            let data = res.data;
-
-            // Bước 2: "Làm giàu" dữ liệu (Tìm ảnh & Bảo hành từ API Lookup mới)
-            // Chạy song song (Promise.all) để tối ưu tốc độ
-            const enrichedItems = await Promise.all(data.items.map(async (item) => {
-                // Chỉ gọi API nếu thiếu ảnh HOẶC thiếu bảo hành
-                // (Giúp tiết kiệm request nếu dữ liệu đã đủ)
-                if (!item.image || !item.warranty) {
-                    const sku = item.product_code || item.sku;
-                    const info = await fetchProductInfo(sku);
-
-                    if (info) {
-                        return { 
-                            ...item, 
-                            image: info.image || item.image,       // Ưu tiên ảnh từ API Lookup
-                            warranty: info.warranty || item.warranty, // Ưu tiên bảo hành từ API
-                            // product_name: info.name || item.product_name // (Tuỳ chọn: Cập nhật tên mới nhất)
-                        };
-                    }
-                }
-                return item;
-            }));
-
-            // Bước 3: Cập nhật lại data hoàn chỉnh
-            data = { ...data, items: enrichedItems };
-
-            // Bước 4: Mở Modal
-            setPreviewData(data);
-            setIsPrintModalOpen(true); 
-        } catch (error) { 
-            console.error(error);
-            alert("Lỗi tải dữ liệu báo giá!"); 
-        } finally {
-            setIsPreparing(false);
-        }
-    };
-
-    // --- 3. XỬ LÝ XÓA ---
+    // --- HANDLERS ---
     const handleDelete = async (id) => {
-        if (!confirm("Chắc chắn xóa báo giá này?")) return;
         try {
             await axios.delete(`/api/v2/quotations/${id}`);
-            setQuotes(prev => prev.filter(q => q.id !== id));
-        } catch (e) { 
-            alert("Lỗi xóa báo giá!"); 
+            message.success('Đã xóa báo giá thành công');
+            refresh();
+        } catch (err) {
+            message.error('Không thể xóa báo giá');
         }
     };
 
-    return (
-        <div className="p-6 bg-gray-50 min-h-screen font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Danh sách Báo Giá</h1>
-                <button onClick={() => navigate('/quotations/create')} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold shadow-sm hover:bg-blue-700 transition-colors">
-                    <Plus size={18} /> Tạo mới
-                </button>
-            </div>
+    const handleCopy = async (id) => {
+        try {
+            await axios.post(`/api/v2/quotations/${id}/copy`);
+            message.success('Đã sao chép báo giá mới');
+            refresh();
+        } catch (err) {
+            message.error('Lỗi khi sao chép báo giá');
+        }
+    };
 
-            {/* Search Bar */}
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-4 border border-gray-100">
-                <div className="relative">
-                    <Search className="absolute left-3 top-3 text-gray-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="Tìm kiếm theo mã phiếu..." 
-                        className="w-full pl-10 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)} 
-                        onKeyDown={e => e.key === 'Enter' && fetchQuotes()}
-                    />
+    const handlePrint = (id) => {
+        window.open(`/api/v2/quotations/${id}/print`, '_blank');
+    };
+
+    const handleExportExcel = async () => {
+        if (!quotations || quotations.length === 0) {
+            message.warning('Không có dữ liệu để xuất Excel');
+            return;
+        }
+
+        const excelData = quotations.map((q, idx) => ({
+            "STT": idx + 1,
+            "Số Phiếu": q.so_ct,
+            "Ngày Báo Giá": formatDate(q.ngay_ct),
+            "Khách Hàng": q.ten_kh,
+            "Số Điện Thoại": q.dien_thoai,
+            "Tổng Tiền": q.tong_tien,
+            "Chiết Khấu": q.tong_ck,
+            "Thuế GTGT": q.tong_thue,
+            "Tổng Thanh Toán": q.tong_thanh_toan,
+            "Trạng Thái": q.trang_thai_text || 'Mới',
+            "Người Tạo": q.user_name,
+            "Ngày Tạo": formatDate(q.created_at)
+        }));
+
+        try {
+            await exportToExcel([{ sheetName: "Danh_Sach_Bao_Gia", data: excelData }], `DS_BaoGia_${dayjs().format('YYYYMMDD')}`);
+            message.success('Đã xuất file Excel thành công');
+        } catch (err) {
+            message.error('Lỗi khi xuất file Excel');
+        }
+    };
+
+    // --- COLUMN DEFINITION ---
+    const columns = [
+        {
+            title: '#',
+            width: 50,
+            render: (_, __, idx) => <span className="text-gray-400 font-mono text-[10px]">{idx + 1}</span>,
+            align: 'center'
+        },
+        {
+            title: 'SỐ PHIẾU',
+            dataIndex: 'so_ct',
+            key: 'so_ct',
+            width: 140,
+            render: (text) => <span className="font-black text-blue-600 tracking-tight">{text}</span>,
+            sorter: (a, b) => (a.so_ct || '').localeCompare(b.so_ct || '')
+        },
+        {
+            title: 'NGÀY CT',
+            dataIndex: 'ngay_ct',
+            key: 'ngay_ct',
+            width: 100,
+            render: (date) => <div className="flex flex-col"><span className="text-xs font-bold text-gray-700">{formatDate(date)}</span></div>,
+            sorter: (a, b) => dayjs(a.ngay_ct).unix() - dayjs(b.ngay_ct).unix()
+        },
+        {
+            title: 'KHÁCH HÀNG / CÔNG TY',
+            key: 'customer',
+            ellipsis: true,
+            render: (_, row) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-gray-800 text-sm truncate uppercase tracking-tight">{row.ten_kh || 'Khách lẻ'}</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {row.dien_thoai && <span className="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">{row.dien_thoai}</span>}
+                        {row.ma_kh && <span className="text-[10px] text-blue-400 font-mono">{row.ma_kh}</span>}
+                    </div>
+                </div>
+            )
+        },
+        {
+            title: 'TỔNG THANH TOÁN',
+            dataIndex: 'tong_thanh_toan',
+            key: 'tong_thanh_toan',
+            width: 180,
+            align: 'right',
+            render: (val) => <span className="font-mono font-black text-gray-800">{formatCurrency(val)}</span>,
+            sorter: (a, b) => a.tong_thanh_toan - b.tong_thanh_toan
+        },
+        {
+            title: 'NV PHỤ TRÁCH',
+            dataIndex: 'user_name',
+            key: 'user_name',
+            width: 150,
+            render: (name) => <div className="flex items-center gap-1.5"><div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[10px] text-blue-600 font-bold uppercase">{name?.charAt(0)}</div><span className="text-xs font-medium text-gray-600">{name}</span></div>
+        },
+        {
+            title: 'TRẠNG THÁI',
+            dataIndex: 'status',
+            key: 'status',
+            width: 120,
+            align: 'center',
+            render: (_, row) => {
+                const colors = { 'Mới': 'processing', 'Đã gửi': 'warning', 'Đã duyệt': 'success', 'Từ chối': 'error' };
+                const label = row.trang_thai_text || 'Mới';
+                return <Tag color={colors[label] || 'default'} className="rounded-full px-3 text-[10px] font-bold border-0 uppercase">{label}</Tag>
+            }
+        },
+        {
+            title: '',
+            key: 'actions',
+            width: 100,
+            align: 'center',
+            render: (_, row) => (
+                <Space size="small">
+                    <Tooltip title="Chỉnh sửa">
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<Edit size={14} className="text-blue-500" />}
+                            onClick={() => { setSelectedId(row.id); setPageState('EDIT'); }}
+                        />
+                    </Tooltip>
+                    <Dropdown
+                        overlay={
+                            <Menu onClick={({ key }) => {
+                                if (key === 'print') handlePrint(row.id);
+                                if (key === 'copy') handleCopy(row.id);
+                                if (key === 'delete') handleDelete(row.id);
+                                if (key === 'view') { setSelectedId(row.id); setPageState('EDIT'); }
+                            }}>
+                                <Menu.Item key="view" icon={<Eye size={14} />}>Chi tiết</Menu.Item>
+                                <Menu.Item key="print" icon={<Printer size={14} />}>In báo giá</Menu.Item>
+                                <Menu.Item key="copy" icon={<Copy size={14} />}>Sao chép</Menu.Item>
+                                <Menu.Divider />
+                                <Menu.Item key="delete" icon={<Trash2 size={14} />} danger>Xóa vĩnh viễn</Menu.Item>
+                            </Menu>
+                        }
+                    >
+                        <Button type="text" size="small" icon={<MoreVertical size={14} className="text-gray-400" />} />
+                    </Dropdown>
+                </Space>
+            )
+        }
+    ];
+
+    if (pageState === 'ADD' || pageState === 'EDIT') {
+        return (
+            <QuotationFormNew
+                quotationId={selectedId}
+                onBack={() => { setPageState('LIST'); setSelectedId(null); refresh(); }}
+                onSaveSuccess={() => { setPageState('LIST'); setSelectedId(null); refresh(); }}
+            />
+        );
+    }
+
+    return (
+        <div className="p-6 bg-[#f8fafc] min-h-full font-inter animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Header / Stats Overlay */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-2 m-0 uppercase">
+                        Dự Phóng Doanh Thu <span className="text-blue-500">& Báo Giá</span>
+                    </h1>
+                    <p className="text-xs text-gray-400 font-medium m-0 flex items-center gap-1.5 mt-1">
+                        <Clock size={12} /> Cập nhật lúc: {dayjs().format('HH:mm:ss')} • <span className="text-blue-500 font-bold">{quotations.length}</span> báo giá trong tháng
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        icon={<FileDown size={16} />}
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-2 font-bold h-10 bg-white border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-200"
+                    >
+                        Xuất Excel
+                    </Button>
+                    <Button
+                        type="primary"
+                        size="large"
+                        icon={<Plus size={18} />}
+                        onClick={() => { setSelectedId(null); setPageState('ADD'); }}
+                        className="flex items-center gap-2 font-bold h-10 px-6 shadow-blue-200 shadow-lg border-0 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all"
+                    >
+                        TẠO BÁO GIÁ
+                    </Button>
                 </div>
             </div>
 
-            {/* Table List */}
-            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 relative">
-                
-                {/* Loading Overlay khi đang chuẩn bị in */}
-                {isPreparing && (
-                    <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
-                        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-                        <span className="text-sm font-semibold text-blue-700 animate-pulse">Đang đồng bộ dữ liệu ảnh & bảo hành...</span>
+            {/* Filter Hub */}
+            <Card className="mb-6 shadow-sm border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex-1 min-w-[300px]">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 ml-1">Tìm kiếm thông minh</label>
+                        <Input
+                            prefix={<Search size={16} className="text-gray-300" />}
+                            placeholder="Số phiếu, Tên khách hàng, SĐT hoặc Mã NV..."
+                            className="rounded-xl border-gray-100 bg-gray-50/50 p-2.5 hover:bg-white focus:bg-white transition-all text-sm h-11"
+                            value={search}
+                            onChange={e => {
+                                setSearch(e.target.value);
+                                setFilters(prev => ({ ...prev, q: e.target.value }));
+                            }}
+                            allowClear
+                        />
                     </div>
-                )}
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 ml-1">Khoảng ngày</label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="date"
+                                className="rounded-xl border-gray-100 bg-gray-50/50 h-11 text-xs font-bold w-36"
+                                value={filters.date_from}
+                                onChange={e => setFilters(prev => ({ ...prev, date_from: e.target.value }))}
+                            />
+                            <div className="h-px w-2 bg-gray-300"></div>
+                            <Input
+                                type="date"
+                                className="rounded-xl border-gray-100 bg-gray-50/50 h-11 text-xs font-bold w-36"
+                                value={filters.date_to}
+                                onChange={e => setFilters(prev => ({ ...prev, date_to: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-end h-full">
+                        <Button
+                            icon={<RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />}
+                            onClick={refresh}
+                            type="text"
+                            className="h-11 w-11 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 text-gray-400 hover:text-blue-500 hover:bg-white transition-all mt-6"
+                        />
+                    </div>
+                </div>
+            </Card>
 
-                {loading ? (
-                    <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
-                ) : (
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-600 font-bold uppercase border-b">
-                            <tr>
-                                <th className="px-6 py-3">Mã phiếu</th>
-                                <th className="px-6 py-3">Khách hàng</th>
-                                <th className="px-6 py-3 text-right">Tổng tiền</th>
-                                <th className="px-6 py-3 text-center">Trạng thái</th>
-                                <th className="px-6 py-3 text-right">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {quotes.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-400 italic">Không có dữ liệu báo giá</td>
-                                </tr>
-                            ) : (
-                                quotes.map((q) => (
-                                    <tr key={q.id} className="hover:bg-blue-50 transition duration-150">
-                                        <td className="px-6 py-4 font-bold text-blue-600 cursor-pointer" onClick={() => handlePrintPreview(q.id)}>
-                                            {q.code}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">{q.customer_name}</div>
-                                            <div className="text-xs text-gray-500">{new Date(q.date).toLocaleDateString('vi-VN')}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-bold">
-                                            {new Intl.NumberFormat('vi-VN').format(q.total_amount)}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`px-2 py-1 rounded text-xs font-bold ${q.status === 'Đã chốt' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                {q.status || 'Mới'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => handlePrintPreview(q.id)} 
-                                                    title="In phiếu & Xuất Excel" 
-                                                    className="p-2 text-gray-600 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 rounded transition-colors"
-                                                >
-                                                    <Printer size={16} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => navigate(`/quotations/create?source_id=${q.id}`)} 
-                                                    title="Sao chép" 
-                                                    className="p-2 text-gray-600 hover:text-green-600 bg-gray-100 hover:bg-green-50 rounded transition-colors"
-                                                >
-                                                    <Copy size={16} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => navigate(`/quotations/edit/${q.id}`)} 
-                                                    title="Chỉnh sửa" 
-                                                    className="p-2 text-gray-600 hover:text-orange-600 bg-gray-100 hover:bg-orange-50 rounded transition-colors"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDelete(q.id)} 
-                                                    title="Xóa" 
-                                                    className="p-2 text-gray-600 hover:text-red-600 bg-gray-100 hover:bg-red-50 rounded transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                )}
+            {/* Main Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative min-h-[500px]">
+                <Table
+                    columns={columns}
+                    dataSource={quotations}
+                    rowKey="id"
+                    loading={isLoading}
+                    pagination={{
+                        pageSize: 15,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['15', '30', '50', '100'],
+                        position: ['bottomRight'],
+                        className: "px-6 py-4"
+                    }}
+                    rowClassName={() => "group cursor-pointer hover:bg-blue-50/20 transition-all h-[70px]"}
+                    onRow={(record) => ({
+                        onClick: () => { setSelectedId(record.id); setPageState('EDIT'); }
+                    })}
+                    locale={{
+                        emptyText: <div className="py-20 flex flex-col items-center justify-center text-gray-300">
+                            <FileText size={48} strokeWidth={1} className="mb-3" />
+                            <p className="text-sm font-medium">Chưa có kết quả báo giá nào trong khoảng này</p>
+                            <Button type="link" onClick={() => { setSearch(''); setFilters({ date_from: '', date_to: '', q: '' }) }}>Xóa bộ lọc</Button>
+                        </div>
+                    }}
+                />
             </div>
 
-            {/* --- COMPONENT MODAL IN & XUẤT EXCEL --- */}
-            <PrintPreviewModal 
-                isOpen={isPrintModalOpen} 
-                onClose={() => setIsPrintModalOpen(false)} 
-                data={previewData} 
-            />
+            {/* Footer / Dev Note */}
+            <div className="mt-8 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hỗ trợ kỹ thuật</span>
+                        <span className="text-xs font-bold text-gray-600">Dev team: 0944.xxx.xxx</span>
+                    </div>
+                    <div className="h-6 w-px bg-gray-200"></div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sẵn sàng xuất kho</span>
+                        <span className="text-xs font-bold text-green-600 flex items-center gap-1"><CheckCircle2 size={12} /> Auto Sync Active</span>
+                    </div>
+                </div>
+                <div className="text-[10px] font-medium text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                    POWERED BY <span className="text-blue-500 font-black">TAIDINH89</span> • SYSTEM VERSION 2.1
+                </div>
+            </div>
         </div>
     );
 };

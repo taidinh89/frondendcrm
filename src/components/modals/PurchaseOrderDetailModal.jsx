@@ -1,11 +1,11 @@
-// src/components/Modals/PurchaseOrderDetailModal.jsx
+﻿// src/components/modals/PurchaseOrderDetailModal.jsx
 import React, { useState, useEffect, Fragment } from 'react';
 import axios from 'axios';
 import { Modal, Button, Icon } from '../ui.jsx';
 
 // Import các modal con nếu có
-import { CustomerDetailModal } from '../Modals/CustomerDetailModal.jsx';
-import { ProductDetailModal } from '../Modals/ProductDetailModal.jsx';
+import { CustomerDetailModal } from '../modals/CustomerDetailModal.jsx';
+import { ProductDetailModal } from '../modals/ProductDetailModal.jsx';
 
 const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('vi-VN') : '';
 const formatPrice = (p) => new Intl.NumberFormat('vi-VN').format(p ?? 0);
@@ -21,7 +21,7 @@ const StatusBadge = ({ status }) => {
     if (!status) return null;
     let colorClass = 'bg-gray-100 text-gray-600 border-gray-200';
     const s = status.toLowerCase();
-    
+
     if (s.includes('hoàn thành') || s.includes('đã nhập')) colorClass = 'bg-green-50 text-green-700 border-green-200';
     else if (s.includes('hủy')) colorClass = 'bg-red-50 text-red-700 border-red-200';
     else if (s.includes('chưa') || s.includes('chờ')) colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
@@ -78,12 +78,12 @@ export const PurchaseOrderDetailModal = ({ orderIdentifier, onClose }) => {
         <Fragment>
             <Modal isOpen={true} onClose={onClose} title="Chi tiết Nhập Hàng" maxWidthClass="max-w-6xl">
                 <div className="flex flex-col h-[80vh]"> {/* Cố định chiều cao để scroll nội dung */}
-                    
+
                     {/* --- HEADER INFO --- */}
                     <div className="flex-shrink-0 bg-gray-50 p-4 border-b border-gray-200">
                         {isLoading && <div className="text-center py-4 text-gray-500">Đang tải dữ liệu...</div>}
                         {error && <div className="text-center py-4 text-red-500 font-bold">{error}</div>}
-                        
+
                         {order && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                                 {/* Cột 1: NCC */}
@@ -91,7 +91,7 @@ export const PurchaseOrderDetailModal = ({ orderIdentifier, onClose }) => {
                                     <div className="flex justify-between items-start mb-1">
                                         <label className="text-xs font-bold text-gray-400 uppercase">Nhà Cung Cấp</label>
                                         <Button variant="ghost" size="xs" onClick={() => setViewingCustomer(order.ma_khncc)}>
-                                            <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-3.5 h-3.5 text-blue-500"/>
+                                            <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-3.5 h-3.5 text-blue-500" />
                                         </Button>
                                     </div>
                                     <div className="font-bold text-blue-900 text-base">{order.ten_khncc}</div>
@@ -156,18 +156,23 @@ export const PurchaseOrderDetailModal = ({ orderIdentifier, onClose }) => {
                                             <React.Fragment key={index}>
                                                 <tr className="hover:bg-blue-50 transition-colors">
                                                     <td className="p-3 text-center text-gray-400">{index + 1}</td>
-                                                    <td className="p-3 font-mono text-xs font-bold text-blue-700 align-top">
-                                                        {item.ma_mat_hang}
+                                                    <td className="p-3 font-mono text-xs font-bold align-top">
+                                                        <button
+                                                            onClick={() => setViewingProduct(item.ma_mat_hang)}
+                                                            className="text-blue-700 hover:underline hover:text-blue-900 transition-all active:scale-95"
+                                                        >
+                                                            {item.ma_mat_hang}
+                                                        </button>
                                                     </td>
                                                     <td className="p-3 align-top">
                                                         <div className="font-medium text-gray-800">{item.ten_mat_hang}</div>
                                                         {hasSerial && (
                                                             <div className="mt-1">
-                                                                <button 
+                                                                <button
                                                                     onClick={() => toggleSerial(index)}
                                                                     className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded border transition-all ${isExpanded ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                                                                 >
-                                                                    <Icon path="M3.75 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" className="w-3 h-3"/>
+                                                                    <Icon path="M3.75 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" className="w-3 h-3" />
                                                                     {isExpanded ? 'Ẩn Serial' : `Xem ${serials.length} Serial`}
                                                                 </button>
                                                             </div>
@@ -180,7 +185,7 @@ export const PurchaseOrderDetailModal = ({ orderIdentifier, onClose }) => {
                                                     </td>
                                                     <td className="p-3 text-center align-top">
                                                         <Button variant="ghost" size="xs" onClick={() => setViewingProduct(item.ma_mat_hang)}>
-                                                            <Icon path="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" className="w-4 h-4 text-gray-400 hover:text-blue-600"/>
+                                                            <Icon path="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" className="w-4 h-4 text-gray-400 hover:text-blue-600" />
                                                         </Button>
                                                     </td>
                                                 </tr>

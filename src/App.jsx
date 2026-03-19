@@ -1,4 +1,4 @@
-// src/App.jsx
+﻿// src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
@@ -14,15 +14,17 @@ import { CustomersContent } from './pages/Business/CustomersContent.jsx';
 import { SalesOrdersContent } from './pages/Business/SalesOrdersContent.jsx';
 import { PurchaseOrdersContent } from './pages/Business/PurchaseOrdersContent.jsx';
 import { InventoriesContent } from './pages/Inventory/InventoriesContent.jsx';
-import { DirectInventoryChecker } from './pages/Inventory/DirectInventoryChecker.jsx';
+import PurchasingIntelligenceHub from './pages/Inventory/PurchasingIntelligenceHub.jsx';
+
 import { InvoicesContent } from './pages/Finance/InvoicesContent.jsx';
 import { SalesAnalysisContent } from './pages/Analytics/SalesAnalysisContent.jsx';
 import { ProductGroupAnalysisContent } from './pages/Analytics/ProductGroupAnalysisContent.jsx';
 import { PartnerAnalysisContent } from './pages/Analytics/PartnerAnalysisContent.jsx';
+import { InventoryAnalysisContent } from './pages/Analytics/InventoryAnalysisContent.jsx';
 import { DebtRiskPage } from './pages/Finance/DebtRiskPage.jsx';
 import { Customer360Content } from './pages/Business/Customer360Content.jsx';
 import { DictionaryManagementPage } from './pages/System/DictionaryManagementPage.jsx';
-import { GlobalSearchModal } from './components/Modals/GlobalSearchModal.jsx';
+import { GlobalSearchModal } from './components/modals/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
 import { SepayCashier } from './pages/Sepay/SepayCashier.jsx';
 import DepartmentTreeManager from "./pages/System/DepartmentTreeManager.jsx";
@@ -65,6 +67,7 @@ import MonitorServiceManager from './pages/System/MonitorServiceManager.jsx';
 import { ProductStandardization } from './pages/Inventory/ProductStandardization.jsx';
 import { ProductMappingManager } from './pages/Inventory/ProductMappingManager.jsx';
 import { EcountProductManager } from './pages/Inventory/EcountProductManager.jsx';
+import { DirectInventoryChecker } from './pages/Inventory/DirectInventoryChecker.jsx';
 import ProductMobileManagerV3 from './components/Product/ProductMobileManagerV3.jsx';
 import ProductUnifiedEditor from './pages/Product/ProductUnifiedEditor';
 import OmnichannelChatPage from './components/Chat/OmnichannelChatPage.jsx';
@@ -93,18 +96,21 @@ const navItems = [
     { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'file-text', component: <QuotationList /> },
     { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'plus', component: <QuotationFormNew /> },
     { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Tồn kho - Web', permission: 'inventory.view', iconName: 'package', component: <InventoriesContent /> },
-    { id: 'direct-inventory', path: '/direct-inventory', label: 'Đối soát Tồn Kho (Gốc)', group: 'Tồn kho - Web', permission: 'inventory.view', iconName: 'check-circle', component: <DirectInventoryChecker /> },
     { id: 'invoice-dashboard', path: '/invoice-dashboard', label: 'Dashboard Hóa đơn', group: 'Báo cáo', permission: 'invoice.view', iconName: 'bar-chart', component: <InvoiceDashboardPage /> },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Tồn kho - Web', permission: 'invoice.view', iconName: 'file-text', component: <InvoicesContent /> },
     { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'arrow-up-down', component: <ProductStandardization /> },
     { id: 'product-mobile-manager-v3', path: '/product-mobile-v3', label: 'Quản lý SP web v3 (Mới)', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'monitor', component: <ProductMobileManagerV3 /> },
     { id: 'ecount-manager', path: '/ecount-manager', label: 'Kho ECount (Master)', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'database', component: <EcountProductManager /> },
+    { id: 'direct-inventory', path: '/direct-inventory', label: 'Dritex Tồn kho (Live)', group: 'Tồn kho - Web', permission: 'inventory.view', iconName: 'package', component: <DirectInventoryChecker /> },
     { id: 'media-library', path: '/system/media', label: 'Kho Media (Ảnh)', group: 'Media', permission: 'system.security', iconName: 'image', component: <MediaLibrary /> },
     { id: 'media-studio-page', path: '/system/media-studio', label: 'Media Studio (Chế ảnh)', group: 'Media', permission: 'system.security', iconName: 'wand', component: <MediaStudioPage /> },
     { id: 'sales-analysis', path: '/sales-analysis', label: 'Phân tích Kinh doanh', group: 'Báo cáo', permission: 'report.sales', iconName: 'bar-chart', component: <SalesAnalysisContent /> },
     { id: 'product-group-analysis', path: '/product-group-analysis', label: 'Phân tích Nhóm SP', group: 'Báo cáo', permission: 'report.product', iconName: 'grid', component: <ProductGroupAnalysisContent /> },
     { id: 'partner-analysis', path: '/partner-analysis', label: 'Phân tích Đối tác', group: 'Báo cáo', permission: 'report.partner', iconName: 'users', component: <PartnerAnalysisContent /> },
+    { id: 'inventory-analysis', path: '/inventory-analysis', label: 'Tương tác & Quyết định Nhập', group: 'Báo cáo', permission: 'purchase.view', iconName: 'activity', component: <InventoryAnalysisContent /> },
+    { id: 'purchasing-hub', path: '/purchasing-hub', label: 'Trung tâm Quyết định Nhập', group: 'Báo cáo', permission: 'purchase.view', iconName: 'activity', component: <PurchasingIntelligenceHub /> },
     { id: 'debt-risk', path: '/debt-risk', label: 'Quản trị Rủi ro Công nợ', group: 'Báo cáo', permission: 'report.debt', iconName: 'alert-triangle', component: <DebtRiskPage /> },
+
     { id: 'qr-history', path: '/qr-history', label: 'Lịch sử QR Code', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <QrHistoryPage /> },
     { id: 'sepay-sync-management', path: '/sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <SepaySyncManager /> },
     { id: 'sepay-admin', path: '/sepay-admin', label: 'Quản trị Dòng tiền', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'credit-card', component: <SepayDashboard /> },

@@ -1,27 +1,27 @@
-// src/pages/SalesAnalysisContent.jsx
+﻿// src/pages/Analytics/SalesAnalysisContent.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer 
-} from 'recharts'; 
+import {
+    PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer
+} from 'recharts';
 
 // --- IMPORTS COMPONENTS ---
 import { SalesAnalysisFilterBar } from '../../components/analysis/SalesAnalysisFilterBar.jsx';
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
 import { Tabs } from '../../components/analysis/Tabs.jsx';
-import { ProductGroupAnalysisDataTable } from '../../components/analysis/ProductGroupAnalysisDataTable.jsx'; 
+import { ProductGroupAnalysisDataTable } from '../../components/analysis/ProductGroupAnalysisDataTable.jsx';
 
 // --- IMPORTS MODALS ---
-import { ProductDetailModal } from '../../components/Modals/ProductDetailModal.jsx';
-import { CustomerDetailModal } from '../../components/Modals/CustomerDetailModal.jsx';
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx';
-import { Button, Icon } from '../../components/ui.jsx'; 
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
+import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
+import { Button, Icon } from '../../components/ui.jsx';
 
 // --- UTILS & HOOKS ---
 import { dateUtils } from '../../utils/dateUtils.js';
 import { handleSalesExport } from '../../utils/salesExportLogic.js';
 import { useApiData } from '../../hooks/useApiData.jsx'; // <--- QUAN TRỌNG: Import Hook này
 
-const API_ENDPOINT = '/api/v2/sales-analysis'; 
+const API_ENDPOINT = '/api/v2/sales-analysis';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 
 const formatPrice = (value) => new Intl.NumberFormat('vi-VN').format(value);
@@ -36,7 +36,7 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
         customer_ids: [],
         brand_codes: [],
         category_codes: [],
-        include_returns: true 
+        include_returns: true
     });
 
     // 2. [FIX] SỬ DỤNG HOOK CHUẨN ĐỂ GỌI DATA
@@ -55,8 +55,8 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
 
     // 3. TÍNH TOÁN KPI (Giữ nguyên logic cũ)
     const charts = fullData?.charts || {};
-    const totalRevenue = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_revenue)||0), 0);
-    const totalProfit = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_profit)||0), 0);
+    const totalRevenue = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_revenue) || 0), 0);
+    const totalProfit = (charts.profit_trend || []).reduce((acc, item) => acc + (parseFloat(item.total_profit) || 0), 0);
     const totalCost = totalRevenue - totalProfit;
 
     const totalOrders = useMemo(() => {
@@ -72,7 +72,7 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
     const pieProfitByBrand = useMemo(() => {
         const raw = charts.stats_by_brand_l1 || [];
         const top8 = raw.slice(0, 8);
-        const others = raw.slice(8).reduce((sum, item) => sum + (parseFloat(item.total_profit)||0), 0);
+        const others = raw.slice(8).reduce((sum, item) => sum + (parseFloat(item.total_profit) || 0), 0);
         const result = top8.map(item => ({
             name: item.category_name || item.category_id || 'Khác',
             value: parseFloat(item.total_profit) || 0
@@ -140,8 +140,8 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
 
         return (
             <div className="space-y-6">
-                 {/* KPI Cards */}
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <AnalysisCard className="text-center py-4 border-t-4 border-green-500">
                         <p className="text-gray-500 text-sm font-medium">Lợi nhuận gộp</p>
                         <p className="text-2xl font-bold text-green-600 mt-1">{formatPrice(totalProfit)}</p>
@@ -153,7 +153,7 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                     <AnalysisCard className="text-center py-4 border-t-4 border-purple-500">
                         <p className="text-gray-500 text-sm font-medium">Tỷ suất Lãi gộp</p>
                         <p className="text-2xl font-bold text-purple-600 mt-1">
-                            {totalRevenue > 0 ? ((totalProfit/totalRevenue)*100).toFixed(1) + '%' : '0%'}
+                            {totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) + '%' : '0%'}
                         </p>
                     </AnalysisCard>
                     <AnalysisCard className="text-center py-4 border-t-4 border-gray-500">
@@ -172,7 +172,7 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                                         <Cell fill="#10b981" /> <Cell fill="#e2e8f0" />
                                     </Pie>
                                     <Tooltip formatter={(val) => formatPrice(val)} />
-                                    <Legend verticalAlign="bottom" height={36}/>
+                                    <Legend verticalAlign="bottom" height={36} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -186,7 +186,7 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                                         {pieProfitByBrand.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip formatter={(val) => formatPrice(val)} />
-                                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{fontSize: '12px'}}/>
+                                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '12px' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -195,17 +195,17 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
 
                 {/* Table Data */}
                 <AnalysisCard title={
-                        <div className="flex justify-between items-center w-full">
-                            <span>Bảng Dữ liệu Chi tiết</span>
-                            <Button variant="primary" size="sm" onClick={handleExportExcel} className="bg-green-600 ml-4">
-                                <Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4 mr-2"/>
-                                Xuất Excel
-                            </Button>
-                        </div>
-                    }
+                    <div className="flex justify-between items-center w-full">
+                        <span>Bảng Dữ liệu Chi tiết</span>
+                        <Button variant="primary" size="sm" onClick={handleExportExcel} className="bg-green-600 ml-4">
+                            <Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4 mr-2" />
+                            Xuất Excel
+                        </Button>
+                    </div>
+                }
                 >
                     <div className="px-4 pt-2 border-b bg-gray-50 rounded-t-lg">
-                        <Tabs 
+                        <Tabs
                             items={[
                                 { id: 'products_profit', label: 'Top Lãi' },
                                 { id: 'products_loss', label: 'Top Lỗ' },
@@ -214,9 +214,9 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                                 { id: 'employees_stats', label: 'Nhân viên' },
                                 { id: 'listOrderStats', label: 'Đơn hàng' },
                                 { id: 'listOrdersByLoss', label: 'Đơn Lỗ' }
-                            ]} 
-                            activeTab={activeListTab} 
-                            onTabChange={(tab) => { setActiveListTab(tab); setLocalSearch(''); setLocalFilterType('ALL'); }} 
+                            ]}
+                            activeTab={activeListTab}
+                            onTabChange={(tab) => { setActiveListTab(tab); setLocalSearch(''); setLocalFilterType('ALL'); }}
                         />
                     </div>
 
@@ -247,16 +247,16 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                             <div className="text-xs text-gray-500 pb-2">SL: <strong>{filteredListData.length}</strong></div>
                         </div>
 
-                        <ProductGroupAnalysisDataTable 
-                            data={filteredListData} 
+                        <ProductGroupAnalysisDataTable
+                            data={filteredListData}
                             type={
-                                activeListTab.includes('employees') ? 'employees' : 
-                                activeListTab.includes('Customer') ? 'customers' :
-                                activeListTab.includes('Order') ? 'orders' :
-                                activeListTab.includes('frequency') ? 'frequency' :
-                                'products' 
+                                activeListTab.includes('employees') ? 'employees' :
+                                    activeListTab.includes('Customer') ? 'customers' :
+                                        activeListTab.includes('Order') ? 'orders' :
+                                            activeListTab.includes('frequency') ? 'frequency' :
+                                                'products'
                             }
-                            onItemClick={handleDataTableItemClick} 
+                            onItemClick={handleDataTableItemClick}
                         />
                     </div>
                 </AnalysisCard>
@@ -267,13 +267,13 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
     return (
         <div className="p-6 space-y-6 bg-gray-100 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800">Phân tích Kinh doanh Tổng hợp</h2>
-            
+
             <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
-            
+
             <div className="flex justify-end px-2">
                 <label className="inline-flex items-center cursor-pointer space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
-                    <input 
-                        type="checkbox" 
+                    <input
+                        type="checkbox"
                         className="form-checkbox h-4 w-4 text-blue-600 rounded"
                         checked={filters.include_returns}
                         onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}

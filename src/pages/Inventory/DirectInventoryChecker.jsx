@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import { InventoryDetailCard, InventoryDenseTable, InventoryCompactList, ProductDetailModal, InventoryVirtualizedTable, InventoryLegacyTable } from '../../components/Core/InventoryViews.jsx';

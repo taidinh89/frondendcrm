@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import MediaStudioModal from '../Modals/MediaStudioModal';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import MediaStudioModal from '../modals/MediaStudioModal';
 
 import { Icon, Button } from '../ui';
 import { mediaApi } from '../../api/admin/mediaApi';

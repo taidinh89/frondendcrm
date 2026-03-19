@@ -1,4 +1,4 @@
-// src/pages/DashboardContent.jsx
+﻿// src/pages/Dashboard/DashboardContent.jsx
 import React, { useState, useMemo } from 'react';
 import { dateUtils } from '../../utils/dateUtils.js';
 
@@ -17,9 +17,9 @@ import { TopEmployeesList } from '../../components/dashboard/TopEmployeesList.js
 import { TopCustomersList } from '../../components/dashboard/TopCustomersList.jsx';
 
 // Import Modal
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx';
-import { CustomerDetailModal } from '../../components/Modals/CustomerDetailModal.jsx';
-import { ProductDetailModal } from '../../components/Modals/ProductDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
+import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
 
 // [FIX] Import Hook chuẩn để gọi API
 import { useApiData } from '../../hooks/useApiData.jsx';
@@ -29,8 +29,8 @@ const formatPrice = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency
 const formatNumber = (value) => new Intl.NumberFormat('vi-VN').format(value || 0);
 
 // Colors
-const VALUE_COLORS = ['#3b82f6', '#10b981']; 
-const COUNT_COLORS = ['#6b7280', '#f59e0b']; 
+const VALUE_COLORS = ['#3b82f6', '#10b981'];
+const COUNT_COLORS = ['#6b7280', '#f59e0b'];
 
 export const DashboardContent = ({ setAppTitle }) => {
     // 1. STATE FILTERS
@@ -100,10 +100,10 @@ export const DashboardContent = ({ setAppTitle }) => {
                 <DashboardCard title="Xu hướng doanh thu" fullHeight={true} className="col-span-12 lg:col-span-6">
                     <SalesTrendChart data={sales_trend} />
                 </DashboardCard>
-                <DashboardCard title="Tỷ trọng Hóa Đơn (Tiền)" fullHeight={true} className="col-span-12 md:col-span-6 lg:col-span-3">
+                <DashboardCard title="Tỷ trọng Hóa đơn (Tiền)" fullHeight={true} className="col-span-12 md:col-span-6 lg:col-span-3">
                     <ComparisonDonutChart data={invoiceValueData} colors={VALUE_COLORS} format="price" />
                 </DashboardCard>
-                <DashboardCard title="Tỷ trọng Hóa Đơn (Số lượng)" fullHeight={true} className="col-span-12 md:col-span-6 lg:col-span-3">
+                <DashboardCard title="Tỷ trọng Hóa đơn (Số lượng)" fullHeight={true} className="col-span-12 md:col-span-6 lg:col-span-3">
                     <ComparisonDonutChart data={invoiceCountData} colors={COUNT_COLORS} format="number" />
                 </DashboardCard>
             </div>
@@ -111,16 +111,16 @@ export const DashboardContent = ({ setAppTitle }) => {
             {/* Row 3: Employees & Customers */}
             <div className="grid grid-cols-12 gap-6 mb-6">
                 <DashboardCard title="Top  Nhân viên" className="col-span-12 md:col-span-6">
-                    <TopEmployeesList 
-                        data={top_employees} 
-                        onItemClick={(item) => handleEmployeeClick(item.nguoi_phu_trach)} 
+                    <TopEmployeesList
+                        data={top_employees}
+                        onItemClick={(item) => handleEmployeeClick(item.nguoi_phu_trach)}
                     />
                 </DashboardCard>
                 <DashboardCard title="Top  Khách hàng (Doanh thu)" className="col-span-12 md:col-span-6">
-                    <TopCustomersList 
-                        data={top_customers_by_revenue} 
-                        mode="revenue" 
-                        onItemClick={(item) => setViewingCustomerId(item.ma_khncc)} 
+                    <TopCustomersList
+                        data={top_customers_by_revenue}
+                        mode="revenue"
+                        onItemClick={(item) => setViewingCustomerId(item.ma_khncc)}
                     />
                 </DashboardCard>
             </div>
@@ -128,15 +128,15 @@ export const DashboardContent = ({ setAppTitle }) => {
             {/* Row 4: Products */}
             <div className="grid grid-cols-12 gap-6 mb-6">
                 <DashboardCard title="Top  Sản phẩm (Doanh thu)" className="col-span-12 md:col-span-6">
-                    <TopProductsList 
-                        data={top_products_by_revenue} 
-                        mode="revenue" 
+                    <TopProductsList
+                        data={top_products_by_revenue}
+                        mode="revenue"
                         onItemClick={(item) => setViewingProductId(item.ma_mat_hang)}
                     />
                 </DashboardCard>
                 <DashboardCard title="Top  Sản phẩm (Số lượng)" className="col-span-12 md:col-span-6">
-                    <TopProductsList 
-                        data={top_products_by_quantity} 
+                    <TopProductsList
+                        data={top_products_by_quantity}
                         mode="quantity"
                         onItemClick={(item) => setViewingProductId(item.ma_mat_hang)}
                     />
@@ -146,15 +146,15 @@ export const DashboardContent = ({ setAppTitle }) => {
             {/* Row 5: Low Stock & Customer Orders */}
             <div className="grid grid-cols-12 gap-6 mb-6">
                 <DashboardCard title="Cảnh báo Tồn kho thấp" className="col-span-12 md:col-span-6">
-                    <LowStockList 
-                        data={low_stock_products} 
+                    <LowStockList
+                        data={low_stock_products}
                         onItemClick={(item) => setViewingProductId(item.ecount_code)}
                     />
                 </DashboardCard>
                 <DashboardCard title="Top  Khách hàng (Số đơn)" className="col-span-12 md:col-span-6">
-                    <TopCustomersList 
-                        data={top_customers_by_orders} 
-                        mode="orders" 
+                    <TopCustomersList
+                        data={top_customers_by_orders}
+                        mode="orders"
                         onItemClick={(item) => setViewingCustomerId(item.ma_khncc)}
                     />
                 </DashboardCard>
@@ -162,8 +162,8 @@ export const DashboardContent = ({ setAppTitle }) => {
 
             {/* Row 6: Recent Sales */}
             <DashboardCard title="Đơn hàng gần đây">
-                <RecentSalesTable 
-                    data={recent_sales} 
+                <RecentSalesTable
+                    data={recent_sales}
                     onOrderClick={(id) => setViewingOrderId(id)}
                     onCustomerClick={(id) => setViewingCustomerId(id)}
                     onEmployeeClick={(name) => handleEmployeeClick(name)}
@@ -171,24 +171,24 @@ export const DashboardContent = ({ setAppTitle }) => {
             </DashboardCard>
 
             {/* --- KHU VỰC RENDER MODAL --- */}
-            
+
             {viewingOrderId && (
-                <SalesOrderDetailModal 
-                    orderIdentifier={viewingOrderId} 
+                <SalesOrderDetailModal
+                    orderIdentifier={viewingOrderId}
                     onClose={() => setViewingOrderId(null)}
                     onSaveSuccess={handleSaveSuccess}
                 />
             )}
 
             {viewingCustomerId && (
-                <CustomerDetailModal 
+                <CustomerDetailModal
                     customerIdentifier={viewingCustomerId}
                     onClose={() => setViewingCustomerId(null)}
                 />
             )}
 
             {viewingProductId && (
-                <ProductDetailModal 
+                <ProductDetailModal
                     productIdentifier={viewingProductId}
                     onClose={() => setViewingProductId(null)}
                 />

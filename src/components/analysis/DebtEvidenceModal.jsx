@@ -1,4 +1,4 @@
-// src/components/analysis/DebtEvidenceModal.jsx
+﻿// src/components/analysis/DebtEvidenceModal.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 // ĐÃ XÓA: import * as XLSX from 'xlsx';  <-- Để giảm dung lượng file build ban đầu
@@ -6,14 +6,14 @@ import { Modal, Button, Icon } from '../ui.jsx';
 import { Tabs } from './Tabs.jsx';
 
 // [MỚI] Import Modal Chi tiết đơn hàng (để dùng chung logic với Dashboard)
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
 
 // Helper format tiền
 const formatPrice = (val) => new Intl.NumberFormat('vi-VN').format(Number(val) || 0);
 const formatNumber = (val) => new Intl.NumberFormat('vi-VN').format(Number(val) || 0);
 
 export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState('overview'); 
+    const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState({ orders: [], logs: [], partner: {} });
     const [expandedRows, setExpandedRows] = useState({});
@@ -25,12 +25,12 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen && customer) {
             setLoading(true);
-            axios.get(`/api/v2/debt-analysis/evidence/${customer.code}`, { 
-                params: { type: 'receivable', mode: 'full' } 
+            axios.get(`/api/v2/debt-analysis/evidence/${customer.code}`, {
+                params: { type: 'receivable', mode: 'full' }
             })
-            .then(res => setData(res.data))
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
+                .then(res => setData(res.data))
+                .catch(err => console.error(err))
+                .finally(() => setLoading(false));
         } else {
             setData({ orders: [], logs: [], partner: {} });
         }
@@ -39,7 +39,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
     // [QUAN TRỌNG] Chuyển thành async để dùng dynamic import
     const handleExportMultiSheet = async () => {
         if (!data.orders || data.orders.length === 0) return;
-        
+
         try {
             // [QUAN TRỌNG] Load thư viện XLSX động tại đây để giảm 3.8MB bundle size
             const XLSX = await import('xlsx');
@@ -86,7 +86,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                 ["Mã khách hàng:", customer?.code],
                 [],
                 ["Chúng tôi gồm có:"],
-                ["Bên A (Bên bán):", "CÔNG TY TNHH CÔNG NGHỆ QUỐC VIỆT"], 
+                ["Bên A (Bên bán):", "CÔNG TY TNHH CÔNG NGHỆ QUỐC VIỆT"],
                 ["Bên B (Bên mua):", customer?.name],
                 [],
                 [`Tính đến ngày ${dateStr}, số liệu công nợ như sau:`],
@@ -97,14 +97,14 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                 [],
                 ["PHÂN TÍCH TUỔI NỢ CHI TIẾT:"],
                 // --- CÁC MỨC TUỔI NỢ BẠN YÊU CẦU ---
-                ["- Gần đây :", formatNumber(sumFutureDebt())], 
-                ["-     hạn < 3 ngày:",         formatNumber(sumDebtByDays(1, 3))],   // 1 đến 2 ngày
-                ["-     hạn 3 - 7 ngày:",       formatNumber(sumDebtByDays(3, 7))],   // 3 đến 6 ngày
-                ["-     hạn 7 - 15 ngày:",      formatNumber(sumDebtByDays(7, 15))],  // 7 đến 14 ngày
-                ["-     hạn 15 - 30 ngày:",     formatNumber(sumDebtByDays(15, 30))], // 15 đến 29 ngày
-                ["-     hạn 30 - 60 ngày:",     formatNumber(sumDebtByDays(30, 60))], // 30 đến 59 ngày
-                ["-     hạn 60 - 90 ngày:",     formatNumber(sumDebtByDays(60, 90))], // 60 đến 89 ngày
-                ["-     hạn > 90 ngày:",        formatNumber(sumDebtByDays(90, null))], // Từ 90 ngày trở lên
+                ["- Gần đây :", formatNumber(sumFutureDebt())],
+                ["-     hạn < 3 ngày:", formatNumber(sumDebtByDays(1, 3))],   // 1 đến 2 ngày
+                ["-     hạn 3 - 7 ngày:", formatNumber(sumDebtByDays(3, 7))],   // 3 đến 6 ngày
+                ["-     hạn 7 - 15 ngày:", formatNumber(sumDebtByDays(7, 15))],  // 7 đến 14 ngày
+                ["-     hạn 15 - 30 ngày:", formatNumber(sumDebtByDays(15, 30))], // 15 đến 29 ngày
+                ["-     hạn 30 - 60 ngày:", formatNumber(sumDebtByDays(30, 60))], // 30 đến 59 ngày
+                ["-     hạn 60 - 90 ngày:", formatNumber(sumDebtByDays(60, 90))], // 60 đến 89 ngày
+                ["-     hạn > 90 ngày:", formatNumber(sumDebtByDays(90, null))], // Từ 90 ngày trở lên
                 [],
                 ["Đề nghị quý khách kiểm tra và xác nhận số liệu trên."],
                 [],
@@ -154,7 +154,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
 
             const ws2 = XLSX.utils.json_to_sheet(sheet2Raw);
             ws2['!cols'] = [
-                { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 40 }, 
+                { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 40 },
                 { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 18 }, { wch: 18 }
             ];
             XLSX.utils.book_append_sheet(wb, ws2, "2. Bảng Kê Đơn Hàng");
@@ -198,8 +198,8 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
 
             // Xuất file
             const safeName = customer?.code ? customer.code.replace(/[^a-z0-9]/gi, '_') : 'KhachHang';
-            XLSX.writeFile(wb, `DoiChieu_${safeName}_${now.toISOString().slice(0,10)}.xlsx`);
-            
+            XLSX.writeFile(wb, `DoiChieu_${safeName}_${now.toISOString().slice(0, 10)}.xlsx`);
+
         } catch (error) {
             console.error("Lỗi khi tải thư viện xuất Excel:", error);
             alert("Không thể tải module xuất Excel. Vui lòng kiểm tra kết nối mạng.");
@@ -212,21 +212,21 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
 
     return (
         <>
-            <Modal 
-                isOpen={isOpen} 
-                onClose={onClose} 
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
                 maxWidthClass="max-w-6xl"
                 title={
                     <div className="flex justify-between items-center w-full pr-8">
                         <span>
-                            Soi đơn: <span className="font-bold text-blue-700">{customer?.name}</span> 
+                            Soi đơn: <span className="font-bold text-blue-700">{customer?.name}</span>
                             <span className="text-gray-400 text-sm ml-2">({customer?.code})</span>
                         </span>
-                        <Button 
-                            onClick={handleExportMultiSheet} 
+                        <Button
+                            onClick={handleExportMultiSheet}
                             className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center shadow-sm px-3 py-1.5"
                         >
-                            <Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4 mr-2"/>
+                            <Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4 mr-2" />
                             Xuất Excel (3 Góc độ)
                         </Button>
                     </div>
@@ -238,19 +238,19 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                     ) : (
                         <div className="flex-1 flex flex-col overflow-hidden">
                             <div className="bg-white border-b px-4 pt-2 sticky top-0 z-10">
-                                <Tabs 
+                                <Tabs
                                     items={[
                                         { id: 'overview', label: '📋 Tổng hợp (Cũ)' },
                                         { id: 'details', label: '📦 Chi tiết mặt hàng' },
                                         { id: 'changes', label: '🕒 Lịch sử biến động' }
-                                    ]} 
-                                    activeTab={activeTab} 
-                                    onTabChange={setActiveTab} 
+                                    ]}
+                                    activeTab={activeTab}
+                                    onTabChange={setActiveTab}
                                 />
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4">
-                                
+
                                 {/* --- TAB 1: VIEW TỔNG HỢP (CÓ CLICK XEM CHI TIẾT) --- */}
                                 {activeTab === 'overview' && (
                                     <table className="w-full text-xs text-left border-collapse bg-white shadow-sm">
@@ -268,9 +268,9 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                                             {data.orders.map((o, i) => (
                                                 <tr key={i} className="hover:bg-blue-50 transition-colors">
                                                     <td className="p-3 text-gray-500 w-24">{o.ngay}</td>
-                                                    
+
                                                     {/* [MỚI] CỘT SỐ PHIẾU CLICKABLE */}
-                                                    <td 
+                                                    <td
                                                         className="p-3 font-bold text-blue-600 cursor-pointer hover:underline hover:text-blue-800"
                                                         title="Bấm để xem chi tiết phiếu"
                                                         onClick={() => setViewingOrderDetailId(o.unique_order_key || o.so_phieu)}
@@ -280,7 +280,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
 
                                                     <td className="p-3 text-right">{formatPrice(o.tong_tien_truoc_thue)}</td>
                                                     <td className="p-3 text-right font-bold text-red-600 bg-red-50/50">{formatPrice(o.debt_allocated)}</td>
-                                                    <td className={`p-3 text-center font-bold ${o.overdue_days > 30 ? 'text-red-600':'text-gray-600'}`}>
+                                                    <td className={`p-3 text-center font-bold ${o.overdue_days > 30 ? 'text-red-600' : 'text-gray-600'}`}>
                                                         {o.overdue_days} ngày
                                                     </td>
                                                     <td className="p-3 text-gray-500 max-w-xs truncate" title={o.dien_giai}>{o.dien_giai}</td>
@@ -295,7 +295,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                                     <div className="space-y-2">
                                         {data.orders.map((o) => (
                                             <div key={o.id} className="bg-white border rounded-lg shadow-sm overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="p-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
                                                     onClick={() => toggleRow(o.id)}
                                                 >
@@ -318,7 +318,7 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {expandedRows[o.id] && (
                                                     <div className="bg-gray-50 border-t p-2 pl-8">
                                                         <table className="w-full text-xs bg-white border rounded-md">
@@ -384,8 +384,8 @@ export const DebtEvidenceModal = ({ customer, isOpen, onClose }) => {
 
             {/* --- MODAL CHI TIẾT ĐƠN HÀNG (STACKED) --- */}
             {viewingOrderDetailId && (
-                <SalesOrderDetailModal 
-                    orderIdentifier={viewingOrderDetailId} 
+                <SalesOrderDetailModal
+                    orderIdentifier={viewingOrderDetailId}
                     onClose={() => setViewingOrderDetailId(null)}
                 />
             )}

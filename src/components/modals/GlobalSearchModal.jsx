@@ -1,14 +1,14 @@
-// src/components/Modals/GlobalSearchModal.jsx
+﻿// src/components/modals/GlobalSearchModal.jsx
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import axios from 'axios';
 import { Modal, Icon } from '../ui.jsx';
 import { useDebounce } from '../../hooks/useDebounce.jsx';
 
 // Import các Modal chi tiết
-import { CustomerDetailModal } from '../Modals/CustomerDetailModal.jsx';
-import { SalesOrderDetailModal } from '../Modals/SalesOrderDetailModal.jsx';
-import { PurchaseOrderDetailModal } from '../Modals/PurchaseOrderDetailModal.jsx';
-import { ProductDetailModal } from '../Modals/ProductDetailModal.jsx';
+import { CustomerDetailModal } from '../modals/CustomerDetailModal.jsx';
+import { SalesOrderDetailModal } from '../modals/SalesOrderDetailModal.jsx';
+import { PurchaseOrderDetailModal } from '../modals/PurchaseOrderDetailModal.jsx';
+import { ProductDetailModal } from '../modals/ProductDetailModal.jsx';
 
 // Helper
 const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('vi-VN') : '';

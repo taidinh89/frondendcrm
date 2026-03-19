@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import { exportToExcel } from '../../utils/exportUtils.js';
 import { SyncStatusBar } from '../../components/Core/SyncStatusBar';
-import { InvoiceModal } from '../../components/Modals/InvoiceModal';
+import { InvoiceModal } from '../../components/modals/InvoiceModal';
 
 const API = '/api/v1/invoices';
 const SYNC_API = '/api/v1/sync-statuses';
@@ -208,7 +208,7 @@ export const InvoicesContent = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
                             {loading ? <tr><td colSpan={columns.length + 1} className="p-20 text-center text-sm text-blue-600 font-bold italic animate-pulse">Đang tải dữ liệu...</td></tr> : invoices.map(inv => (
-                                <tr key={inv.invoice_uuid} className="hover:bg-blue-50/30 transition-colors cursor-pointer" onClick={() => handleOpenModal(inv)}>
+                                <tr key={inv.invoice_uuid} className="hover:bg-blue-50/30 transition-colors cursor-pointer">
                                     <td className="px-4 py-3 border-r border-gray-100 text-center" onClick={e => e.stopPropagation()}><UI.Checkbox checked={selectedInvoices.includes(inv.invoice_uuid)} onChange={e => setSelectedInvoices(p => e.target.checked ? [...p, inv.invoice_uuid] : p.filter(id => id !== inv.invoice_uuid))} /></td>
                                     {columns.map(c => <td key={c.id} className="px-3 py-3 border-r border-gray-50 text-[13px] whitespace-nowrap overflow-hidden">{renderCell(inv, c.id)}</td>)}
                                 </tr>

@@ -1,4 +1,4 @@
-// src/components/Modals/InvoiceModal.jsx
+﻿// src/components/modals/InvoiceModal.jsx
 import React, { useRef } from 'react';
 import * as UI from '../ui.jsx';
 

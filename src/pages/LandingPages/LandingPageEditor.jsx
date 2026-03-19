@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Layout, Card, Button, Input, Select, Form, message, Tabs, Space,
@@ -17,7 +17,7 @@ import moment from 'moment';
 
 import TemplateLibrary from './TemplateLibrary';
 import VersionHistory from './VersionHistory';
-import MediaManagerModal from '../../components/Modals/MediaManagerModal';
+import MediaManagerModal from '../../components/modals/MediaManagerModal';
 
 const { Content, Sider } = Layout;
 const { Option } = Select;
@@ -276,7 +276,7 @@ const LandingPageEditor = () => {
 
     const handlePreview = async () => {
         if (id === 'create') {
-            message.warning('Vui lòng lưu trang trước khi xem trước!');
+            message.warning('Vui lÃ²ng lÆ°u trang trÆ°á»›c khi xem trÆ°á»›c!');
             return;
         }
 
@@ -398,7 +398,7 @@ ${jsContent}
         },
         {
             key: 'css',
-            label: <span>🎨 CSS</span>,
+            label: <span>ðŸŽ¨ CSS</span>,
             children: (
                 <EditorContainer
                     name="CSS"
@@ -411,7 +411,7 @@ ${jsContent}
         },
         {
             key: 'js',
-            label: <span>⚡ JavaScript</span>,
+            label: <span>âš¡ JavaScript</span>,
             children: (
                 <EditorContainer
                     name="JS"
@@ -431,14 +431,14 @@ ${jsContent}
                     title={
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                {id === 'create' ? '📝 Tạo Landing Page Mới' : `✏️ Chỉnh sửa: ${page?.title || ''}`}
+                                {id === 'create' ? 'ðŸ“ Táº¡o Landing Page Má»›i' : `âœï¸ Chá»‰nh sá»­a: ${page?.title || ''}`}
                             </div>
                             <Space>
                                 <Button
                                     icon={<AppstoreOutlined />}
                                     onClick={() => setTemplateModalVisible(true)}
                                 >
-                                    Chọn Template
+                                    Chá»n Template
                                 </Button>
                                 <Button
                                     icon={<EyeOutlined />}
@@ -453,13 +453,13 @@ ${jsContent}
                                     onClick={handleSave}
                                     loading={saving}
                                 >
-                                    Lưu
+                                    LÆ°u
                                 </Button>
                                 <Button
                                     icon={<RollbackOutlined />}
                                     onClick={() => navigate('/landing-pages')}
                                 >
-                                    Quaylại
+                                    Quayláº¡i
                                 </Button>
                             </Space>
                         </div>
@@ -475,8 +475,8 @@ ${jsContent}
                                         <Col span={12}>
                                             <Form.Item
                                                 name="title"
-                                                label="Tiêu đề"
-                                                rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+                                                label="TiÃªu Ä‘á»"
+                                                rules={[{ required: true, message: 'Vui lÃ²ng nháº­p tiÃªu Ä‘á»' }]}
                                             >
                                                 <Input placeholder="Flash Sale Laptop Dell" />
                                             </Form.Item>
@@ -486,8 +486,8 @@ ${jsContent}
                                                 name="slug"
                                                 label="Slug (URL)"
                                                 rules={[
-                                                    { required: true, message: 'Vui lòng nhập slug' },
-                                                    { pattern: /^[a-z0-9-]+$/, message: 'Chỉ chữ thường, số, gạch nối' }
+                                                    { required: true, message: 'Vui lÃ²ng nháº­p slug' },
+                                                    { pattern: /^[a-z0-9-]+$/, message: 'Chá»‰ chá»¯ thÆ°á»ng, sá»‘, gáº¡ch ná»‘i' }
                                                 ]}
                                             >
                                                 <Input placeholder="flash-sale-laptop-dell" />
@@ -498,7 +498,7 @@ ${jsContent}
                                     <Row gutter={16}>
                                         <Col span={8}>
                                             <Form.Item name="site_id" label="Site">
-                                                <Select placeholder="Tất cả sites" allowClear>
+                                                <Select placeholder="Táº¥t cáº£ sites" allowClear>
                                                     {sites.map(site => (
                                                         <Option key={site.id} value={site.id}>{site.name} ({site.code})</Option>
                                                     ))}
@@ -517,20 +517,20 @@ ${jsContent}
                                         </Col>
                                     </Row>
 
-                                    <Form.Item name="description" label="Mô tả">
-                                        <TextArea rows={2} placeholder="Mô tả ngắn về trang..." />
+                                    <Form.Item name="description" label="MÃ´ táº£">
+                                        <TextArea rows={2} placeholder="MÃ´ táº£ ngáº¯n vá» trang..." />
                                     </Form.Item>
 
                                     {/* SEO Section */}
                                     <Card type="inner" title="SEO Metadata" size="small">
                                         <Form.Item name="meta_title" label="Meta Title">
-                                            <Input placeholder="Flash Sale Laptop Dell - Giảm 50%" maxLength={60} showCount />
+                                            <Input placeholder="Flash Sale Laptop Dell - Giáº£m 50%" maxLength={60} showCount />
                                         </Form.Item>
                                         <Form.Item name="meta_description" label="Meta Description">
                                             <TextArea rows={2} placeholder="Meta description..." maxLength={160} showCount />
                                         </Form.Item>
                                         <Form.Item name="meta_keywords" label="Meta Keywords">
-                                            <Input placeholder="laptop, dell, sale, giảm giá" />
+                                            <Input placeholder="laptop, dell, sale, giáº£m giÃ¡" />
                                         </Form.Item>
                                     </Card>
                                 </Form>
@@ -566,19 +566,19 @@ ${jsContent}
                             )}
 
                             {/* Quick Info */}
-                            <Card size="small" title="ℹ️ Thông tin" style={{ marginTop: 16 }}>
+                            <Card size="small" title="â„¹ï¸ ThÃ´ng tin" style={{ marginTop: 16 }}>
                                 {page && (
                                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
                                         <div>
-                                            <strong>Trạng thái:</strong>{' '}
+                                            <strong>Tráº¡ng thÃ¡i:</strong>{' '}
                                             <Tag color={page.status === 'published' ? 'green' : 'orange'}>
                                                 {page.status}
                                             </Tag>
                                         </div>
                                         <div>
-                                            <strong>Dữ liệu:</strong>
+                                            <strong>Dá»¯ liá»‡u:</strong>
                                             <div style={{ fontSize: '10px', color: '#666' }}>
-                                                HTML: {htmlContent?.length || 0} chars (Loaded: {page.active_version ? '✅' : '❌'})
+                                                HTML: {htmlContent?.length || 0} chars (Loaded: {page.active_version ? 'âœ…' : 'âŒ'})
                                                 <br />
                                                 CSS: {cssContent?.length || 0} chars
                                             </div>
@@ -607,7 +607,7 @@ ${jsContent}
                             </Card>
 
                             {/* Variable Helper */}
-                            <Card size="small" title="📌 Biến khả dụng" style={{ marginTop: 16 }}>
+                            <Card size="small" title="ðŸ“Œ Biáº¿n kháº£ dá»¥ng" style={{ marginTop: 16 }}>
                                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                                     <ul style={{ paddingLeft: 20, fontSize: '12px' }}>
                                         <li><code>{"{{product.name}}"}</code></li>
@@ -618,30 +618,30 @@ ${jsContent}
                                         <li><code>{"{{shop.categories_json}}"}</code></li>
                                     </ul>
                                 </div>
-                                <small style={{ color: '#999' }}>Click vào biến để copy (Sắp có)</small>
+                                <small style={{ color: '#999' }}>Click vÃ o biáº¿n Ä‘á»ƒ copy (Sáº¯p cÃ³)</small>
                             </Card>
 
                             {/* Dynamic Block Generator */}
-                            <Card size="small" title="⚡ Trình tạo Block động" style={{ marginTop: 16 }}>
+                            <Card size="small" title="âš¡ TrÃ¬nh táº¡o Block Ä‘á»™ng" style={{ marginTop: 16 }}>
                                 <Space direction="vertical" style={{ width: '100%' }}>
                                     <Select
                                         defaultValue="catid"
                                         style={{ width: '100%' }}
                                         onChange={(v) => setBlockType(v)}
                                     >
-                                        <Option value="catid">Theo Danh mục ID</Option>
-                                        <Option value="brandid">Theo Thương hiệu ID</Option>
-                                        <Option value="collection">Theo Bộ sưu tập</Option>
-                                        <Option value="search">Theo Từ khóa</Option>
+                                        <Option value="catid">Theo Danh má»¥c ID</Option>
+                                        <Option value="brandid">Theo ThÆ°Æ¡ng hiá»‡u ID</Option>
+                                        <Option value="collection">Theo Bá»™ sÆ°u táº­p</Option>
+                                        <Option value="search">Theo Tá»« khÃ³a</Option>
                                     </Select>
                                     <Input
-                                        placeholder="Nhập ID hoặc từ khóa..."
+                                        placeholder="Nháº­p ID hoáº·c tá»« khÃ³a..."
                                         onChange={(e) => setBlockId(e.target.value)}
                                     />
                                     <div style={{ display: 'flex', gap: 10 }}>
                                         <Select defaultValue="theme01" style={{ flex: 1 }} onChange={(v) => setBlockTheme(v)}>
-                                            <Option value="theme01">Grid (Dàn trang)</Option>
-                                            <Option value="theme02">List (Danh sách)</Option>
+                                            <Option value="theme01">Grid (DÃ n trang)</Option>
+                                            <Option value="theme02">List (Danh sÃ¡ch)</Option>
                                         </Select>
                                         <Input
                                             type="number"
@@ -654,7 +654,7 @@ ${jsContent}
                                         const shortcode = `{${blockType || 'catid'}:${blockId || '0'}:${blockTheme || 'theme01'}:sl${blockLimit || 10}}`;
                                         insertSnippet(shortcode);
                                     }}>
-                                        Thêm Block động
+                                        ThÃªm Block Ä‘á»™ng
                                     </Button>
 
                                     <div style={{ marginTop: 8, borderTop: '1px dashed #ddd', paddingTop: 8 }}>
@@ -670,29 +670,29 @@ ${jsContent}
 </dynamic-block>`;
                                             insertSnippet(snippet);
                                         }}>
-                                            Chèn Block tùy chỉnh HTML
+                                            ChÃ¨n Block tÃ¹y chá»‰nh HTML
                                         </Button>
                                     </div>
                                 </Space>
                             </Card>
 
                             {/* HTML Blocks */}
-                            <Card size="small" title="🧱 Quick Snippets" style={{ marginTop: 16 }}>
+                            <Card size="small" title="ðŸ§± Quick Snippets" style={{ marginTop: 16 }}>
                                 <Space direction="vertical" style={{ width: '100%' }}>
                                     <Button size="small" block onClick={() => {
                                         const snippet = '<div class="header" style="background:#333; color:white; padding:20px; text-align:center;">\n  <h1>{{site.name}}</h1>\n  <p>Hotline: {{site.phone}}</p>\n</div>';
                                         insertSnippet(snippet);
                                     }}>
-                                        Header Mặc định
+                                        Header Máº·c Ä‘á»‹nh
                                     </Button>
                                     <Button size="small" block onClick={() => {
-                                        const snippet = '<div class="footer" style="padding:40px; background:#f5f5f5; text-align:center; margin-top:50px;">\n  <p>© {{site.name}} - {{site.address}}</p>\n</div>';
+                                        const snippet = '<div class="footer" style="padding:40px; background:#f5f5f5; text-align:center; margin-top:50px;">\n  <p>Â© {{site.name}} - {{site.address}}</p>\n</div>';
                                         insertSnippet(snippet);
                                     }}>
-                                        Footer Mặc định
+                                        Footer Máº·c Ä‘á»‹nh
                                     </Button>
                                     <Button size="small" block type="primary" ghost onClick={() => setMediaModalVisible(true)} style={{ marginTop: 8 }}>
-                                        🖼️ Chèn hình ảnh từ thư viện
+                                        ðŸ–¼ï¸ ChÃ¨n hÃ¬nh áº£nh tá»« thÆ° viá»‡n
                                     </Button>
                                 </Space>
                             </Card>
@@ -716,7 +716,7 @@ ${jsContent}
                     onSelect={handleMediaSelect}
                     multiple={false}
                     type="image"
-                    title="Chọn hình ảnh chèn vào Landing Page"
+                    title="Chá»n hÃ¬nh áº£nh chÃ¨n vÃ o Landing Page"
                 />
             )}
         </Layout>

@@ -1,18 +1,18 @@
-// src/archive/components/ContextualSearchModalContainer.jsx
+﻿// src/archive/components/ContextualSearchModalContainer.jsx
 
 import React, { useState, useMemo, Fragment } from 'react';
 import { Modal, Button, Icon } from '../../components/ui.jsx';
 // Import các component cần thiết để sử dụng bên trong Modal
 // Giả định các file này đã được import và tồn tại đúng trong scope của ứng dụng
-import { CustomerDetailModal } from '../../components/Modals/CustomerDetailModal.jsx';
-import { ProductDetailModal } from '../../components/Modals/ProductDetailModal.jsx';
-import { SalesOrderDetailModal } from '../../components/Modals/SalesOrderDetailModal.jsx'; 
+import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
+import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
 import { SalesOrderForm } from '../../components/Trading/SalesOrderForm.jsx'; // Dùng cho chức năng sửa đổi
 
 // Component con hiển thị nội dung chính dựa trên Context
 const ContextualContentRenderer = ({ context, onClose, onSaveSuccess, isEditing, setIsEditing }) => {
-    
-    // --- MOCK LOGIC TẢI DỮ LIỆU TỔNG QUAN ---
+
+    // --- TẢI DỮ LIỆU TỔNG QUAN ---
     const mockData = {
         name: "CÔNG TY TNHH CÔNG NGHỆ MÁY TÍNH HOÀNG ĐĂNG",
         sales_rep: "Anh Giáp",
@@ -22,11 +22,11 @@ const ContextualContentRenderer = ({ context, onClose, onSaveSuccess, isEditing,
             { id: 1, so_phieu_mua: 'P1-2025-001', so_phieu_ban: 'B1-2025-002', ten_kh: 'Hoàng Đăng', tong_tien: 150000000 },
         ],
         // Dữ liệu giả lập cho Form Edit
-        mockOrder: { composite_key: context.identifier, so_phieu: context.identifier, ten_khncc: 'Khách hàng giả lập', ngay: '2025-11-17', ma_khncc: 'KH001', items: [] } 
+        mockOrder: { composite_key: context.identifier, so_phieu: context.identifier, ten_khncc: 'Khách hàng giả lập', ngay: '2025-11-17', ma_khncc: 'KH001', items: [] }
     };
-    
+
     const getTargetDisplay = (type) => {
-        switch(type) {
+        switch (type) {
             case 'orders': return "Đơn hàng:";
             case 'customers': return "Khách hàng/NCC:";
             case 'products': return "Sản phẩm:";
@@ -34,25 +34,25 @@ const ContextualContentRenderer = ({ context, onClose, onSaveSuccess, isEditing,
             default: return "Đối tượng:";
         }
     }
-    
+
     // Nếu đang ở chế độ sửa Đơn hàng, hiển thị form
     if (context.type === 'orders' && isEditing) {
         return (
             <div className="p-4 h-full">
                 <h3 className="text-xl font-bold mb-4">Sửa Đổi Đơn Hàng: {context.identifier}</h3>
-                <SalesOrderForm 
-                    order={mockData.mockOrder} 
+                <SalesOrderForm
+                    order={mockData.mockOrder}
                     onSaveSuccess={() => { setIsEditing(false); onSaveSuccess(); }}
-                    onCancel={() => setIsEditing(false)} 
+                    onCancel={() => setIsEditing(false)}
                 />
             </div>
         );
     }
-    
+
     // Chế độ Xem / Danh sách
     return (
         <div className="h-full space-y-4">
-            
+
             {/* Thông tin tìm thấy/tạo mới */}
             <div className="border rounded-md p-4 bg-white shadow-sm space-y-3 flex-shrink-0">
                 <h3 className="text-xl font-bold text-gray-800">
@@ -65,19 +65,19 @@ const ContextualContentRenderer = ({ context, onClose, onSaveSuccess, isEditing,
                     {/* Nút Sửa đổi cho Đơn hàng */}
                     {context.type === 'orders' && (
                         <div className="col-span-2">
-                             <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                                <Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.283-8.283z" className="w-4 h-4 mr-1"/>
+                            <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+                                <Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.283-8.283z" className="w-4 h-4 mr-1" />
                                 Sửa Đơn Hàng
                             </Button>
                         </div>
                     )}
                 </div>
             </div>
-            
+
             {/* Thanh menu lọc phụ (Tạm thời không lọc) */}
             <div className="flex space-x-4 border-b border-gray-200">
-                 {['Tất cả', 'Chưa xác nhận', 'Xác nhận', 'Đã hủy'].map(tab => (
-                    <button key={tab} 
+                {['Tất cả', 'Chưa xác nhận', 'Xác nhận', 'Đã hủy'].map(tab => (
+                    <button key={tab}
                         className={`py-2 px-3 text-sm font-medium ${'Tất cả' === tab ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800'}`}>
                         {tab}
                     </button>
@@ -111,10 +111,10 @@ const ContextualContentRenderer = ({ context, onClose, onSaveSuccess, isEditing,
     );
 }
 
-// --- COMPONENT CONTAINER CHÍNH ---
+// --- CONTAINER CHÍNH ---
 export const ContextualSearchModalContainer = (props) => {
     if (!props.context || !props.context.identifier) return null;
-    
+
     const [isEditing, setIsEditing] = useState(false);
     const [activeMenu, setActiveMenu] = useState('Danh sách mua'); // Giả lập Menu đang hoạt động
 
@@ -123,7 +123,7 @@ export const ContextualSearchModalContainer = (props) => {
     }, [props.context]);
 
     const getTitlePrefix = (type) => {
-        switch(type) {
+        switch (type) {
             case 'orders': return "Đơn hàng";
             case 'customers': return "Khách hàng/NCC";
             case 'products': return "Sản phẩm";
@@ -133,10 +133,10 @@ export const ContextualSearchModalContainer = (props) => {
     }
 
     return (
-        <Modal 
-            isOpen={true} 
-            onClose={props.onClose} 
-            title={`Tất cả trong một: ${getTitlePrefix(initialContext.type)}`} 
+        <Modal
+            isOpen={true}
+            onClose={props.onClose}
+            title={`Tất cả trong một: ${getTitlePrefix(initialContext.type)}`}
             maxWidthClass="max-w-7xl" // Luôn là modal lớn
         >
             <div className="h-[90vh] flex flex-col">
@@ -149,12 +149,12 @@ export const ContextualSearchModalContainer = (props) => {
                             placeholder={`Nhập ${getTitlePrefix(initialContext.type)} để tìm kiếm...`}
                             defaultValue={initialContext.identifier}
                         />
-                         <div className="flex-shrink-0 flex space-x-2">
+                        <div className="flex-shrink-0 flex space-x-2">
                             <Button variant="secondary" size="sm">Tùy chọn</Button>
                             <Button variant="secondary" size="sm">Trợ giúp</Button>
                         </div>
                     </div>
-                    
+
                     {/* Menu/Bộ lọc */}
                     <div className="flex space-x-4 text-sm mt-2 overflow-x-auto">
                         {['Menu', 'Danh sách mua', 'Số khách hàng/NCC', 'Thời gian trả nợ', 'Phải thu/Phải trả', 'Danh mục'].map(menu => (
@@ -168,16 +168,16 @@ export const ContextualSearchModalContainer = (props) => {
 
                 {/* Nội dung chính */}
                 <div className="flex-1 overflow-y-auto p-4">
-                    <ContextualContentRenderer 
-                        context={initialContext} 
+                    <ContextualContentRenderer
+                        context={initialContext}
                         onClose={props.onClose}
                         onSaveSuccess={props.onSaveSuccess}
                         isEditing={isEditing}
                         setIsEditing={setIsEditing}
                     />
                 </div>
-                
-                 <div className="flex justify-end p-4 border-t flex-shrink-0">
+
+                <div className="flex justify-end p-4 border-t flex-shrink-0">
                     <Button variant="secondary" onClick={props.onClose}>Đóng Modal</Button>
                 </div>
             </div>

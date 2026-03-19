@@ -1,19 +1,19 @@
-// src/components/Modals/CustomerDetailModal.jsx
+﻿// src/components/modals/CustomerDetailModal.jsx
 import React, { useState, useEffect, Fragment } from 'react';
 import axios from 'axios';
 import { Modal, Button, Icon } from '../ui.jsx';
-import { useV2Paginator } from '../../hooks/useV2Paginator.js'; 
+import { useV2Paginator } from '../../hooks/useV2Paginator.js';
 
 // Import modal con
-import { SalesOrderDetailModal } from '../Modals/SalesOrderDetailModal.jsx';
-import { PurchaseOrderDetailModal } from '../Modals/PurchaseOrderDetailModal.jsx';
+import { SalesOrderDetailModal } from '../modals/SalesOrderDetailModal.jsx';
+import { PurchaseOrderDetailModal } from '../modals/PurchaseOrderDetailModal.jsx';
 
 const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('vi-VN') : '';
 
 const CustomerOrdersList = ({ apiEndpoint, customerCode }) => {
-    const { data: orders, isLoading, error } = 
+    const { data: orders, isLoading, error } =
         useV2Paginator(apiEndpoint, { ma_khncc: customerCode });
-    
+
     const [viewingOrder, setViewingOrder] = useState(null); // Sẽ là ID
     const DetailModal = apiEndpoint.includes('sales') ? SalesOrderDetailModal : PurchaseOrderDetailModal;
 
@@ -30,7 +30,7 @@ const CustomerOrdersList = ({ apiEndpoint, customerCode }) => {
                                     <td className="p-2 text-sm text-gray-600">{order.nguoi_phu_trach}</td>
                                     <td className="p-2 text-right">
                                         <Button variant="secondary" className="px-1 py-0.5 text-xs" onClick={() => setViewingOrder(order.id)}>
-                                            <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-3 h-3"/>
+                                            <Icon path="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m-5.25 0h5.25v5.25" className="w-3 h-3" />
                                         </Button>
                                     </td>
                                 </tr>
@@ -58,7 +58,7 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, maxWidthClass
 
     useEffect(() => {
         if (!customerIdentifier) return;
-        
+
         const fetchCustomer = async () => {
             setIsLoading(true);
             setError(null);
@@ -66,7 +66,7 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, maxWidthClass
                 const response = await axios.get(`/api/v2/customers/${customerIdentifier}`);
                 setCustomer(response.data.data);
             } catch (err) {
-                 if (err.response && err.response.status === 404) {
+                if (err.response && err.response.status === 404) {
                     setError(`Không tìm thấy khách hàng: ${customerIdentifier}`);
                 } else {
                     setError(err.response?.data?.message || err.message);
@@ -77,9 +77,9 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, maxWidthClass
         };
         fetchCustomer();
     }, [customerIdentifier]);
-    
-    const modalTitle = customer 
-        ? `Chi tiết Khách hàng: ${customer.ten_cong_ty_khach_hang} (${customer.ma_khncc})` 
+
+    const modalTitle = customer
+        ? `Chi tiết Khách hàng: ${customer.ten_cong_ty_khach_hang} (${customer.ma_khncc})`
         : `Đang tải chi tiết Khách hàng: ${customerIdentifier}`;
 
 
@@ -91,7 +91,7 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, maxWidthClass
                 {customer && (
                     <>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                           <div><label className="text-sm text-gray-500">Tên Khách hàng</label>
+                            <div><label className="text-sm text-gray-500">Tên Khách hàng</label>
                                 <p className="font-medium text-lg">{customer.ten_cong_ty_khach_hang}</p>
                             </div>
                             <div><label className="text-sm text-gray-500">Mã Khách hàng</label>
@@ -110,16 +110,16 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, maxWidthClass
 
                         <div>
                             <h3 className="text-lg font-medium mb-2">Đơn Bán Hàng (V2)</h3>
-                            <CustomerOrdersList 
+                            <CustomerOrdersList
                                 apiEndpoint="/api/v2/sales-orders"
-                                customerCode={customer.ma_khncc} 
+                                customerCode={customer.ma_khncc}
                             />
                         </div>
                         <div>
                             <h3 className="text-lg font-medium mb-2">Đơn Mua Hàng (V2)</h3>
-                            <CustomerOrdersList 
+                            <CustomerOrdersList
                                 apiEndpoint="/api/v2/purchase-orders"
-                                customerCode={customer.ma_khncc} 
+                                customerCode={customer.ma_khncc}
                             />
                         </div>
                     </>
