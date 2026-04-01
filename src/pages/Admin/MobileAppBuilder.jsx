@@ -1,9 +1,33 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useApiData } from '../../hooks/useApiData';
 import MobileScreenManager from './MobileScreenManager';
 import MobileThemeManager from './MobileThemeManager';
+
+// ─── CHUẨN VÀNG: Danh sách 8 Block được phép (đồng bộ với backkhoa.md Ch.8)
+// NGHIÊM CẤM thêm block ngoài danh sách này vào App Builder!
+const ALLOWED_BLOCKS = [
+    { type: 'BannerBlock', label: 'Banner Tiêu Đề', color: 'blue', icon: '🖼️' },
+    { type: 'GridMenuBlock', label: 'Menu Lưới (Grid)', color: 'purple', icon: '⊞' },
+    { type: 'SummaryCardBlock', label: 'Thẻ Tóm Tắt (KPI)', color: 'green', icon: '📊' },
+    { type: 'ProfileHeaderBlock', label: 'Header Hồ Sơ', color: 'orange', icon: '👤' },
+    { type: 'SocialFeedBlock', label: 'Mạng Xã Hội', color: 'pink', icon: '💬' },
+    { type: 'TaskBoardBlock', label: 'Bảng Công Việc', color: 'indigo', icon: '📋' },
+    { type: 'GpsBlock', label: 'Check-in GPS', color: 'red', icon: '📍' },
+    { type: 'ListGroupBlock', label: 'Danh Sách Nhóm', color: 'teal', icon: '☰' },
+];
+
+const BLOCK_COLOR_MAP = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    green: 'bg-green-50 border-green-200 text-green-700',
+    orange: 'bg-orange-50 border-orange-200 text-orange-700',
+    pink: 'bg-pink-50 border-pink-200 text-pink-700',
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+    red: 'bg-red-50 border-red-200 text-red-700',
+    teal: 'bg-teal-50 border-teal-200 text-teal-700',
+};
 
 // --- 1. COMPONENT THANH DEBUG PHIÊN BẢN (MỚI) ---
 const VersionDebugBar = ({ timestamp, itemCount }) => {
@@ -50,57 +74,132 @@ const AppSimulator = ({ layoutJson, screensMap, forceKey, versionMeta }) => {
 
     // Helper render
     const renderBlock = (block, index) => {
-        // A. Block tham chiếu (Dùng Screen Key)
-        if (block.screen_key) {
-            const screen = screensMap[block.screen_key];
-            if (!screen) return <div className="p-2 bg-red-50 text-[10px] text-red-500 border border-red-200 mb-2 rounded border-dashed">⚠ Missing: {block.screen_key}</div>;
+        const type = block.type || (block.screen_key ? (screensMap[block.screen_key]?.type) : null);
+        const screen = block.screen_key ? screensMap[block.screen_key] : null;
 
-            if (screen.type === 'HEADER_BANNER') return (
-                <div className="p-4 text-white rounded-b-xl mb-2 shadow-sm relative overflow-hidden" style={{ backgroundColor: screen.ui_config?.bg_color || '#007AFF' }}>
-                    <div className="absolute top-0 right-0 p-4 opacity-10 text-4xl">⦿</div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs backdrop-blur-sm border border-white/30">IMG</div>
-                        <div>
-                            <div className="font-bold text-sm">{screen.ui_config?.title || screen.label}</div>
-                            <div className="text-[10px] opacity-80">Chức vụ...</div>
-                        </div>
-                    </div>
-                </div>
-            );
-            if (screen.type === 'STATS_CARD') return (
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mb-2 mx-2 flex justify-between items-center relative overflow-hidden">
-                    <div className="absolute right-0 top-0 w-1 h-full bg-blue-500"></div>
-                    <div>
-                        <div className="text-[10px] text-gray-500 uppercase tracking-wider">{screen.label}</div>
-                        <div className="text-base font-bold text-gray-800">{screen.ui_config?.value || '15.000.000'}</div>
-                    </div>
-                    <div className={`text-xs font-bold px-2 py-1 rounded ${screen.ui_config?.trend === 'up' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                        {screen.ui_config?.trend === 'up' ? '▲ 12%' : '▼ 5%'}
-                    </div>
-                </div>
-            );
-        }
-
-        // B. Block Menu Lưới (Grid Menu)
-        if (block.type === 'GRID_MENU' && block.data?.items_keys) {
+        // 1. Grid Menu Rendering
+        if (type === 'GridMenuBlock' || type === 'GRID_MENU') {
+            const items = block.data?.items_keys || [];
             return (
                 <div className="grid grid-cols-2 gap-2 p-2">
-                    {block.data.items_keys.map(key => {
+                    {items.map(key => {
                         const btn = screensMap[key];
                         if (!btn) return <div key={key} className="bg-gray-100 p-2 text-[10px] rounded border-dashed border">? {key}</div>;
                         return (
-                            <div key={key} className="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center justify-center aspect-[4/3] border border-gray-100 hover:border-blue-300 transition-colors">
+                            <div key={key} className="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center justify-center aspect-[4/3] border border-gray-100">
                                 {btn.icon_url ? <img src={btn.icon_url} className="w-8 h-8 mb-2 object-contain" alt="" /> : <div className="w-8 h-8 bg-blue-50 rounded-full mb-2 flex items-center justify-center text-xs text-blue-600">Icon</div>}
                                 <span className="text-[10px] text-center font-bold text-gray-700">{btn.label}</span>
-                                {btn.sub_label && <span className="text-[8px] text-gray-400">{btn.sub_label}</span>}
                             </div>
                         )
                     })}
                 </div>
-            )
+            );
         }
 
-        return <div className="p-2 bg-gray-100 text-[10px] text-center mb-1 border border-dashed border-gray-300 rounded">Block: {block.type}</div>;
+        // 2. Banner Block Rendering
+        if (type === 'BannerBlock' || type === 'HEADER_BANNER') {
+            return (
+                <div className="p-4 text-white rounded-b-xl mb-2 shadow-sm relative overflow-hidden" style={{ backgroundColor: screen?.ui_config?.bg_color || '#007AFF' }}>
+                    <div className="absolute top-0 right-0 p-4 opacity-10 text-4xl">⦿</div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs backdrop-blur-sm border border-white/30">IMG</div>
+                        <div>
+                            <div className="font-bold text-sm tracking-tight">{block.label || screen?.label || 'Banner'}</div>
+                            <div className="text-[10px] opacity-80">Thông tin chi tiết...</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 3. Summary Card Rendering
+        if (type === 'SummaryCardBlock' || type === 'STATS_CARD') {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mb-2 mx-2 flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute right-0 top-0 w-1 h-full bg-blue-500"></div>
+                    <div>
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider">{block.label || screen?.label || 'Sơ lược'}</div>
+                        <div className="text-base font-bold text-gray-800">{screen?.ui_config?.value || '15.000.000'}</div>
+                    </div>
+                    <div className="text-xs font-bold px-1.5 py-0.5 rounded bg-green-50 text-green-600">▲ 12%</div>
+                </div>
+            );
+        }
+
+        // 4. Profile Header Rendering
+        if (type === 'ProfileHeaderBlock') {
+            return (
+                <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded mb-2 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl">👤</div>
+                    <div>
+                        <div className="font-bold text-sm">Xin chào, Nhân viên QVC</div>
+                        <div className="text-[10px] opacity-80">QVC Technology Co., Ltd</div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 5. Social Feed Rendering
+        if (type === 'SocialFeedBlock') {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mb-2 mx-2">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 bg-pink-100 rounded-full flex items-center justify-center text-xs">💬</div>
+                        <div className="text-xs font-bold text-gray-700">Bảng tin nội bộ</div>
+                    </div>
+                    <div className="h-12 bg-gray-50 rounded flex items-center justify-center text-[10px] text-gray-400">Loading posts...</div>
+                </div>
+            );
+        }
+
+        // 6. Task Board Rendering
+        if (type === 'TaskBoardBlock') {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-indigo-100 mb-2 mx-2">
+                    <div className="text-[10px] font-bold text-indigo-600 mb-2">📋 BẢNG CÔNG VIỆC (KANBAN)</div>
+                    <div className="grid grid-cols-2 gap-1">
+                        {['Mới tạo', 'Đang làm'].map(col => (
+                            <div key={col} className="bg-indigo-50 rounded p-2">
+                                <div className="text-[9px] font-bold text-indigo-500 mb-1">{col}</div>
+                                <div className="bg-white rounded text-[9px] p-1 shadow-sm">Task ví dụ...</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 7. GPS Block Rendering
+        if (type === 'GpsBlock') {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-red-100 mb-2 mx-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-sm">📍</div>
+                        <div>
+                            <div className="text-xs font-bold text-gray-800">Check-in Sinh Trắc (GPS)</div>
+                            <div className="text-[10px] text-gray-500">Bấm để chấm công ngay bây giờ</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 8. List Group Rendering
+        if (type === 'ListGroupBlock') {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mb-2 mx-2">
+                    <div className="text-[10px] font-bold text-gray-500 mb-2">☰ DANH SÁCH NHÓM</div>
+                    {['Mục 1', 'Mục 2', 'Mục 3'].map(item => (
+                        <div key={item} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                            <span className="text-[10px] text-gray-700">{item}</span>
+                            <span className="text-gray-300 text-xs">›</span>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        return <div className="p-2 bg-gray-100 text-[10px] text-center mb-1 border border-dashed border-gray-300 rounded mx-4 italic text-gray-400">Khối: {type}</div>;
     };
 
     return (
@@ -166,8 +265,10 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
         let newBlock = {};
         if (screenKey) {
             newBlock = { type, screen_key: screenKey };
-        } else if (type === 'GRID_MENU') {
-            newBlock = { type: 'GRID_MENU', data: { columns: 2, items_keys: [] } };
+        } else if (type === 'GridMenuBlock') {
+            newBlock = { type: 'GridMenuBlock', data: { columns: 2, items_keys: [] } };
+        } else {
+            newBlock = { type }; // For BannerBlock, SummaryCardBlock
         }
         setLayout([...layout, newBlock]);
     };
@@ -189,25 +290,24 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
         setLayout(newLayout);
     };
 
-    const availableScreens = Object.values(screensMap || {});
-
+    // [V9.0] Dùng ALLOWED_BLOCKS thay vì hard-code từng button
     return (
         <div className="flex flex-col h-full bg-gray-50/50">
             {/* DANH SÁCH BLOCK ĐANG CÓ */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar p-1">
                 {layout.map((block, idx) => {
                     const screen = block.screen_key ? screensMap[block.screen_key] : null;
-                    const label = screen ? screen.label : (block.type === 'GRID_MENU' ? 'Menu Lưới (Grid)' : block.type);
-                    const color = block.type === 'HEADER_BANNER' ? 'bg-blue-50 border-blue-200' :
-                        block.type === 'GRID_MENU' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200';
+                    const blockDef = ALLOWED_BLOCKS.find(b => b.type === block.type);
+                    const label = screen ? screen.label : (blockDef?.label || block.type);
+                    const colorClass = BLOCK_COLOR_MAP[blockDef?.color || 'blue'] || 'bg-white border-gray-200';
 
                     return (
-                        <div key={idx} className={`p-3 rounded-lg border ${color} shadow-sm group relative hover:shadow-md transition-all`}>
+                        <div key={idx} className={`p-3 rounded-lg border ${colorClass} shadow-sm group relative hover:shadow-md transition-all`}>
                             <div className="flex justify-between items-center mb-2">
                                 <div className="flex items-center gap-2">
                                     <div className="bg-gray-200 w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-gray-600">{idx + 1}</div>
                                     <div>
-                                        <div className="font-bold text-sm text-gray-800">{label}</div>
+                                        <div className="font-bold text-sm text-gray-800">{blockDef?.icon} {label}</div>
                                         <div className="text-[10px] text-gray-500 font-mono">{block.type}</div>
                                     </div>
                                 </div>
@@ -219,7 +319,7 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
                             </div>
 
                             {/* CẤU HÌNH RIÊNG CHO MENU LƯỚI */}
-                            {block.type === 'GRID_MENU' && (
+                            {block.type === 'GridMenuBlock' && (
                                 <div className="mt-2 pt-2 border-t border-gray-200 animate-fadeIn bg-white/50 p-2 rounded">
                                     <div className="text-[10px] font-bold text-gray-500 mb-2">CHỌN NÚT HIỂN THỊ:</div>
                                     <div className="flex flex-wrap gap-2">
@@ -241,24 +341,23 @@ const VisualEditor = ({ layout, setLayout, screensMap }) => {
                 })}
             </div>
 
-            {/* THANH CÔNG CỤ THÊM MỚI */}
+            {/* THANH CÔNG CỤ THÊM MỚI — dùng ALLOWED_BLOCKS (V9.0) */}
             <div className="pt-4 border-t mt-2 -mx-4 px-4 pb-4">
                 <div className="text-xs font-bold text-gray-500 mb-2 uppercase flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    Thêm Component vào Layout
+                    Thêm Block Chính Thức (V9.0 — 8 Block)
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => addBlock('GRID_MENU')} className="flex items-center gap-2 p-3 border border-purple-200 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 text-xs font-bold text-left transition-all shadow-sm hover:shadow">
-                        <span className="text-xl bg-purple-200 w-6 h-6 rounded flex items-center justify-center">+</span>
-                        Menu Lưới (Grid)
-                    </button>
-
-                    {availableScreens.filter(s => s.type !== 'GRID_ITEM').map(s => (
-                        <button key={s.key} onClick={() => addBlock(s.type, s.key)} className="flex items-center gap-2 p-3 border border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-200 rounded-lg text-gray-700 text-xs text-left truncate transition-all shadow-sm hover:shadow">
-                            <span className="text-xl font-bold text-blue-500 bg-blue-100 w-6 h-6 rounded flex items-center justify-center">+</span>
-                            <div className="truncate">
-                                <div className="font-bold">{s.label || s.key}</div>
-                                <div className="text-[9px] text-gray-400">{s.type}</div>
+                    {ALLOWED_BLOCKS.map(blockDef => (
+                        <button
+                            key={blockDef.type}
+                            onClick={() => addBlock(blockDef.type)}
+                            className={`flex items-center gap-2 p-3 border rounded-lg text-xs font-bold text-left transition-all shadow-sm hover:shadow ${BLOCK_COLOR_MAP[blockDef.color]} hover:opacity-90`}
+                        >
+                            <span className="text-xl">{blockDef.icon}</span>
+                            <div>
+                                <div>{blockDef.label}</div>
+                                <div className="text-[9px] opacity-60 font-mono">{blockDef.type}</div>
                             </div>
                         </button>
                     ))}
@@ -273,14 +372,15 @@ export default function MobileAppBuilder() {
     const [activeTab, setActiveTab] = useState('LAYOUT');
 
     // API Data
-    const { data: layoutsRaw, refetch: reloadLayouts } = useApiData('/api/v2/security/mobile-layouts');
-    const { data: screensRaw, refetch: reloadScreens } = useApiData('/api/v2/security/mobile-layouts/preview/screens');
-    const { data: appConfigRaw, refetch: reloadConfig } = useApiData('/api/v2/security/app-versions');
+    const { data: layoutsRaw, refetch: reloadLayouts } = useApiData('/api/v3/admin/mobile-layouts');
+    const { data: screensRaw, refetch: reloadScreens } = useApiData('/api/v3/admin/mobile-layouts/preview/screens');
+    const { data: appConfigRaw, refetch: reloadConfig } = useApiData('/api/v3/admin/app-versions');
 
     // Xử lý Data
     const layouts = Array.isArray(layoutsRaw) ? layoutsRaw : (layoutsRaw?.data || []);
     const screensMap = screensRaw || {};
-    const appConfig = appConfigRaw || {};
+    const appConfig = appConfigRaw?.data?.settings || {};
+    const metaInfo = appConfigRaw?.data?.meta || {};
 
     // State
     const [selectedLayoutId, setSelectedLayoutId] = useState(null);
@@ -315,22 +415,46 @@ export default function MobileAppBuilder() {
     useEffect(() => { if (appConfig) setConfigForm(appConfig); }, [appConfig]);
 
     const handleSaveLayout = async () => {
+        // Tìm layout đang chọn để lấy slug
+        const currentLayout = layouts.find(l => l.id == selectedLayoutId);
+
         try {
-            await axios.put(`/api/v2/security/mobile-layouts/${selectedLayoutId}`, {
+            await axios.put(`/api/v3/admin/mobile-layouts/${selectedLayoutId}`, {
                 layout_json: layoutData,
                 is_active: true
             });
-            toast.success('Đã lưu & Cập nhật App!');
-            reloadLayouts(); // Khi reload, useEffect sẽ chạy lại và cập nhật currentVersionMeta mới từ server
+
+            // [V9.0]: Auto-broadcast UI.Invalidate sau khi save layout
+            // Mobile App sẽ nhận event và refetch đúng màn hình qua useGlobalSocket
+            try {
+                await axios.post('/api/v3/admin/app-versions/invalidate-ui', {
+                    screen_slug: currentLayout?.slug || null,
+                });
+            } catch (broadcastErr) {
+                // Không block nếu broadcast fail — layout vẫn được lưu
+                console.warn('[MobileAppBuilder] Broadcast UI.Invalidate failed (non-critical):', broadcastErr);
+            }
+
+            toast.success('Đã lưu & Gửi cập nhật giao diện tới App theo thời gian thực! 🚀');
+            reloadLayouts();
         } catch (e) { toast.error('Lỗi lưu: ' + e.message); }
     };
 
     const handleSaveConfig = async () => {
         try {
-            await axios.post('/api/v2/security/app-versions', configForm);
-            toast.success('Đã cập nhật cấu hình!');
+            await axios.post('/api/v3/admin/app-versions', configForm);
+            toast.success('Đã cập nhật cấu hình & Đồng bộ Socket!');
             reloadConfig();
         } catch (e) { toast.error('Lỗi lưu cấu hình'); }
+    };
+
+    const handleForcePush = async () => {
+        if (!window.confirm('Cưỡng chế toàn bộ App đang mở tải lại giao diện ngay lập tức?')) return;
+        try {
+            await axios.post('/api/v2/security/app-versions/force-push');
+            toast.success('Đã gửi lệnh Force Push qua Socket!');
+            reloadConfig();
+        } catch (e) { toast.error('Lỗi gửi lệnh Force Push'); }
     };
 
     return (
@@ -395,28 +519,93 @@ export default function MobileAppBuilder() {
                 {/* TAB 3 */}
                 {activeTab === 'THEME' && <div className="h-full p-4 overflow-y-auto"><MobileThemeManager /></div>}
 
-                {/* TAB 4 */}
+                {/* TAB 4: CONTROL CENTER */}
                 {activeTab === 'CONFIG' && (
-                    <div className="max-w-3xl mx-auto p-8 h-full overflow-y-auto">
-                        <div className="bg-white border rounded-xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold mb-6 border-b pb-2">Cấu Hình Phiên Bản App</h3>
-                            <div className="grid grid-cols-2 gap-6 mb-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">iOS Min Version</label>
-                                    <input type="text" className="w-full border p-2 rounded"
-                                        value={configForm.min_ios_version || ''}
-                                        onChange={e => setConfigForm({ ...configForm, min_ios_version: e.target.value })}
-                                    />
+                    <div className="max-w-4xl mx-auto p-8 h-full overflow-y-auto bg-gray-50/30">
+                        {/* 1. DASHBOARD OVERVIEW */}
+                        <div className="grid grid-cols-3 gap-4 mb-8">
+                            <div className="bg-white p-4 rounded-xl border shadow-sm">
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">SDUI Version</div>
+                                <div className="text-xl font-mono font-bold text-blue-600">{metaInfo.sdui_version || 'v8.0.0'}</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border shadow-sm">
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Layout Hash</div>
+                                <div className="text-sm font-mono font-bold text-gray-800 truncate" title={metaInfo.layout_hash}>{metaInfo.layout_hash || 'N/A'}</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border shadow-sm">
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Last Sync (Realtime)</div>
+                                <div className="text-xs font-bold text-green-600">{metaInfo.last_sync || 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* 2. CHẾ ĐỘ BẢO TRÌ */}
+                            <div className="bg-white border rounded-xl p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-6 border-b pb-2">
+                                    <h3 className="text-sm font-bold flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                        Bảo Trì Hệ Thống (Maintenance)
+                                    </h3>
+                                    <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="toggle" id="toggle"
+                                            checked={configForm.maintenance_mode === "1"}
+                                            onChange={e => setConfigForm({ ...configForm, maintenance_mode: e.target.checked ? "1" : "0" })}
+                                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer outline-none" />
+                                        <label htmlFor="toggle" className={`toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${configForm.maintenance_mode === "1" ? 'bg-red-400' : 'bg-gray-300'}`}></label>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Android Min Version</label>
-                                    <input type="text" className="w-full border p-2 rounded"
-                                        value={configForm.min_android_version || ''}
-                                        onChange={e => setConfigForm({ ...configForm, min_android_version: e.target.value })}
-                                    />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">THÔNG BÁO BẢO TRÌ</label>
+                                        <textarea
+                                            className="w-full border p-3 rounded-lg text-sm bg-gray-50 h-24 focus:ring-2 ring-red-100 outline-none"
+                                            placeholder="Nhập nội dung thông báo khi bảo trì..."
+                                            value={configForm.maintenance_message || ''}
+                                            onChange={e => setConfigForm({ ...configForm, maintenance_message: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-[10px] text-red-600 leading-relaxed">
+                                        <b>Lưu ý:</b> Khi bật chế độ này, toàn bộ App sẽ bị khóa và hiển thị nội dung thông báo trên. Người dùng sẽ không thể thao tác bất kỳ tính năng nào.
+                                    </div>
                                 </div>
                             </div>
-                            <button onClick={handleSaveConfig} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Cập nhật Cấu hình</button>
+
+                            {/* 3. ĐIỀU KHIỂN CHIẾN LƯỢC & REQUIREMENTS */}
+                            <div className="space-y-6">
+                                <div className="bg-white border rounded-xl p-6 shadow-sm">
+                                    <h3 className="text-sm font-bold mb-4 border-b pb-2">Phiên Bản Tối Thiểu</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-500 mb-1">MIN IOS</label>
+                                            <input type="text" className="w-full border p-2 rounded text-sm font-mono"
+                                                value={configForm.min_ios_version || ''}
+                                                onChange={e => setConfigForm({ ...configForm, min_ios_version: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-500 mb-1">MIN ANDROID</label>
+                                            <input type="text" className="w-full border p-2 rounded text-sm font-mono"
+                                                value={configForm.min_android_version || ''}
+                                                onChange={e => setConfigForm({ ...configForm, min_android_version: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white border rounded-xl p-6 shadow-sm border-blue-100">
+                                    <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-blue-700">
+                                        <span>⚡</span> Quick Actions
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <button onClick={handleSaveConfig} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-all active:scale-[0.98] shadow-lg shadow-blue-200">
+                                            Lưu & Đồng Bộ Ngay
+                                        </button>
+                                        <button onClick={handleForcePush} className="w-full bg-white border-2 border-orange-400 text-orange-500 py-3 rounded-lg font-bold hover:bg-orange-50 transition-all active:scale-[0.98]">
+                                            Cưỡng Chế Làm Mới Toàn Hệ Thống
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

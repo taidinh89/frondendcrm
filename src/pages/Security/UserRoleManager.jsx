@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import { message } from 'antd';
+import { Loader2 } from 'lucide-react';
 
 // --- SUB-COMPONENT: THẺ BÀI THÔNG MINH ---
 const StatCard = ({ title, count, type, icon, activeFilter, onClick, colorClass }) => {
@@ -51,6 +53,7 @@ const UserRoleManager = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [selectedDepts, setSelectedDepts] = useState([]);
+    const [isSaving, setIsSaving] = useState(false);
 
     // [NEW] Form States
     const [editName, setEditName] = useState('');
@@ -193,29 +196,35 @@ const UserRoleManager = () => {
     };
 
     const handleSave = async () => {
+        if (isSaving) return;
+
+        // Basic Validation
+        if (!editName.trim()) return message.warning("Vui lòng nhập họ tên!");
+        if (!editEmail.trim()) return message.warning("Vui lòng nhập email!");
+
+        setIsSaving(true);
+        const hideLoading = message.loading(editingUser.id ? "Đang cập nhật hồ sơ..." : "Đang tạo tài khoản mới...", 0);
+
         try {
             const payload = {
                 name: editName,
                 email: editEmail,
                 roles: selectedRoles,
-                is_active: editingUser.is_active // Retain status if new or edit
+                is_active: editingUser.is_active
             };
 
             if (editPassword) {
                 if (editPassword !== confirmPassword) {
-                    toast.error("Mật khẩu xác nhận không khớp!");
+                    message.error("Mật khẩu xác nhận không khớp!");
+                    setIsSaving(false);
+                    hideLoading();
                     return;
                 }
                 if (editPassword.length < 8) {
-                    toast.error("Mật khẩu phải có ít nhất 8 ký tự!");
+                    message.error("Mật khẩu phải có ít nhất 8 ký tự!");
+                    setIsSaving(false);
+                    hideLoading();
                     return;
-                }
-                // Regex: Min 8 chars, at least 1 letter and 1 number
-                const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
-                if (!strongPasswordRegex.test(editPassword)) {
-                    toast.warning("Mật khẩu yếu! Nên có ít nhất 1 chữ cái và 1 số.");
-                    // Vẫn cho lưu nhưng cảnh báo, hoặc return nếu muốn chặt chẽ hơn.
-                    // return; 
                 }
                 payload.password = editPassword;
             }
@@ -227,22 +236,31 @@ const UserRoleManager = () => {
                 await axios.put(`/api/v2/security/users/${targetId}`, payload);
             } else {
                 // Create
-                if (!editPassword) {
-                    toast.error("Vui lòng nhập mật khẩu cho nhân sự mới!");
-                    return;
-                }
                 const res = await axios.post('/api/v2/security/users', payload);
-                targetId = res.data.data.id;
+                // Fix logic lấy targetId (Xử lý cả trường hợp axiosGlobal unwraps data)
+                targetId = res.data?.id || res.id || res.data?.data?.id;
+                
+                if (!targetId) {
+                    throw new Error("Không nhận được ID từ máy chủ sau khi tạo.");
+                }
             }
 
             const deptPayload = {};
-            selectedDepts.filter(d => d.id).forEach(d => { deptPayload[d.id] = { position: d.position, access_level: d.access_level }; });
+            selectedDepts.filter(d => d.id).forEach(d => {
+                deptPayload[d.id] = { position: d.position, access_level: d.access_level };
+            });
             await axios.put(`/api/v2/security/users/${targetId}/departments`, { departments: deptPayload });
 
-            toast.success(editingUser.id ? "Cập nhật thành công!" : "Tạo mới thành công!");
+            message.success(editingUser.id ? "Cập nhật thành công!" : "Tạo mới thành công!");
             setEditingUser(null);
             fetchData();
-        } catch (e) { toast.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message)); }
+        } catch (e) {
+            console.error("Save error:", e);
+            message.error("Lỗi lưu dữ liệu: " + (e.response?.data?.message || e.message));
+        } finally {
+            setIsSaving(false);
+            hideLoading();
+        }
     };
 
     if (loading) return <div className="p-20 text-center font-black text-gray-400 animate-pulse text-xl tracking-widest">ĐANG TẢI DỮ LIỆU...</div>;
@@ -414,7 +432,7 @@ const UserRoleManager = () => {
                                                 <div>
                                                     <input
                                                         type="password"
-                                                        placeholder="Mật khẩu mới (Min 8 ký tự)"
+                                                        placeholder="Mật khẩu (Để trống nếu dùng mặc định)"
                                                         value={editPassword}
                                                         onChange={e => setEditPassword(e.target.value)}
                                                         className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
@@ -423,7 +441,7 @@ const UserRoleManager = () => {
                                                 <div>
                                                     <input
                                                         type="password"
-                                                        placeholder="Xác nhận mật khẩu mới"
+                                                        placeholder="Xác nhận mật khẩu"
                                                         value={confirmPassword}
                                                         onChange={e => setConfirmPassword(e.target.value)}
                                                         className="w-full font-bold text-red-600 placeholder-red-200 bg-white border border-red-100 rounded-xl px-4 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
@@ -470,12 +488,25 @@ const UserRoleManager = () => {
                                     <div className="flex-1 space-y-4">
                                         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="text-[10px] font-black text-gray-400 uppercase mb-2">Quyền hạn</div>{selectedRoles.length > 0 ? <ul className="list-disc pl-4 text-blue-700 font-bold text-xs">{roles.filter(r => selectedRoles.includes(r.id)).map(r => <li key={r.id}>{r.name}</li>)}</ul> : <p className="text-xs text-red-500 italic">Chưa chọn vai trò.</p>}</div>
                                     </div>
-                                    <button onClick={handleSave} className="mt-4 w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase shadow-lg hover:bg-blue-700 transition-all">Lưu Hồ sơ</button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className={`mt-4 w-full py-4 rounded-xl font-black uppercase shadow-lg transition-all flex items-center justify-center gap-2
+                                            ${isSaving
+                                                ? 'bg-gray-400 cursor-not-allowed text-white/50'
+                                                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-blue-200'
+                                            }`}
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                                        {isSaving ? 'Đang lưu...' : 'Lưu Hồ sơ'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
+                {/* Đảm bảo Toast vẫn hoạt động nếu được gọi lẻ */}
+                <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
             </div>
         </div>
     );

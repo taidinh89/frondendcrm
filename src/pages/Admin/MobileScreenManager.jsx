@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useApiData } from '../../hooks/useApiData';
 
 // --- CẤU HÌNH CONSTANTS ---
-const TYPE_OPTIONS = ['GRID_ITEM', 'HEADER_BANNER', 'STATS_CARD', 'GRID_MENU'];
+const TYPE_OPTIONS = ['GRID_ITEM', 'GridMenuBlock', 'BannerBlock', 'SummaryCardBlock', 'ListGroupBlock', 'FeedActionBlock', 'StoryBlock', 'SocialFeedBlock', 'PostComposerBlock', 'CommentBlock', 'CameraBlock', 'GpsBlock', 'TaskBoardBlock'];
 const ACTION_TYPES = ['NATIVE_SCREEN', 'WEBVIEW', 'LINK', 'API_CALL'];
 
 // Danh sách các nghiệp vụ Backend hỗ trợ (ProcessActionController)

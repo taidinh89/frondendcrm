@@ -113,8 +113,8 @@ const VisualThemeBuilderV2 = () => {
     const fetchPatterns = async () => {
         try {
             const res = await axios.get('/api/v2/web/patterns');
-            setPatterns(res.data.data);
-        } catch (e) { console.error("Lỗi nạp mẫu"); }
+            setPatterns(res.data?.data || {});
+        } catch (e) { console.error("Lỗi nạp mẫu"); setPatterns({}); }
     };
 
     const fetchVersions = async () => {
@@ -190,7 +190,7 @@ const VisualThemeBuilderV2 = () => {
 
     // Filtered lists
     const filteredVariables = schema.filter(v => v.key.toLowerCase().includes(searchTerm.toLowerCase()) || v.desc.toLowerCase().includes(searchTerm.toLowerCase()));
-    const currentPatterns = patterns[activeTab.replace('html_', '').replace('_custom', '').replace('_template_html', '')] || [];
+    const currentPatterns = (patterns || {})[activeTab.replace('html_', '').replace('_custom', '').replace('_template_html', '')] || [];
 
     if (isLoading) return (
         <div className="flex items-center justify-center h-screen bg-slate-900 text-indigo-400 font-mono animate-pulse">

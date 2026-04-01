@@ -4,6 +4,7 @@ import { useApiData } from '../../hooks/useApiData.jsx';
 import * as UI from '../../components/ui.jsx';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { exportToExcel } from '../../utils/exportUtils.js';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
 
 // ==========================================================================
 // == CONFIGURATION (Cấu hình)                                           ==
@@ -280,7 +281,13 @@ export const InventoriesContent = () => {
     const [syncStatus, setSyncStatus] = React.useState({ ecount: null, misa: null });
     const [triggeringTypes, setTriggeringTypes] = React.useState([]); 
     
+    const [historyProductId, setHistoryProductId] = React.useState(null);
+    
     const parentRef = React.useRef(null);
+
+    const openHistory = (product) => {
+        setHistoryProductId(product.ecount_code || product.misa_code);
+    };
 
     // --- Data Fetching ---
     const { data: allWarehouses, isLoading: warehousesLoading } = useApiData(WAREHOUSES_ENDPOINT, { per_page: -1 });
@@ -385,7 +392,28 @@ export const InventoriesContent = () => {
 
         switch (colDef.id) {
             case COL_ID.SOURCE: if (hasEcount && hasMisa) return <span className="text-purple-700 font-medium text-xs">Ecount & Misa</span>; if (hasEcount) return <span className="text-blue-600 font-medium text-xs">Ecount</span>; if (hasMisa) return <span className="text-green-600 font-medium text-xs">Misa</span>; return '-';
-            case COL_ID.SKU: return (<div className="flex flex-col items-start justify-center h-full leading-tight text-left px-1"> {product.misa_code && <span className="block text-xs text-gray-800 break-all">MISA: {product.misa_code}</span>} {product.ecount_code && <span className="block text-xs text-gray-600 break-all">ECOUNT: {product.ecount_code}</span>} {!product.misa_code && !product.ecount_code && '-'} </div>);
+            case COL_ID.SKU: 
+                return (
+                    <div className="flex flex-col items-start justify-center h-full leading-tight text-left px-1"> 
+                        {product.misa_code && (
+                            <span 
+                                onClick={() => openHistory(product)}
+                                className="block text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer break-all font-bold"
+                            >
+                                MISA: {product.misa_code}
+                            </span>
+                        )} 
+                        {product.ecount_code && (
+                            <span 
+                                onClick={() => openHistory(product)}
+                                className="block text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer break-all font-bold"
+                            >
+                                ECOUNT: {product.ecount_code}
+                            </span>
+                        )} 
+                        {!product.misa_code && !product.ecount_code && '-'} 
+                    </div>
+                );
             
             case COL_ID.PRODUCT_ECOUNT: return ecountData.name || <span className="text-gray-300">-</span>;
             case COL_ID.PRODUCT_MISA: return misaData.name || <span className="text-gray-300">-</span>;
@@ -1003,6 +1031,14 @@ export const InventoriesContent = () => {
                     <div className="text-center p-3 text-xs text-gray-500 italic bg-gray-50 border-t">Đang tải thêm dữ liệu...</div>
                 )}
             </div>
+
+            {/* Product Detail/History Modal */}
+            {historyProductId && (
+                <ProductDetailModal
+                    productIdentifier={historyProductId}
+                    onClose={() => setHistoryProductId(null)}
+                />
+            )}
         </div>
     );
-};
+};

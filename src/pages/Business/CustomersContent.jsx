@@ -1,4 +1,4 @@
-﻿// src/pages/Business/CustomersContent.jsx
+// src/pages/Business/CustomersContent.jsx
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui.jsx';
 import { useV2Paginator } from '../../hooks/useV2Paginator.js';
@@ -7,8 +7,8 @@ import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal
 // --- CẤU HÌNH CỘT MỚI (FULL THÔNG TIN) ---
 const DEFAULT_COLUMNS = [
     // 1. Nhóm ưu tiên hiển thị đầu tiên (Theo yêu cầu)
-    { key: 'ma_khncc', label: 'Mã KH', width: 150, visible: true, sortable: true },
-    { key: 'ten_cong_ty_khach_hang', label: 'Tên Khách Hàng / Công Ty', width: 250, visible: true, sortable: true },
+    { key: 'ma_khncc', label: 'Mã KH/NCC', width: 150, visible: true, sortable: true },
+    { key: 'ten_cong_ty_khach_hang', label: 'Tên Đối Tác (KH/NCC) / Công Ty', width: 250, visible: true, sortable: true },
     { key: 'dien_thoai_1', label: 'SĐT 1', width: 120, visible: true, sortable: true },
     { key: 'dien_thoai_2', label: 'SĐT 2', width: 120, visible: true, sortable: true },
     { key: 'dia_chi_cong_ty_1', label: 'Địa Chỉ 1', width: 300, visible: true, sortable: false },
@@ -210,7 +210,7 @@ export const CustomersContent = () => {
                 <div className="flex items-end gap-2 flex-1 min-w-[300px]">
                     <Input
                         name="search"
-                        placeholder="Tìm kiếm (Mã, Tên, SĐT, Địa chỉ...)"
+                        placeholder="Tìm kiếm Đối tác (Mã, Tên KH/NCC, SĐT, Địa chỉ...)"
                         className="w-full"
                         value={filters.search}
                         onChange={(e) => setFilters({ ...filters, search: e.target.value })}

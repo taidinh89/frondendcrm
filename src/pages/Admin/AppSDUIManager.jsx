@@ -221,11 +221,25 @@ export default function AppSDUIManager() {
                                             <div className="space-y-2">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase ml-1">Kinh kiện (Block)</label>
                                                 <select className="input-pro w-full" value={formData.block_type} onChange={e => setFormData({ ...formData, block_type: e.target.value })}>
-                                                    <option value="GridMenuBlock">Lưới Icon (Grid)</option>
-                                                    <option value="ProfileHeaderBlock">Thẻ Profile</option>
-                                                    <option value="PostComposerBlock">Trình đăng bài</option>
-                                                    <option value="SocialFeedBlock">Bảng tin</option>
-                                                    <option value="SummaryCardBlock">Thẻ tóm tắt</option>
+                                                    <optgroup label="Khối Cốt Lõi (Core)">
+                                                        <option value="GridMenuBlock">Cụm Menu Lưới (Grid)</option>
+                                                        <option value="BannerBlock">Banner / Cảnh báo</option>
+                                                        <option value="ProfileHeaderBlock">Thẻ Hồ sơ / Công ty</option>
+                                                        <option value="SummaryCardBlock">Thẻ Tóm tắt số liệu</option>
+                                                        <option value="ListGroupBlock">Danh sách Cài đặt</option>
+                                                    </optgroup>
+                                                    <optgroup label="Khối Cộng Đồng (Social)">
+                                                        <option value="SocialFeedBlock">Bảng tin nội bộ</option>
+                                                        <option value="PostComposerBlock">Trình đăng bài</option>
+                                                        <option value="StoryBlock">Stories (Mới)</option>
+                                                        <option value="FeedActionBlock">Thẻ hành động nhanh</option>
+                                                    </optgroup>
+                                                    <optgroup label="Khối Đặc Thù (Nghiệp vụ)">
+                                                        <option value="TaskBoardBlock">Bảng Tiến độ Dự án</option>
+                                                        <option value="CommentBlock">Tường Thảo luận</option>
+                                                        <option value="CameraBlock">Camera (Bắt buộc ảnh)</option>
+                                                        <option value="GpsBlock">Định vị GPS hiện trường</option>
+                                                    </optgroup>
                                                 </select>
                                             </div>
                                             <div className="space-y-2">

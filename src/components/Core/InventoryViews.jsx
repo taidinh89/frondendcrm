@@ -163,17 +163,42 @@ export const InventoryDetailCard = ({ item, onSelectCode, onSelectName }) => (
 );
 
 /* 2. Dạng Bảng Đối Soát (Standard Table) */
-export const InventoryDenseTable = ({ data, onSelectCode, onSelectName, loadMoreRef }) => (
+export const InventoryDenseTable = ({ data, onSort, sortBy, sortDirection, onSelectCode, onSelectName, loadMoreRef }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
         <table className="w-full text-[11px] border-collapse">
             <thead className="bg-gray-100 text-gray-600 font-bold uppercase tracking-tighter">
                 <tr>
-                    <th className="text-left py-3 px-4 border-b">Mã SP</th>
-                    <th className="text-left py-3 px-4 border-b">Tên Sản Phẩm</th>
+                    <th className="text-left py-3 px-4 border-b cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('product_code')}>
+                        <div className="flex items-center">
+                            Mã SP
+                            {sortBy === 'product_code' && <SortIcon direction={sortDirection} />}
+                        </div>
+                    </th>
+                    <th className="text-left py-3 px-4 border-b cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('product_name')}>
+                        <div className="flex items-center">
+                            Tên Sản Phẩm
+                            {sortBy === 'product_name' && <SortIcon direction={sortDirection} />}
+                        </div>
+                    </th>
                     <th className="text-left py-3 px-4 border-b">Hãng / Nhóm</th>
-                    <th className="text-right py-3 px-4 border-b">Tồn Ecount</th>
-                    <th className="text-right py-3 px-4 border-b">Tồn Misa</th>
-                    <th className="text-right py-3 px-4 border-b">Chênh lệch</th>
+                    <th className="text-right py-3 px-4 border-b cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('total_ecount_quantity')}>
+                        <div className="flex items-center justify-end">
+                            Tồn Ecount
+                            {sortBy === 'total_ecount_quantity' && <SortIcon direction={sortDirection} />}
+                        </div>
+                    </th>
+                    <th className="text-right py-3 px-4 border-b cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('total_misa_quantity')}>
+                        <div className="flex items-center justify-end">
+                            Tồn Misa
+                            {sortBy === 'total_misa_quantity' && <SortIcon direction={sortDirection} />}
+                        </div>
+                    </th>
+                    <th className="text-right py-3 px-4 border-b cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('ecount_misa_diff')}>
+                        <div className="flex items-center justify-end">
+                            Chênh lệch
+                            {sortBy === 'ecount_misa_diff' && <SortIcon direction={sortDirection} />}
+                        </div>
+                    </th>
                     <th className="text-center py-3 px-4 border-b">Trạng thái</th>
                 </tr>
             </thead>
@@ -221,7 +246,7 @@ export const InventoryDenseTable = ({ data, onSelectCode, onSelectName, loadMore
 );
 
 /* 3. Dạng Bảng Ảo Hóa (Virtualized Table - Superior Mode) */
-export const InventoryVirtualizedTable = ({ data, onSelectCode, onSelectName, parentRef, loadMoreRef }) => {
+export const InventoryVirtualizedTable = ({ data, onSort, sortBy, sortDirection, onSelectCode, onSelectName, parentRef, loadMoreRef }) => {
     const rowVirtualizer = useVirtualizer({
         count: Array.isArray(data) ? data.length : 0,
         getScrollElement: () => parentRef.current,
@@ -236,12 +261,37 @@ export const InventoryVirtualizedTable = ({ data, onSelectCode, onSelectName, pa
                     <table className="w-full text-xs border-collapse">
                         <thead className="bg-gray-100 text-gray-600 font-black uppercase tracking-widest sticky top-0 z-10 border-b border-gray-200">
                             <tr>
-                                <th className="text-left py-4 px-4 w-32 min-w-[128px]">Mã Sản Phẩm</th>
-                                <th className="text-left py-4 px-4">Tên Sản Phẩm</th>
+                                <th className="text-left py-4 px-4 w-32 min-w-[128px] cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('product_code')}>
+                                    <div className="flex items-center">
+                                        Mã Sản Phẩm
+                                        {sortBy === 'product_code' && <SortIcon direction={sortDirection} />}
+                                    </div>
+                                </th>
+                                <th className="text-left py-4 px-4 cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('product_name')}>
+                                    <div className="flex items-center">
+                                        Tên Sản Phẩm
+                                        {sortBy === 'product_name' && <SortIcon direction={sortDirection} />}
+                                    </div>
+                                </th>
                                 <th className="text-left py-4 px-4 w-48 min-w-[192px]">Hãng / Nhóm</th>
-                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Ecount</th>
-                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Tồn Misa</th>
-                                <th className="text-right py-4 px-4 w-28 min-w-[112px]">Chênh lệch</th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px] cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('total_ecount_quantity')}>
+                                    <div className="flex items-center justify-end">
+                                        Tồn Ecount
+                                        {sortBy === 'total_ecount_quantity' && <SortIcon direction={sortDirection} />}
+                                    </div>
+                                </th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px] cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('total_misa_quantity')}>
+                                    <div className="flex items-center justify-end">
+                                        Tồn Misa
+                                        {sortBy === 'total_misa_quantity' && <SortIcon direction={sortDirection} />}
+                                    </div>
+                                </th>
+                                <th className="text-right py-4 px-4 w-28 min-w-[112px] cursor-pointer hover:bg-gray-200" onClick={() => onSort?.('ecount_misa_diff')}>
+                                    <div className="flex items-center justify-end">
+                                        Chênh lệch
+                                        {sortBy === 'ecount_misa_diff' && <SortIcon direction={sortDirection} />}
+                                    </div>
+                                </th>
                                 <th className="text-center py-4 px-4 w-24 min-w-[96px]">Status</th>
                             </tr>
                         </thead>
@@ -819,21 +869,21 @@ export const InventoryLegacyTable = ({
                     {/* Header: Normal flow */}
                     <div className="flex bg-white border-b border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                         <HeaderCell id="source" width={colWidths.source} isSticky left={offsets.source} className="z-40">Nguồn</HeaderCell>
-                        <HeaderCell id="sku" width={colWidths.sku} isSticky left={offsets.sku} className="z-40">Mã SKU</HeaderCell>
-                        <HeaderCell id="name_ecount" width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="z-40" onClick={() => onSort('product_name')} sortKey="product_name">Tên Ecount</HeaderCell>
-                        <HeaderCell id="name_misa" width={colWidths.name_misa}>Tên Misa</HeaderCell>
+                        <HeaderCell id="sku" width={colWidths.sku} isSticky left={offsets.sku} className="z-40 cursor-pointer hover:bg-slate-200" onClick={() => onSort('product_code')} sortKey="product_code">Mã SKU</HeaderCell>
+                        <HeaderCell id="name_ecount" width={colWidths.name_ecount} isSticky left={offsets.name_ecount} className="z-40 cursor-pointer hover:bg-slate-200" onClick={() => onSort('product_name')} sortKey="product_name">Tên Ecount</HeaderCell>
+                        <HeaderCell id="name_misa" width={colWidths.name_misa} className="cursor-pointer hover:bg-slate-200" onClick={() => onSort('misa_name')} sortKey="misa_name">Tên Misa</HeaderCell>
                         <HeaderCell id="status" width={colWidths.status} className="justify-center">Trạng thái</HeaderCell>
-                        <HeaderCell id="total_ecount" width={colWidths.total_ecount} className="justify-end text-blue-600" onClick={() => onSort('total_ecount_quantity')} sortKey="total_ecount_quantity">Tồn Ecount</HeaderCell>
-                        <HeaderCell id="total_vat" width={colWidths.total_vat} className="justify-end text-red-600" onClick={() => onSort('total_misa_quantity')} sortKey="total_misa_quantity">Kho VAT</HeaderCell>
-                        <HeaderCell id="diff" width={colWidths.diff} className="justify-end text-purple-600 font-black" onClick={() => onSort('ecount_misa_diff')} sortKey="ecount_misa_diff">Chênh Lệch</HeaderCell>
+                        <HeaderCell id="total_ecount" width={colWidths.total_ecount} className="justify-end text-blue-600 cursor-pointer hover:bg-slate-200" onClick={() => onSort('total_ecount_quantity')} sortKey="total_ecount_quantity">Tồn Ecount</HeaderCell>
+                        <HeaderCell id="total_vat" width={colWidths.total_vat} className="justify-end text-red-600 cursor-pointer hover:bg-slate-200" onClick={() => onSort('total_misa_quantity')} sortKey="total_misa_quantity">Kho VAT</HeaderCell>
+                        <HeaderCell id="diff" width={colWidths.diff} className="justify-end text-purple-600 font-black cursor-pointer hover:bg-slate-200" onClick={() => onSort('ecount_misa_diff')} sortKey="ecount_misa_diff">Chênh Lệch</HeaderCell>
                         <HeaderCell id="tax" width={colWidths.tax} className="justify-center text-slate-400">Thuế %</HeaderCell>
 
                         {warehouseColumns.map(wh => (
                             <HeaderCell key={wh.code} width={colWidths.warehouse} className="justify-end text-slate-400">{wh.name}</HeaderCell>
                         ))}
 
-                        <HeaderCell width={colWidths.price} className="justify-end">Giá Lẻ</HeaderCell>
-                        <HeaderCell width={colWidths.price} className="justify-end border-r-0">Giá Sỉ 1</HeaderCell>
+                        <HeaderCell width={colWidths.price} className="justify-end cursor-pointer hover:bg-slate-200" onClick={() => onSort('out_price')} sortKey="out_price">Giá Lẻ</HeaderCell>
+                        <HeaderCell width={colWidths.price} className="justify-end border-r-0 cursor-pointer hover:bg-slate-200" onClick={() => onSort('out_price1')} sortKey="out_price1">Giá Sỉ 1</HeaderCell>
                     </div>
 
                     {/* Virtualized Body */}

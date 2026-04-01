@@ -144,6 +144,28 @@
   animation: pulse-slow 3s infinite ease-in-out;
 }
 
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+.led-green { animation: pulse-green 2s infinite; background-color: #22c55e; }
+.led-red { animation: pulse-red 1.5s infinite; background-color: #ef4444; }
+.led-yellow { animation: pulse-yellow 2s infinite; background-color: #eab308; }
+
 .custom-scrollbar-dark::-webkit-scrollbar {
   width: 4px;
 }

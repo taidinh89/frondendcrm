@@ -15,6 +15,7 @@ export default function ProductMobileManagerV3() {
     const [stats, setStats] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [dictionary, setDictionary] = useState({ brands: [], categories: [] });
+    const [activeFilters, setActiveFilters] = useState([]);
 
     // 0. Helpers
     const resolveUrl = (url) => {
@@ -28,7 +29,20 @@ export default function ProductMobileManagerV3() {
         try {
             setLoading(true);
             const p = isRefresh ? 1 : page;
-            const res = await productApi.getLibrary({ page: p, search });
+            const params = { page: p, search };
+
+            if (activeFilters.includes('ACTIVE')) params.is_on = 1;
+            if (activeFilters.includes('INACTIVE')) params.is_on = 0;
+            if (activeFilters.includes('OUT_STOCK')) params.stock_status = 'out_stock';
+            if (activeFilters.includes('IN_STOCK')) params.stock_status = 'in_stock';
+            if (activeFilters.includes('NO_IMAGE')) params.has_image = 0;
+            if (activeFilters.includes('HAS_IMAGE')) params.has_image = 1;
+            if (activeFilters.includes('V3')) params.v3_variants = 1;
+            if (activeFilters.includes('NO_CATEGORY')) params.missing_category = 1;
+            if (activeFilters.includes('NO_DESC')) params.missing_desc = 1;
+            if (activeFilters.includes('NO_SKU')) params.missing_sku = 1;
+
+            const res = await productApi.getLibrary(params);
 
             const resData = res.data;
             const productsList = Array.isArray(resData) ? resData : (resData?.data || []);
@@ -64,7 +78,7 @@ export default function ProductMobileManagerV3() {
             fetchProducts(true);
         }, 300);
         return () => clearTimeout(timeoutId);
-    }, [search]);
+    }, [search, activeFilters]);
 
     // Load Meta
     useEffect(() => {
@@ -98,7 +112,20 @@ export default function ProductMobileManagerV3() {
         if (!loading && hasMore) {
             const nextPage = page + 1;
             setPage(nextPage);
-            productApi.getLibrary({ page: nextPage, search })
+
+            const params = { page: nextPage, search };
+            if (activeFilters.includes('ACTIVE')) params.is_on = 1;
+            if (activeFilters.includes('INACTIVE')) params.is_on = 0;
+            if (activeFilters.includes('OUT_STOCK')) params.stock_status = 'out_stock';
+            if (activeFilters.includes('IN_STOCK')) params.stock_status = 'in_stock';
+            if (activeFilters.includes('NO_IMAGE')) params.has_image = 0;
+            if (activeFilters.includes('HAS_IMAGE')) params.has_image = 1;
+            if (activeFilters.includes('V3')) params.v3_variants = 1;
+            if (activeFilters.includes('NO_CATEGORY')) params.missing_category = 1;
+            if (activeFilters.includes('NO_DESC')) params.missing_desc = 1;
+            if (activeFilters.includes('NO_SKU')) params.missing_sku = 1;
+
+            productApi.getLibrary(params)
                 .then(res => {
                     const resData = res.data;
                     const newData = Array.isArray(resData) ? resData : (resData?.data || []);
@@ -128,6 +155,17 @@ export default function ProductMobileManagerV3() {
         });
     };
 
+    const toggleFilter = (key) => {
+        if (key === 'ALL') {
+            setActiveFilters([]);
+            return;
+        }
+        setActiveFilters(prev => {
+            if (prev.includes(key)) return prev.filter(k => k !== key);
+            return [...prev, key];
+        });
+    };
+
     return (
         <div className="flex flex-col h-full bg-slate-50 font-sans">
             {/* Header */}
@@ -151,27 +189,91 @@ export default function ProductMobileManagerV3() {
 
             {/* Stats Bar */}
             {stats && (
-                <div className="flex overflow-x-auto bg-white p-3 gap-3 border-b no-scrollbar">
-                    <div className="shrink-0 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Tổng SP</p>
-                        <p className="text-sm font-black text-slate-700">{stats.total}</p>
-                    </div>
-                    <div className="shrink-0 bg-green-50 px-4 py-2 rounded-xl border border-green-100">
-                        <p className="text-[9px] font-black text-green-400 uppercase">Hiển thị</p>
-                        <p className="text-sm font-black text-green-700">{stats.active}</p>
-                    </div>
-                    <div className="shrink-0 bg-red-50 px-4 py-2 rounded-xl border border-red-100">
-                        <p className="text-[9px] font-black text-red-400 uppercase">Hết hàng</p>
-                        <p className="text-sm font-black text-red-700">{stats.out_stock}</p>
-                    </div>
-                    <div className="shrink-0 bg-orange-50 px-4 py-2 rounded-xl border border-orange-100">
-                        <p className="text-[9px] font-black text-orange-400 uppercase">Thiếu ảnh</p>
-                        <p className="text-sm font-black text-orange-700">{stats.no_image}</p>
-                    </div>
-                    <div className="shrink-0 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
-                        <p className="text-[9px] font-black text-blue-400 uppercase">Chỉnh sửa</p>
-                        <p className="text-sm font-black text-blue-700">{stats.v3_variants}</p>
-                    </div>
+                <div className="flex overflow-x-auto bg-slate-50 p-3 gap-3 border-b border-slate-200 no-scrollbar relative z-20 shadow-inner">
+                    {activeFilters.length > 0 && (
+                        <button
+                            onClick={() => toggleFilter('ALL')}
+                            className="shrink-0 px-4 py-2 bg-red-100 text-red-600 border border-red-200 rounded-xl hover:bg-red-200 hover:text-red-700 transition-all font-black text-[10px] uppercase flex items-center justify-center shadow-sm"
+                        >
+                            Xóa {activeFilters.length} Lọc ✖
+                        </button>
+                    )}
+                    <button
+                        onClick={() => toggleFilter('ACTIVE')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('ACTIVE') ? 'bg-green-600 border-green-600 text-white shadow-md shadow-green-200 scale-105' : 'bg-white border-green-200 hover:bg-green-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('ACTIVE') ? 'text-green-100' : 'text-green-500'}`}>Đã hiển thị</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('ACTIVE') ? 'text-white' : 'text-green-700'}`}>{stats.active}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('INACTIVE')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('INACTIVE') ? 'bg-slate-700 border-slate-700 text-white shadow-md shadow-slate-300 scale-105' : 'bg-white border-slate-300 hover:bg-slate-100'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('INACTIVE') ? 'text-slate-300' : 'text-slate-500'}`}>Chưa hiện thị</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('INACTIVE') ? 'text-white' : 'text-slate-700'}`}>{stats.total - stats.active}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('OUT_STOCK')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('OUT_STOCK') ? 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-200 scale-105' : 'bg-white border-rose-200 hover:bg-rose-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('OUT_STOCK') ? 'text-rose-200' : 'text-rose-500'}`}>Hết hàng</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('OUT_STOCK') ? 'text-white' : 'text-rose-700'}`}>{stats.out_stock}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('IN_STOCK')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('IN_STOCK') ? 'bg-cyan-600 border-cyan-600 text-white shadow-md shadow-cyan-200 scale-105' : 'bg-white border-cyan-200 hover:bg-cyan-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('IN_STOCK') ? 'text-cyan-100' : 'text-cyan-600'}`}>Còn hàng</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('IN_STOCK') ? 'text-white' : 'text-cyan-800'}`}>{stats.total - stats.out_stock}</p>
+                    </button>
+                    <div className="w-[2px] shrink-0 bg-slate-200 rounded-full mx-1"></div>
+                    <button
+                        onClick={() => toggleFilter('NO_IMAGE')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('NO_IMAGE') ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200 scale-105' : 'bg-white border-orange-200 hover:bg-orange-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('NO_IMAGE') ? 'text-orange-100' : 'text-orange-500'}`}>Thiếu ảnh</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('NO_IMAGE') ? 'text-white' : 'text-orange-700'}`}>{stats.no_image}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('NO_CATEGORY')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('NO_CATEGORY') ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200 scale-105' : 'bg-white border-amber-200 hover:bg-amber-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('NO_CATEGORY') ? 'text-amber-100' : 'text-amber-500'}`}>Thiếu Danh Mục</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('NO_DESC')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('NO_DESC') ? 'bg-yellow-500 border-yellow-500 text-white shadow-md shadow-yellow-200 scale-105' : 'bg-white border-yellow-300 hover:bg-yellow-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('NO_DESC') ? 'text-yellow-100' : 'text-yellow-600'}`}>Thiếu Mô Tả</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('NO_SKU')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('NO_SKU') ? 'bg-pink-500 border-pink-500 text-white shadow-md shadow-pink-200 scale-105' : 'bg-white border-pink-200 hover:bg-pink-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('NO_SKU') ? 'text-pink-100' : 'text-pink-500'}`}>Thiếu SKU</p>
+                    </button>
+                    <div className="w-[2px] shrink-0 bg-slate-200 rounded-full mx-1"></div>
+                    <button
+                        onClick={() => toggleFilter('HAS_IMAGE')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('HAS_IMAGE') ? 'bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-200 scale-105' : 'bg-white border-indigo-200 hover:bg-indigo-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('HAS_IMAGE') ? 'text-indigo-100' : 'text-indigo-500'}`}>CÓ ảnh</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('HAS_IMAGE') ? 'text-white' : 'text-indigo-700'}`}>{stats.total - stats.no_image}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('V3')}
+                        className={`shrink-0 px-4 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.includes('V3') ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 scale-105' : 'bg-white border-purple-200 hover:bg-purple-50'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${activeFilters.includes('V3') ? 'text-purple-200' : 'text-purple-500'}`}>Chỉnh sửa (V3)</p>
+                        <p className={`text-sm font-black ${activeFilters.includes('V3') ? 'text-white' : 'text-purple-700'}`}>{stats.v3_variants || 'V3'}</p>
+                    </button>
+                    <button
+                        onClick={() => toggleFilter('ALL')}
+                        className={`shrink-0 px-5 py-2.5 rounded-xl border text-left transition-all cursor-pointer select-none active:scale-[0.97] ${activeFilters.length === 0 ? 'bg-slate-800 border-slate-800 text-white shadow-md scale-105' : 'bg-white border-slate-200 hover:bg-slate-100'}`}
+                    >
+                        <p className={`text-[9px] font-black uppercase tracking-widest pl-1 ${activeFilters.length === 0 ? 'text-slate-300' : 'text-slate-500'}`}>Tổng</p>
+                        <p className={`text-sm font-black pl-1 pr-2 ${activeFilters.length === 0 ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
+                    </button>
                 </div>
             )}
 
@@ -189,7 +291,17 @@ export default function ProductMobileManagerV3() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4 pb-20">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4 pb-20 relative">
+                {/* Loading indicator that is overlaid when loading with existing products */}
+                {loading && products.length > 0 && (
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex items-start justify-center pt-10">
+                        <div className="bg-indigo-600 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 font-black text-xs uppercase tracking-widest animate-pulse border border-indigo-400">
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Đang lấy bộ lọc mới...
+                        </div>
+                    </div>
+                )}
+
                 {products.length > 0 ? products.map(item => (
                     <div
                         key={item.id}

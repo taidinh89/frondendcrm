@@ -34,14 +34,35 @@ export const useChatStore = create(
             // ==========================================
             // 1. GLOBAL INITIALIZATION (Call once on login/mount)
             // ==========================================
-            initGlobalData: async (statusFilter = 'open', platformFilter = 'all', channelIdFilter = null) => {
+            initGlobalData: async (options = {}) => {
+                const { 
+                    force = false, 
+                    statusFilter = 'open', 
+                    platformFilter = 'all', 
+                    channelIdFilter = null 
+                } = options;
+
+                const state = get();
+                if (state.isLoadingConvos) return;
+
+                // Tối ưu hóa Throttling: Dựa trên thời gian Cache 6 tiếng đã nâng cấp ở Backend
+                // Chỉ buộc fetch lại nếu force=true hoặc dữ liệu đã cũ hơn 30 phút (để đảm bảo tính mới)
+                const now = Date.now();
+                const lastSyncTime = state.lastSync ? new Date(state.lastSync).getTime() : 0;
+                if (!force && (now - lastSyncTime < 1800000)) { // 30 minutes
+                    console.debug("[ChatStore] ⏩ Bỏ qua init global (Dữ liệu còn trong hạn 30p)");
+                    return;
+                }
+
                 set({ isLoadingConvos: true });
+                console.info("%c[ChatStore] 🔄 Đang đồng bộ dữ liệu Chat/Thông báo...", "color: #2196f3; font-weight: bold;");
+
                 try {
                     let omniUrl = `v1/omnichannel/conversations?status=${statusFilter}`;
                     if (platformFilter !== 'all') omniUrl += `&platform=${platformFilter}`;
                     if (channelIdFilter) omniUrl += `&channel_id=${channelIdFilter}`;
 
-                    // Fetch all 3 data sources concurrently to save time (Promise.all)
+                    // Fetch song song 3 nguồn dữ liệu đề tăng tốc
                     const [omniRes, internalRes, notifyRes] = await Promise.allSettled([
                         chatApi.get(omniUrl),
                         chatApi.get('v1/internal/conversations'),
@@ -77,47 +98,47 @@ export const useChatStore = create(
 
                     set(updates);
 
+                    // Nếu thành công, tự động khởi động Socket nếu chưa có
+                    if (!state.globalEcho) {
+                        const userId = (state.conversations[0]?.participants?.find(p => p.role === 'admin')?.user_id) || 
+                                     JSON.parse(localStorage.getItem('user') || '{}')?.id;
+                        if (userId) get().initGlobalSocket(userId);
+                    }
+
                 } catch (error) {
-                    console.error("[ChatStore] Global init error", error);
-                    set({ isLoadingConvos: false });
+                    console.error("[ChatStore] Lỗi đồng bộ Global", error);
+                    set({ isLoadingConvos: false, connectionStatus: 'error' });
                 }
             },
 
             initGlobalSocket: (userId) => {
                 if (!userId) return;
 
-                // Prevent multiple connections
+                // Tránh khởi tạo chồng chéo
                 if (get().globalEcho) return;
 
                 const echoInstance = createChatEcho();
-                if (!echoInstance) return;
+                if (!echoInstance) {
+                    set({ connectionStatus: 'error' });
+                    return;
+                }
 
-                console.info('%c[GlobalStore] 📡 Khởi tạo Global Echo...', 'color: #9c27b0; font-weight: bold;');
+                console.info('%c[GlobalStore] 📡 Khởi tạo kết nối Realtime (Socket)...', 'color: #9c27b0; font-weight: bold;');
 
                 const channel = echoInstance.private(`user.${userId}`);
 
                 channel.listen('.IncomingCall', (e) => {
-                    console.warn('%c[GlobalStore] 📞 NHẬN CUỘC GỌI:', 'color: red; font-weight: bold; font-size: 1.2em;', e);
-                    // Có thể dispatch event ra UI hoặc lưu state
+                    console.warn('%c[GlobalStore] 📞 CUỘC GỌI MIẾN PHÍ:', 'color: red; font-weight: bold; font-size: 1.2em;', e);
                     window.dispatchEvent(new CustomEvent('global-incoming-call', { detail: e }));
                 });
 
                 channel.notification((payload) => {
-                    console.info('%c[Socket-User] 🔔 Thông báo mới:', 'color: #ff9800; font-weight: bold;', payload);
                     const state = get();
-
-                    // 1. Update Badge immediate
                     if (payload.unread_total !== undefined) {
                         set({ unreadInternalCount: payload.unread_total });
                     }
-
-                    // 2. Phân loại Notification
                     if (payload.type === 'NewMessage' && payload.message) {
-                        // Tín hiệu tin nhắn mới từ Kênh Cá Nhân (Broadcasting via Laravel Notification)
-                        // Kênh này đảm bảo tin nhắn luôn đến dù bạn ở đâu
                         get().addMessage(payload.message.conversation_id, payload.message);
-
-                        // Show Toast if not the sender OR if current view is not this conversation
                         if (payload.message.sender_id !== userId && String(state.activeConversationId) !== String(payload.message.conversation_id)) {
                             antMessage.success({
                                 content: `💬 ${payload.message.sender?.name || 'Ai đó'}: ${payload.message.content?.substring(0, 30)}...`,
@@ -125,7 +146,6 @@ export const useChatStore = create(
                             });
                         }
                     } else {
-                        // Thông báo hệ thống khác
                         set({ unreadNotifyCount: state.unreadNotifyCount + 1 });
                         if (payload.title) antMessage.info(payload.title);
                         get().refreshNotifications();
@@ -134,9 +154,9 @@ export const useChatStore = create(
 
                 set({ globalEcho: echoInstance });
 
-                // Listen for connection events
+                // Theo dõi trạng thái kết nối
                 echoInstance.connector.pusher.connection.bind('state_change', (states) => {
-                    console.info('[Socket] State changed from', states.previous, 'to', states.current);
+                    console.info('[Socket] Trạng thái:', states.previous, '→', states.current);
                     let status = 'disconnected';
                     if (states.current === 'connected') status = 'connected';
                     else if (states.current === 'connecting') status = 'connecting';

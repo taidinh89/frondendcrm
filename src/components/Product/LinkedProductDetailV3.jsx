@@ -91,7 +91,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             setParentData(null);
 
         } catch (e) {
-            toast.error("Lá»—i khá»Ÿi táº¡o dá»¯ liá»‡u: " + e.message);
+            toast.error("Lỗi khởi tạo dữ liệu: " + e.message);
         } finally {
             setIsLoading(false);
         }
@@ -125,7 +125,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                 setParentData(null);
             }
         } catch (e) {
-            toast.error("Lá»—i chuyá»ƒn tab");
+            toast.error("Lỗi chuyển tab");
         } finally {
             setIsLoading(false);
         }
@@ -185,7 +185,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             else {
                 const text = e.clipboardData.getData('text');
                 if (text && (text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || text.startsWith('http'))) {
-                    if (window.confirm(`Táº£i áº£nh tá»« link?\n${text}`)) {
+                    if (window.confirm(`Tải ảnh từ link?\n${text}`)) {
                         smartUploadHandler(text, 'gallery');
                     }
                 }
@@ -198,7 +198,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
 
     // --- SMART UPLOAD ---
     const smartUploadHandler = async (fileOrUrl, targetMode = 'gallery') => {
-        const tid = toast.loading("Äang xá»­ lÃ½ áº£nh...");
+        const tid = toast.loading("Đang xử lý ảnh...");
         try {
             const formDataUpload = new FormData();
             if (fileOrUrl instanceof File) formDataUpload.append('image', fileOrUrl);
@@ -218,23 +218,23 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             // Auto Sync separation if editing child site?
             // If in Child Site, adding an image will trigger Diff immediately on Save.
 
-            toast.success("ÄÃ£ thÃªm áº£nh!", { id: tid });
+            toast.success("Đã thêm ảnh!", { id: tid });
         } catch (e) {
-            toast.error("Lá»—i upload: " + e.message, { id: tid });
+            toast.error("Lỗi upload: " + e.message, { id: tid });
         }
     };
 
     // --- IMAGE ACTIONS ---
     const handleDeleteImage = async (imgId) => {
-        if (!window.confirm("XÃ³a áº£nh nÃ y?")) return;
+        if (!window.confirm("Xóa ảnh này?")) return;
         // In V3 Linked, we just remove from UI first. Real delete on Save or explicit API?
         // V2 deletes immediately. Let's match V2.
         try {
             await productApi.deleteImage(activeTabId, imgId);
             setFullImages(prev => prev.filter(img => img.id !== imgId));
-            toast.success("ÄÃ£ xÃ³a");
+            toast.success("Đã xóa");
         } catch (e) {
-            toast.error("Lá»—i xÃ³a: " + e.message);
+            toast.error("Lỗi xóa: " + e.message);
         }
     };
 
@@ -243,15 +243,15 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             await productApi.setMainImage(activeTabId, imgId);
             // Optimistic update
             setFullImages(prev => prev.map(img => ({ ...img, is_main: img.id === imgId })));
-            toast.success("ÄÃ£ Ä‘áº·t lÃ m áº£nh chÃ­nh");
+            toast.success("Đã đặt làm ảnh chính");
         } catch (e) {
-            toast.error("Lá»—i: " + e.message);
+            toast.error("Lỗi: " + e.message);
         }
     };
 
     const downloadImage = async (url) => {
         if (!url) return;
-        const tid = toast.loading("Äang táº£i...");
+        const tid = toast.loading("Đang tải...");
         try {
             const response = await fetch(url, { mode: 'cors' });
             const blob = await response.blob();
@@ -263,7 +263,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
-            toast.success("ÄÃ£ táº£i!", { id: tid });
+            toast.success("Đã tải!", { id: tid });
         } catch (e) {
             window.open(url, '_blank');
             toast.dismiss(tid);
@@ -274,7 +274,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
     const handleSave = async () => {
         if (!activeTabId) return;
         setIsSaving(true);
-        const tid = toast.loading(`Äang lÆ°u ${formData.site_code}...`);
+        const tid = toast.loading(`Đang lưu ${formData.site_code}...`);
         try {
             const catIdArray = Array.isArray(formData.catId) ? formData.catId : [];
             const catIdString = catIdArray.length > 0 ? `,${catIdArray.join(',')},` : '';
@@ -290,13 +290,13 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             };
 
             await productApi.update(activeTabId, payload);
-            toast.success("LÆ°u thÃ nh cÃ´ng!", { id: tid });
+            toast.success("Lưu thành công!", { id: tid });
 
             setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, data: payload } : t));
             if (onRefresh) onRefresh();
 
         } catch (e) {
-            toast.error("Lá»—i lÆ°u dá»¯ liá»‡u: " + e.message, { id: tid });
+            toast.error("Lỗi lưu dữ liệu: " + e.message, { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -305,10 +305,10 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
     // --- CREATE LOGIC ---
     const handleCreateForSite = async (targetSiteCode) => {
         if (!targetSiteCode) return;
-        if (!window.confirm(`Táº¡o báº£n sao cho site [${targetSiteCode}]?`)) return;
+        if (!window.confirm(`Tạo bản sao cho site [${targetSiteCode}]?`)) return;
 
         setIsLoading(true);
-        const tid = toast.loading(`Äang khá»Ÿi táº¡o ${targetSiteCode}...`);
+        const tid = toast.loading(`Đang khởi tạo ${targetSiteCode}...`);
         try {
             const rootTab = tabs.find(t => t.is_root);
             const resRoot = await productApi.getDetail(rootTab.id);
@@ -329,7 +329,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             const createRes = await productApi.create(payload);
             const newProdId = createRes.data?.id || createRes.data?.data?.id;
 
-            if (!newProdId) throw new Error("KhÃ´ng láº¥y Ä‘Æ°á»£c ID sáº£n pháº©m má»›i");
+            if (!newProdId) throw new Error("Không lấy được ID sản phẩm mới");
 
             await axiosClient.post(`/api/v2/product-links`, {
                 source_product_id: rootTab.id,
@@ -338,13 +338,13 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                 site_code: targetSiteCode
             });
 
-            toast.success(`ÄÃ£ táº¡o site ${targetSiteCode}`, { id: tid });
+            toast.success(`Đã tạo site ${targetSiteCode}`, { id: tid });
             setIsAddSiteOpen(false);
             initializeMainTab(rootTab.id);
 
         } catch (e) {
             console.error(e);
-            toast.error("Lá»—i táº¡o site má»›i: " + e.message, { id: tid });
+            toast.error("Lỗi tạo site mới: " + e.message, { id: tid });
         } finally {
             setIsLoading(false);
         }
@@ -362,11 +362,11 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
         return (
             <div className="absolute right-0 top-0 -mt-2 -mr-2 z-10">
                 {separated ? (
-                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-1 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm" title="KhÃ¡c QVC">
+                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-1 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm" title="Khác QVC">
                         <Icon name="unlink" className="w-3 h-3" /> RIM
                     </span>
                 ) : (
-                    <span className="text-[8px] font-black bg-indigo-100 text-indigo-400 px-1 py-0.5 rounded flex items-center gap-1 opacity-50 hover:opacity-100 cursor-help" title="Tiáº¿p tá»¥c Ä‘á»“ng bá»™">
+                    <span className="text-[8px] font-black bg-indigo-100 text-indigo-400 px-1 py-0.5 rounded flex items-center gap-1 opacity-50 hover:opacity-100 cursor-help" title="Tiếp tục đồng bộ">
                         <Icon name="link" className="w-3 h-3" /> SYNC
                     </span>
                 )}
@@ -376,9 +376,9 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
 
     const handleResync = (field) => {
         if (!parentData) return;
-        if (window.confirm(`Äá»“ng bá»™ láº¡i [${field}] theo QVC?`)) {
+        if (window.confirm(`Đồng bộ lại [${field}] theo QVC?`)) {
             setFormData(prev => ({ ...prev, [field]: parentData[field] }));
-            toast.success("ÄÃ£ Ä‘á»“ng bá»™!");
+            toast.success("Đã đồng bộ!");
         }
     };
 
@@ -391,9 +391,9 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
     if (!isOpen) return null;
 
     const SITE_OPTIONS = [
-        { code: 'THIENDUC', label: 'ThiÃªn Äá»©c' },
-        { code: 'BANBUON', label: 'BÃ¡n BuÃ´n' },
-        { code: 'HOCSINH', label: 'Há»c Sinh' }
+        { code: 'THIENDUC', label: 'Thiên Đức' },
+        { code: 'BANBUON', label: 'Bán Buôn' },
+        { code: 'HOCSINH', label: 'Học Sinh' }
     ];
     const availableSites = SITE_OPTIONS.filter(s => !tabs.some(t => t.site_code === s.code));
 
@@ -415,7 +415,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                             `}
                         >
                             {tab.is_root && <Icon name="database" className="w-3 h-3" />}
-                            {tab.site_code === 'QVC' ? 'QVC (Gá»C)' : tab.site_code}
+                            {tab.site_code === 'QVC' ? 'QVC (GỐC)' : tab.site_code}
                             <div className={`absolute top-0 left-0 w-full h-1 rounded-t-xl transition-colors ${activeTabId === tab.id ? 'bg-indigo-500' : 'bg-transparent group-hover:bg-gray-300'}`}></div>
                         </button>
                     ))}
@@ -425,7 +425,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                     <button onClick={() => setIsAddSiteOpen(!isAddSiteOpen)} className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all mb-1.5"><Icon name="plus" className="w-4 h-4" /></button>
                     {isAddSiteOpen && (
                         <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-[100] animate-scaleIn origin-top-right">
-                            <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 px-2">Táº¡o Site Má»›i</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 px-2">Tạo Site Mới</div>
                             {availableSites.map(s => (
                                 <button key={s.code} onClick={() => handleCreateForSite(s.code)} className="w-full text-left px-2 py-2 rounded-lg hover:bg-emerald-50 text-xs font-bold text-slate-700 flex justify-between items-center group">
                                     {s.label}
@@ -455,7 +455,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                         {renderSyncStatus('proName')}
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-[2]">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">TÃªn sáº£n pháº©m</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tên sản phẩm</label>
                                 <input
                                     value={formData.proName}
                                     onChange={e => setFormData({ ...formData, proName: e.target.value })}
@@ -480,21 +480,21 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                         <div className="xl:col-span-3 space-y-4">
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('brandId')}
-                                <SectionHeader title="PhÃ¢n loáº¡i" icon="hash" color="indigo" />
+                                <SectionHeader title="Phân loại" icon="hash" color="indigo" />
                                 <div className="space-y-3 mt-4">
-                                    <FormField type="select" label="ThÆ°Æ¡ng hiá»‡u" options={dictionary?.brands} value={formData.brandId} onChange={v => setFormData({ ...formData, brandId: v })} onManage={() => setBrandManager({ open: true, mode: 'list' })} />
-                                    <FormField type="select" label="Danh má»¥c" options={dictionary?.categories} value={formData.catId} onChange={v => setFormData({ ...formData, catId: v })} multiple={true} onManage={() => setCatManager({ open: true, mode: 'list' })} />
+                                    <FormField type="select" label="Thương hiệu" options={dictionary?.brands} value={formData.brandId} onChange={v => setFormData({ ...formData, brandId: v })} onManage={() => setBrandManager({ open: true, mode: 'list' })} />
+                                    <FormField type="select" label="Danh mục" options={dictionary?.categories} value={formData.catId} onChange={v => setFormData({ ...formData, catId: v })} multiple={true} onManage={() => setCatManager({ open: true, mode: 'list' })} />
                                 </div>
                             </div>
 
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('storeSKU')}
-                                <SectionHeader title="Äá»‹nh danh" icon="tag" color="blue" />
+                                <SectionHeader title="Định danh" icon="tag" color="blue" />
                                 <div className="space-y-3 mt-4">
-                                    <FormField label="MÃ£ SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} />
+                                    <FormField label="Mã SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} />
                                     <FormField label="Model / NSX" value={formData.productModel} onChange={v => setFormData({ ...formData, productModel: v })} />
-                                    <FormField label="Khá»‘i lÆ°á»£ng (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} />
-                                    <div className="pt-2"><ToggleField label="Hiá»‡n Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" /></div>
+                                    <FormField label="Khối lượng (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} />
+                                    <div className="pt-2"><ToggleField label="Hiện Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} color="green" /></div>
                                 </div>
                             </div>
                         </div>
@@ -504,9 +504,9 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col relative">
                                 {renderSyncStatus('fullImages')}
                                 <div className="flex justify-between items-center mb-4">
-                                    <SectionHeader title={`ThÆ° viá»‡n áº£nh (${fullImages.length})`} icon="image" color="orange" />
+                                    <SectionHeader title={`Thư viện ảnh (${fullImages.length})`} icon="image" color="orange" />
                                     <div className="flex gap-2">
-                                        <button onClick={() => { setMediaManagerMode('gallery'); setIsMediaManagerOpen(true); }} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Kho áº£nh</button>
+                                        <button onClick={() => { setMediaManagerMode('gallery'); setIsMediaManagerOpen(true); }} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Kho ảnh</button>
                                         <label className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all cursor-pointer">
                                             + Upload
                                             <input type="file" className="hidden" onChange={e => smartUploadHandler(e.target.files[0])} />
@@ -526,11 +526,11 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                                     )) : (
                                         <div className="col-span-full flex flex-col items-center justify-center text-slate-300">
                                             <Icon name="image" className="w-10 h-10" />
-                                            <span className="text-xs font-bold uppercase mt-2">ChÆ°a cÃ³ áº£nh</span>
+                                            <span className="text-xs font-bold uppercase mt-2">Chưa có ảnh</span>
                                         </div>
                                     )}
                                 </div>
-                                {isSeparated('fullImages') && <button onClick={() => handleResync('fullImages')} className="text-[10px] text-orange-500 underline text-right mt-2">Äá»“ng bá»™ láº¡i áº£nh</button>}
+                                {isSeparated('fullImages') && <button onClick={() => handleResync('fullImages')} className="text-[10px] text-orange-500 underline text-right mt-2">Đồng bộ lại ảnh</button>}
                             </div>
                         </div>
 
@@ -538,44 +538,44 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                         <div className="xl:col-span-4 space-y-4">
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('price')}
-                                <SectionHeader title="GiÃ¡ & Kho" icon="dollar-sign" color="red" />
+                                <SectionHeader title="Giá & Kho" icon="dollar-sign" color="red" />
                                 <div className="mt-4 grid grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">GiÃ¡ bÃ¡n láº»</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Giá bán lẻ</label>
                                         <div className="relative">
                                             <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full font-black text-xl text-red-600 border-b border-slate-200 outline-none pb-1" />
-                                            <span className="absolute right-0 bottom-1 text-xs font-bold text-red-400">VNÄ</span>
+                                            <span className="absolute right-0 bottom-1 text-xs font-bold text-red-400">VNĐ</span>
                                         </div>
                                     </div>
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tá»“n kho</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tồn kho</label>
                                         <input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} className="w-full font-black text-xl text-slate-800 border-b border-slate-200 outline-none pb-1" />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">GiÃ¡ vá»‘n</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Giá vốn</label>
                                         <input type="number" value={formData.purchase_price_web} onChange={e => setFormData({ ...formData, purchase_price_web: e.target.value })} className="w-full font-bold text-sm text-slate-600 border-b border-slate-200 outline-none pb-1" />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Báº£o hÃ nh</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Bảo hành</label>
                                         <input value={formData.warranty} onChange={e => setFormData({ ...formData, warranty: e.target.value })} className="w-full font-bold text-sm text-slate-600 border-b border-slate-200 outline-none pb-1" />
                                     </div>
-                                    {isSeparated('price') && <div className="col-span-2 text-right"><button onClick={() => handleResync('price')} className="text-[10px] text-orange-500 underline">Äá»“ng bá»™ láº¡i</button></div>}
+                                    {isSeparated('price') && <div className="col-span-2 text-right"><button onClick={() => handleResync('price')} className="text-[10px] text-orange-500 underline">Đồng bộ lại</button></div>}
                                 </div>
                             </div>
 
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative flex-1">
                                 {renderSyncStatus('proSummary')}
-                                <SectionHeader title="MÃ´ táº£ - Ná»™i dung" icon="file-text" color="purple" />
+                                <SectionHeader title="Mô tả - Nội dung" icon="file-text" color="purple" />
                                 <div className="mt-4">
-                                    <label className="text-[9px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded uppercase tracking-widest mb-2 inline-block">MÃ´ táº£ ngáº¯n</label>
+                                    <label className="text-[9px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded uppercase tracking-widest mb-2 inline-block">Mô tả ngắn</label>
                                     <textarea
                                         value={formData.proSummary}
                                         onChange={e => setFormData({ ...formData, proSummary: e.target.value })}
                                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium outline-none focus:bg-white focus:border-purple-500 transition-all min-h-[140px] resize-none"
-                                        placeholder="Nháº­p tÃ³m táº¯t..."
+                                        placeholder="Nhập tóm tắt..."
                                     ></textarea>
                                 </div>
-                                <div className="mt-2 text-right text-[10px] text-gray-400 italic">Há»— trá»£ dÃ¡n áº£nh tá»« Clipboard (Ctrl+V)</div>
+                                <div className="mt-2 text-right text-[10px] text-gray-400 italic">Hỗ trợ dán ảnh từ Clipboard (Ctrl+V)</div>
                             </div>
                         </div>
 
@@ -588,13 +588,13 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                             {/* KHUYEN MAI (SPECIAL OFFER) */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('specialOffer')}
-                                <SectionHeader title="Khuyáº¿n mÃ£i & Æ¯u Ä‘Ã£i" icon="gift" color="rose" />
+                                <SectionHeader title="Khuyến mãi & Ưu đãi" icon="gift" color="rose" />
                                 <div className="mt-4">
                                     <RichTextEditor
                                         value={formData.specialOffer}
                                         onChange={v => setFormData({ ...formData, specialOffer: v })}
                                         className="min-h-[150px]"
-                                        placeholder="Nháº­p ná»™i dung khuyáº¿n mÃ£i..."
+                                        placeholder="Nhập nội dung khuyến mãi..."
                                     />
                                 </div>
                             </div>
@@ -602,7 +602,7 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                             {/* MAIN CONTENT */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('description')}
-                                <SectionHeader title="Chi tiáº¿t bÃ i viáº¿t" icon="align-left" color="slate" />
+                                <SectionHeader title="Chi tiết bài viết" icon="align-left" color="slate" />
                                 <div className={`mt-4 rounded-xl border overflow-hidden ${isSeparated('description') ? 'border-orange-300 ring-2 ring-orange-50' : 'border-slate-200'}`}>
                                     <RichTextEditor
                                         value={formData.description}
@@ -610,13 +610,13 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
                                         className="min-h-[500px]"
                                     />
                                 </div>
-                                {isSeparated('description') && <div className="mt-2 text-right"><button onClick={() => handleResync('description')} className="text-[10px] font-bold text-white bg-orange-500 px-3 py-1 rounded-lg shadow uppercase">Äá»“ng bá»™ láº¡i vá»›i QVC</button></div>}
+                                {isSeparated('description') && <div className="mt-2 text-right"><button onClick={() => handleResync('description')} className="text-[10px] font-bold text-white bg-orange-500 px-3 py-1 rounded-lg shadow uppercase">Đồng bộ lại với QVC</button></div>}
                             </div>
 
                             {/* SPECS */}
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative">
                                 {renderSyncStatus('spec')}
-                                <SectionHeader title="ThÃ´ng sá»‘ ká»¹ thuáº­t" icon="list" color="blue" />
+                                <SectionHeader title="Thông số kỹ thuật" icon="list" color="blue" />
                                 <div className="mt-4">
                                     <RichTextEditor
                                         value={formData.spec}
@@ -637,9 +637,9 @@ const LinkedProductDetailV3 = ({ isOpen, onClose, product, onRefresh, dictionary
             </div>
 
             <div className="bg-white/90 backdrop-blur-md p-4 border-t flex gap-4 justify-end md:px-20 lg:px-40 z-[60]">
-                <button onClick={onClose} className="px-6 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold uppercase text-xs hover:bg-slate-200">ÄÃ³ng</button>
+                <button onClick={onClose} className="px-6 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold uppercase text-xs hover:bg-slate-200">Đóng</button>
                 <button onClick={handleSave} disabled={isSaving} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold uppercase text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700">
-                    {isSaving ? 'Äang lÆ°u...' : `LÆ°u thay Ä‘á»•i (${formData.site_code})`}
+                    {isSaving ? 'Đang lưu...' : `Lưu thay đổi (${formData.site_code})`}
                 </button>
             </div>
 

@@ -1,4 +1,4 @@
-﻿// src/App.jsx
+// src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { PartnerAnalysisContent } from './pages/Analytics/PartnerAnalysisContent
 import { InventoryAnalysisContent } from './pages/Analytics/InventoryAnalysisContent.jsx';
 import { DebtRiskPage } from './pages/Finance/DebtRiskPage.jsx';
 import { Customer360Content } from './pages/Business/Customer360Content.jsx';
+import KpiManagerPage from './pages/Analytics/KpiManagerPage.jsx';
 import { DictionaryManagementPage } from './pages/System/DictionaryManagementPage.jsx';
 import { GlobalSearchModal } from './components/modals/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
@@ -60,6 +61,10 @@ import TargetingManager from './pages/AppManager/TargetingManager.jsx';
 import NavigationManager from './pages/AppManager/NavigationManager.jsx';
 import VersionHistory from './pages/AppManager/VersionHistory.jsx';
 import AuditCenter from './pages/AppManager/AuditCenter.jsx';
+import DeviceMonitoring from './pages/AppManager/DeviceMonitoring.jsx';
+import ApiMonitoringCenter from './pages/AppManager/ApiMonitoringCenter.jsx';
+import AppConfigManager from './pages/AppManager/AppConfigManager.jsx';
+import RemoteLogManager from './pages/AppManager/RemoteLogManager.jsx';
 import LandingPageList from './pages/LandingPages/LandingPageList.jsx';
 import LandingPageEditor from './pages/LandingPages/LandingPageEditor.jsx';
 import { SepaySyncManager } from './pages/Sepay/SepaySyncManager.jsx';
@@ -89,12 +94,11 @@ const navItems = [
     { id: 'user-group-manager', path: '/user-groups', label: 'Quản lý Nhóm NV', group: 'Giao tiếp', permission: 'system.security', iconName: 'users', component: <StaffGroupManager /> },
     { id: 'notification-admin', path: '/notifications/admin', label: 'Trung tâm Thông báo', group: 'Giao tiếp', permission: 'system.security', iconName: 'bell', component: <NotificationManager /> },
     { id: 'dashboard', path: '/dashboard', label: 'Tổng quan Hệ thống', group: 'Chung', permission: null, iconName: 'home', component: <DashboardContent /> },
-    { id: 'customers', path: '/customers', label: 'Quản lý Khách Hàng', group: 'Kinh doanh', permission: 'customer.view', iconName: 'users', component: <CustomersContent /> },
-    { id: 'customer-360', path: '/customer-360', label: 'Chân dung Khách hàng', group: 'Kinh doanh', permission: 'customer.view', iconName: 'user', component: <Customer360Content /> },
-    { id: 'sales-orders', path: '/sales-orders', label: 'Đơn Bán Hàng', group: 'Kinh doanh', permission: 'sales.view', iconName: 'shopping-cart', component: <SalesOrdersContent /> },
-    { id: 'purchase-orders', path: '/purchase-orders', label: 'Đơn Mua Hàng', group: 'Kinh doanh', permission: 'purchase.view', iconName: 'list', component: <PurchaseOrdersContent /> },
-    { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'file-text', component: <QuotationList /> },
-    { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'plus', component: <QuotationFormNew /> },
+    { id: 'customers', path: '/customers', label: 'Quản lý Khách hàng & NCC', group: 'Kinh doanh', permission: 'customer.view', iconName: 'users', component: <CustomersContent /> },
+    { id: 'sales-orders', path: '/sales-orders', label: 'Đơn Bán Hàng', group: 'Kinh doanh', permission: 'sales.view', iconName: 'shopping-bag', component: <SalesOrdersContent /> },
+    { id: 'purchase-orders', path: '/purchase-orders', label: 'Đơn Mua Hàng', group: 'Kinh doanh', permission: 'purchase.view', iconName: 'truck', component: <PurchaseOrdersContent /> },
+    { id: 'Quotation-list', path: '/quotations', label: 'Danh sách Báo giá', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'clipboard-list', component: <QuotationList /> },
+    { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'plus-circle', component: <QuotationFormNew /> },
     { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Tồn kho - Web', permission: 'inventory.view', iconName: 'package', component: <InventoriesContent /> },
     { id: 'invoice-dashboard', path: '/invoice-dashboard', label: 'Dashboard Hóa đơn', group: 'Báo cáo', permission: 'invoice.view', iconName: 'bar-chart', component: <InvoiceDashboardPage /> },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Tồn kho - Web', permission: 'invoice.view', iconName: 'file-text', component: <InvoicesContent /> },
@@ -110,9 +114,11 @@ const navItems = [
     { id: 'inventory-analysis', path: '/inventory-analysis', label: 'Tương tác & Quyết định Nhập', group: 'Báo cáo', permission: 'purchase.view', iconName: 'activity', component: <InventoryAnalysisContent /> },
     { id: 'purchasing-hub', path: '/purchasing-hub', label: 'Trung tâm Quyết định Nhập', group: 'Báo cáo', permission: 'purchase.view', iconName: 'activity', component: <PurchasingIntelligenceHub /> },
     { id: 'debt-risk', path: '/debt-risk', label: 'Quản trị Rủi ro Công nợ', group: 'Báo cáo', permission: 'report.debt', iconName: 'alert-triangle', component: <DebtRiskPage /> },
+    { id: 'customer-360', path: '/customer-360', label: 'Chân dung Khách hàng', group: 'Báo cáo', permission: 'customer.view', iconName: 'user', component: <Customer360Content /> },
+    { id: 'kpi-manager', path: '/kpi', label: 'KPI & Mục tiêu', group: 'Báo cáo', permission: 'report.sales', iconName: 'award', component: <KpiManagerPage /> },
 
     { id: 'qr-history', path: '/qr-history', label: 'Lịch sử QR Code', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <QrHistoryPage /> },
-    { id: 'sepay-sync-management', path: '/sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <SepaySyncManager /> },
+    { id: 'sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <SepaySyncManager /> },
     { id: 'sepay-admin', path: '/sepay-admin', label: 'Quản trị Dòng tiền', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'credit-card', component: <SepayDashboard /> },
     { id: 'sepay-cashier', path: '/sepay-cashier', label: 'Thu ngân (QR Code)', group: 'Thanh toán', permission: 'sepay.create', iconName: 'grid', component: <SepayCashier /> },
     { id: 'security-commander', path: '/security/commander', label: 'Trung tâm Chỉ huy (Sếp)', group: 'Hệ thống - Bảo mật', permission: 'system.security', iconName: 'shield', component: <SecurityCommanderCenter /> },
@@ -132,14 +138,24 @@ const navItems = [
     { id: 'system-monitor-v2', path: '/system/monitor-v2', label: 'Giám sát & Vận hành V2.2', group: 'Hệ thống - Giám sát', permission: 'system.security', iconName: 'activity', component: <SystemMonitorPage /> },
     { id: 'observer-dashboard', path: '/system/intelligence', label: 'Trung tâm Giám sát API', group: 'Hệ thống - Giám sát', permission: 'system.security', iconName: 'activity', component: <SystemIntelligenceDashboard /> },
     { id: 'monitor-config', path: '/system/monitor-config', label: 'Cấu hình Giám sát API', group: 'Hệ thống - Giám sát', permission: 'system.security', iconName: 'cog', component: <MonitorServiceManager /> },
-    { id: 'news-feed-admin', path: '/system/news-feed', label: 'Quản lý News Feed', group: 'Hệ thống - Mobile', permission: 'system.security', iconName: 'navigation', component: <NewsFeedManager /> },
     { id: 'landing-pages', path: '/landing-pages', label: 'Quản lý Landing Pages', group: 'Quản lý Website', permission: 'system.security', iconName: 'layout', component: <LandingPageList /> },
-    { id: 'sdui-blocks', path: '/admin/app-manager/blocks', label: 'Kho Linh Kiện (Blocks)', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'grid', component: <BlockLibrary /> },
-    { id: 'sdui-screens', path: '/admin/app-manager/screens', label: 'Thiết Kế Màn Hình', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'layout', component: <ScreenBuilder /> },
-    { id: 'sdui-targeting', path: '/admin/app-manager/targeting', label: 'Phân Phối & Nhắm Mục Tiêu', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'globe', component: <TargetingManager /> },
-    { id: 'sdui-navigation', path: '/admin/app-manager/navigation', label: 'Thanh Điều Hướng (Tab)', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'navigation', component: <NavigationManager /> },
-    { id: 'sdui-versions', path: '/admin/app-manager/snapshots', label: 'Lịch Sử Phiên Bản', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'refresh', component: <VersionHistory /> },
-    { id: 'sdui-audit', path: '/admin/app-manager/audit', label: 'Trung tâm Kiểm soát', group: 'Quản Trị Ứng Dụng (V3)', permission: 'system.security', iconName: 'shield', component: <AuditCenter /> },
+
+    // --- [MOBILE APP] HUB ĐIỀU HÀNH V8.4 ELITE ---
+    { id: 'sdui-hub', path: '/admin/app-manager/hub', label: 'Dashboard Điều Hành', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'dashboard', component: <AppSDUIManager /> },
+    { id: 'app-config', path: '/admin/app-manager/config', label: 'Cấu hình Hệ thống', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'cog', component: <AppConfigManager /> },
+    { id: 'notification-admin', path: '/admin/app-manager/notifications', label: 'Broadcast Push (FCM)', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'bell', component: <NotificationManager /> },
+    { id: 'news-feed-admin', path: '/admin/app-manager/news-feed', label: 'Quản lý Bảng Tin', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'message-square', component: <NewsFeedManager /> },
+
+    { id: 'sdui-blocks', path: '/admin/app-manager/blocks', label: 'Kho Linh Kiện (Blocks)', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'grid', component: <BlockLibrary /> },
+    { id: 'sdui-screens', path: '/admin/app-manager/screens', label: 'Thiết Kế Màn Hình', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'layout', component: <ScreenBuilder /> },
+    { id: 'sdui-navigation', path: '/admin/app-manager/navigation', label: 'Thanh Điều Hướng (Tab)', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'compass', component: <NavigationManager /> },
+    { id: 'sdui-targeting', path: '/admin/app-manager/targeting', label: 'Phân Phối & Targeting', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'globe', component: <TargetingManager /> },
+
+    { id: 'sdui-devices', path: '/admin/app-manager/devices', label: 'Giám sát Định danh IP/1:1', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'monitor', component: <DeviceMonitoring /> },
+    { id: 'sdui-api-monitor', path: '/admin/app-manager/api-monitor', label: 'Monitoring API (Audit)', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'activity', component: <ApiMonitoringCenter /> },
+    { id: 'sdui-app-logs', path: '/admin/app-manager/logs', label: 'Remote Logs (Exception)', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'bug', component: <RemoteLogManager /> },
+    { id: 'sdui-versions', path: '/admin/app-manager/snapshots', label: 'Lịch Sử Phiên Bản', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'clock', component: <VersionHistory /> },
+    { id: 'sdui-audit', path: '/admin/app-manager/audit', label: 'Trung tâm Kiểm soát', group: '[MOBILE HUB] ĐIỀU HÀNH 8.4', permission: 'system.security', iconName: 'shield', component: <AuditCenter /> },
     { id: 'thienduc-products', path: '/thienduc/products', label: 'Sản phẩm Thiên Đức V4', group: 'Thiên Đức V4', permission: 'thienduc.admin', iconName: 'package', component: <ProductList /> },
     { id: 'thienduc-sync', path: '/thienduc/sync', label: 'Trung tâm Đồng bộ', group: 'Thiên Đức V4', permission: 'thienduc.admin', iconName: 'refresh', component: <SyncDashboard /> },
 ];
@@ -152,7 +168,7 @@ const MainLayout = ({
     const checkAccess = (requiredPerm, requiredPolicy = null) => {
         if (!ENABLE_PERMISSION_CHECK) return true;
         if (!user) return false;
-        if (user.is_admin) return true;
+        if (user.is_admin || user.is_super_admin) return true;
         if (requiredPolicy && user.access_policies?.[requiredPolicy] === true) return false;
         if (!requiredPerm) return true;
         const myPerms = user.permissions || [];
@@ -261,6 +277,15 @@ const App = () => {
 
     useEffect(() => { document.title = pageTitle; }, [pageTitle]);
     useEffect(() => { setAppTitle(activeRouteItem?.label); }, [activeRouteItem, setAppTitle]);
+
+    // [DYNAMIC FAVICON]
+    useEffect(() => {
+        const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/png';
+        link.rel = 'icon';
+        link.href = '/logo2.png';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    }, []);
 
     useEffect(() => {
         const checkAuth = async () => {

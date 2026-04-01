@@ -254,6 +254,20 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     const notifications = useChatStore((state) => state.notifications);
     const unreadCount = useChatStore((state) => state.unreadNotifyCount);
     const markNotifyReadLocal = useChatStore((state) => state.markNotifyReadLocal);
+    const connectionStatus = useChatStore((state) => state.connectionStatus);
+
+    const getConnectionIndicator = () => {
+        switch (connectionStatus) {
+            case 'connected':
+                return { class: 'led-green', text: 'Máy chủ Chat: Đã kết nối' };
+            case 'connecting':
+                return { class: 'led-yellow', text: 'Máy chủ Chat: Đang kết nối...' };
+            default:
+                return { class: 'led-red', text: 'Máy chủ Chat: Mất kết nối' };
+        }
+    };
+
+    const statusLed = getConnectionIndicator();
 
     const [isOpen, setIsOpen] = React.useState(false);
 
@@ -295,6 +309,10 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                 <h1 className={`text-lg font-bold ${textColor}`}>{currentView.label}</h1>
             </div>
             <div className="flex items-center space-x-4">
+                <div className="flex items-center" title={statusLed.text}>
+                    <div className={`w-3 h-3 rounded-full ${statusLed.class} cursor-help shadow-sm`} />
+                </div>
+
                 <button onClick={onSearchClick} className={`${iconColor} transition-colors`}>
                     <Icon path="M10.5 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.657-5.657" />
                 </button>
@@ -383,7 +401,7 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
     }, {});
 
     // [MOD] SẮP XẾP NHÓM MENU: Đưa Hệ thống xuống cuối và ưu tiên thứ tự nghiệp vụ
-    const groupOrder = ['Chung', 'Báo cáo', 'Tồn kho - Web', 'Hệ thống - Bảo mật', 'Giao tiếp', 'Kinh doanh', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
+    const groupOrder = ['Chung', 'Báo cáo', 'Tồn kho - Web', 'Kinh doanh', 'Giao tiếp', 'Hệ thống - Bảo mật', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
     const bottomGroups = ['Media', 'Thanh toán', 'Hệ thống - Giám sát', 'Quản Trị Ứng Dụng (V3)', 'Thiên Đức V4'];
 
     const sortedGroups = Object.entries(groupedItems).sort(([groupA], [groupB]) => {

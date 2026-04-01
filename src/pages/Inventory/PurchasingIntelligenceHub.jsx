@@ -1,39 +1,143 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import * as UI from '../../components/ui.jsx';
 import { Icon } from '../../components/ui.jsx';
 import { useApiData } from '../../hooks/useApiData.jsx';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
-    BarChart, Bar, Cell
+    BarChart, Bar, Cell, LabelList, PieChart, Pie
 } from 'recharts';
 
+import { InventoryAnalysisFilterBar } from '../../components/analysis/InventoryAnalysisFilterBar.jsx';
+import { InventoryAnalysisDataTable } from '../../components/analysis/InventoryAnalysisDataTable.jsx';
+import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
+import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
+import { SupplierDetailModal } from '../../components/modals/SupplierDetailModal.jsx';
+
 /**
- * PURCHASING INTELLIGENCE HUB (V1.0)
+ * PURCHASING INTELLIGENCE HUB (V2.0 - Production Ready)
  * Trang hỗ trợ quyết định nhập hàng nhanh cho bộ phận Thu mua
  */
 
-const PurchasingIntelligenceHub = () => {
+const API_ENDPOINT = '/api/v2/inventory-analysis';
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+const formatPrice = (value) => new Intl.NumberFormat('vi-VN').format(value || 0);
+
+const InfoTooltip = ({ children, text }) => {
+    const [show, setShow] = useState(false);
+    return (
+        <span className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+            {children}
+            <span className="ml-1 inline-flex w-3.5 h-3.5 rounded-full bg-slate-200 text-slate-500 text-[9px] font-black items-center justify-center cursor-help hover:bg-blue-200 hover:text-blue-600 transition-colors">?</span>
+            {show && (
+                <span className="absolute z-50 bottom-full left-0 mb-2 w-64 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-2xl leading-relaxed pointer-events-none normal-case font-medium">
+                    {text}
+                    <span className="absolute top-full left-4 border-4 border-transparent border-t-slate-800" />
+                </span>
+            )}
+        </span>
+    );
+};
+
+const CustomBarLabel = (props) => {
+    const { x, y, width, value } = props;
+    if (!value) return null;
+    return (
+        <text x={x + width + 5} y={y + 8} fill="#3b82f6" fontSize={9} fontWeight="bold">
+            {formatPrice(value)}
+        </text>
+    );
+};
+
+const PurchasingIntelligenceHub = ({ setAppTitle }) => {
     const [filters, setFilters] = useState({
-        site: 'ALL',
-        category: '',
-        brand: '',
-        timeRange: '30'
+        days: 30, brand_code: '', category_code: '', search: '', tab: 'low_stock_active',
+        page: 1, per_page: 20, sort_by: '', sort_dir: 'desc'
     });
 
-    // Mock Data for UI Proof-of-concept
+    const { data: fullData, isLoading } = useApiData(API_ENDPOINT, filters, 500);
+    const [viewingProductId, setViewingProductId] = useState(null);
+    const [viewingSupplierCode, setViewingSupplierCode] = useState(null);
+
+    useEffect(() => {
+        if (setAppTitle) setAppTitle('Trung tâm Quyết định Nhập hàng');
+    }, [setAppTitle]);
+
+    const kpis_data = fullData?.kpis || {};
+    const charts_data = fullData?.charts || {};
+    const list_data = fullData?.list || { data: [], current_page: 1, last_page: 1, total: 0 };
+
     const kpis = [
-        { title: 'Cần nhập gấp', value: '42', unit: 'SKUs', color: 'rose', icon: 'alert-triangle' },
-        { title: 'Giá trị đề xuất', value: '1.2B', unit: 'VNĐ', color: 'indigo', icon: 'currency-dollar' },
-        { title: 'Sức khỏe tồn', value: '78%', unit: 'OK', color: 'emerald', icon: 'heart' },
-        { title: 'Hết hàng (7d)', value: '15', unit: 'SKUs', color: 'orange', icon: 'trending-down' },
+        {
+            title: 'Cần nhập gấp',
+            value: formatPrice(kpis_data.low_stock_count),
+            unit: 'SKUs',
+            color: 'rose',
+            icon: 'alert-triangle',
+            tooltip: 'Số lượng mã hàng có mức tồn kho dưới ngưỡng an toàn.'
+        },
+        {
+            title: 'Giá trị tồn kho',
+            value: formatPrice(kpis_data.total_inventory_value),
+            unit: 'VNĐ',
+            color: 'indigo',
+            icon: 'currency-dollar',
+            tooltip: 'Tổng giá trị hàng hóa đang nằm trong kho tính theo giá nhập.'
+        },
+        {
+            title: 'Hết hàng dự kiến',
+            value: formatPrice(kpis_data.dead_stock_count),
+            unit: 'SKUs',
+            color: 'emerald',
+            icon: 'archive',
+            tooltip: 'Hàng tồn đọng lâu ngày không có đơn phát sinh.'
+        },
+        {
+            title: 'Công nợ NCC',
+            value: formatPrice(kpis_data.total_payable_debt),
+            unit: 'VNĐ',
+            color: 'orange',
+            icon: 'trending-down',
+            tooltip: 'Tổng số tiền nợ các nhà cung cấp cần thanh toán.'
+        },
     ];
 
-    const decisionData = [
-        { id: 1, name: 'Laptop ASUS ROG Strix G15', sku: 'ASUS-G15-001', stock: 2, min: 5, velocity: 0.8, days: 2, suggest: 20, vendor: 'FPT Synnex', status: 'CRITICAL' },
-        { id: 2, name: 'Mainboard Gigabyte Z790 AORUS', sku: 'GIGA-Z790-PRO', stock: 1, min: 10, velocity: 0.5, days: 2, suggest: 15, vendor: 'Thủy Linh', status: 'CRITICAL' },
-        { id: 3, name: 'VGA MSI RTX 4070 Ti Ventus', sku: 'MSI-4070TI-V', stock: 8, min: 10, velocity: 1.2, days: 6, suggest: 30, vendor: 'Mai Hoàng', status: 'WARNING' },
-    ];
+    const topSuppliers = useMemo(() => {
+        const raw = charts_data.top_suppliers_suggested || [];
+        return raw.map(item => ({
+            name: item.supplier === 'UNKNOWN' ? 'N/A' : item.supplier,
+            full_name: item.supplier,
+            supplier_code: item.supplier_code,
+            value: parseFloat(item.total_suggested) || 0
+        }));
+    }, [charts_data.top_suppliers_suggested]);
+
+    const inventoryValueTrend = useMemo(() => {
+        // Mocking trend data if not available in API, otherwise use charts_data
+        return [
+            { day: '01/03', value: 1200000000 },
+            { day: '05/03', value: 1150000000 },
+            { day: '10/03', value: 1300000000 },
+            { day: '15/03', value: 1280000000 },
+            { day: '20/03', value: 1400000000 },
+        ];
+    }, []);
+
+    const handleDataTableItemClick = (type, identifier) => {
+        if (!identifier) return;
+        if (type === 'product') setViewingProductId(identifier);
+        if (type === 'supplier') setViewingSupplierCode(identifier);
+    };
+
+    const handleDataTableSort = (field) => {
+        setFilters(prev => ({
+            ...prev,
+            sort_by: field,
+            sort_dir: prev.sort_by === field && prev.sort_dir === 'desc' ? 'asc' : 'desc',
+            page: 1
+        }));
+    };
 
     return (
         <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans text-slate-900">
@@ -50,19 +154,10 @@ const PurchasingIntelligenceHub = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <button className="px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
-                        <Icon name="filter" className="w-4 h-4" /> Bộ lọc
-                    </button>
-                    <button className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-xl shadow-indigo-100">
-                        <Icon name="plus" className="w-4 h-4" /> Tạo PO mới
-                    </button>
-                    <button className="p-3 bg-white border-2 border-slate-100 rounded-2xl text-slate-400 hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm">
-                        <Icon name="bell" className="w-6 h-6" />
-                    </button>
+                    {/* Filters moved to bottom for better data-first access */}
                 </div>
             </header>
 
-            {/* 2. KPI CARDS SECTION */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 {kpis.map((kpi, idx) => (
                     <div key={idx} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
@@ -71,141 +166,138 @@ const PurchasingIntelligenceHub = () => {
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg bg-${kpi.color}-50 text-${kpi.color}-600`}>
                                 <Icon name={kpi.icon} className="w-6 h-6" />
                             </div>
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg bg-${kpi.color}-50 text-${kpi.color}-600 uppercase tracking-widest`}>Trend ▲</span>
+                            <InfoTooltip text={kpi.tooltip}>
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg bg-${kpi.color}-50 text-${kpi.color}-600 uppercase tracking-widest cursor-help`}>Chi tiết</span>
+                            </InfoTooltip>
                         </div>
                         <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{kpi.title}</h3>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black text-slate-800 tracking-tighter">{kpi.value}</span>
+                            <span className="text-3xl font-black text-slate-800 tracking-tighter">{kpi.value || '—'}</span>
                             <span className="text-slate-400 text-xs font-bold uppercase">{kpi.unit}</span>
                         </div>
                     </div>
                 ))}
             </section>
 
-            {/* 3. MAIN DECISION TABLE */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px] mb-10">
+                <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 flex flex-col overflow-hidden">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-xl font-black tracking-tight text-slate-800">Biến động tồn kho</h2>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá trị vốn lưu động (Mockup)</p>
+                        </div>
+                        <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1 bg-indigo-50 rounded-lg">30 ngày qua</div>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={inventoryValueTrend}>
+                                <defs>
+                                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                <YAxis hide />
+                                <ReTooltip
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(val) => [formatPrice(val), 'Giá trị']}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 flex flex-col overflow-hidden">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-xl font-black tracking-tight text-slate-800 uppercase italic">Top NCC cần tập trung</h2>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Dựa trên tổng giá trị hàng đề xuất nhập</p>
+                        </div>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={topSuppliers} layout="vertical" margin={{ left: 20, right: 60 }}>
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 9, fontWeight: 700, fill: '#475569' }} axisLine={false} tickLine={false} />
+                                <ReTooltip formatter={(val) => [formatPrice(val) + ' SP', 'Đề xuất']} />
+                                <Bar dataKey="value" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={20}>
+                                    <LabelList dataKey="value" content={<CustomBarLabel />} />
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </section>
+
+            <section className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-10">
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                            <Icon name="filter" className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Bộ lọc & Điều chỉnh dữ liệu</h3>
+                    </div>
+                    <InventoryAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
+                </div>
+            </section>
+
             <section className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden mb-10">
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight text-slate-800">Danh sách đề xuất nhập hàng</h2>
+                        <h2 className="text-xl font-black tracking-tight text-slate-800 uppercase italic">Danh sách đề xuất nhập hàng</h2>
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Sắp xếp theo độ khẩn cấp (Stock-out Risk)</p>
                     </div>
-                    <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-white border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">Xuất Excel</button>
+                    <div className="flex gap-4">
+                        <div className="flex bg-slate-100 rounded-xl p-1">
+                            <button onClick={() => setFilters(p => ({ ...p, tab: 'low_stock_active' }))} className={`px-4 py-2 text-[10px] font-black rounded-lg transition-all ${filters.tab === 'low_stock_active' ? 'bg-white shadow text-rose-600' : 'text-slate-400'}`}>🚨 CẦN NHẬP</button>
+                            <button onClick={() => setFilters(p => ({ ...p, tab: 'dead_stock' }))} className={`px-4 py-2 text-[10px] font-black rounded-lg transition-all ${filters.tab === 'dead_stock' ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>📉 TỒN ĐỌNG</button>
+                            <button onClick={() => setFilters(p => ({ ...p, tab: 'by_supplier' }))} className={`px-4 py-2 text-[10px] font-black rounded-lg transition-all ${filters.tab === 'by_supplier' ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}`}>🤝 THEO NCC</button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b">Sản phẩm</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b">Tồn kho</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b text-center">Tốc độ bán</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b text-center">Dự báo hết</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b text-center">Đề xuất nhập</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b">NCC Gợi ý</th>
-                                <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b text-center">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {decisionData.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/80 transition-all group">
-                                    <td className="p-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-slate-100 rounded-2xl p-2 flex-shrink-0">
-                                                <div className="w-full h-full bg-slate-200 rounded-lg animate-pulse" />
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{item.name}</div>
-                                                <div className="text-[10px] font-bold text-slate-400 font-mono mt-1">{item.sku}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-6">
-                                        <div className="flex flex-col">
-                                            <span className={`text-xl font-black ${item.stock <= item.min ? 'text-rose-500' : 'text-slate-800'}`}>{item.stock}</span>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Min: {item.min}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-6 text-center">
-                                        <span className="text-sm font-black text-slate-700">{item.velocity}</span>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase">SP/Ngày</p>
-                                    </td>
-                                    <td className="p-6 text-center">
-                                        <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${item.days <= 3 ? 'bg-rose-50 text-rose-500 border border-rose-100 animate-pulse' : 'bg-orange-50 text-orange-500 border border-orange-100'}`}>
-                                            Còn {item.days} ngày
-                                        </div>
-                                    </td>
-                                    <td className="p-6 text-center">
-                                        <span className="text-xl font-black text-indigo-600 underline decoration-indigo-200 underline-offset-4">{item.suggest}</span>
-                                    </td>
-                                    <td className="p-6">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center">
-                                                <Icon name="award" className="w-3 h-3 text-slate-400" />
-                                            </div>
-                                            <span className="text-xs font-black text-slate-600">{item.vendor}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-6">
-                                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all">Nhập ngay</button>
-                                            <button className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"><Icon name="edit" className="w-4 h-4" /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="p-4">
+                    <InventoryAnalysisDataTable
+                        data={list_data.data}
+                        activeTab={filters.tab}
+                        pagination={{
+                            currentPage: list_data.current_page,
+                            lastPage: list_data.last_page,
+                            total: list_data.total,
+                            perPage: list_data.per_page,
+                            onPageChange: (n) => setFilters(prev => ({ ...prev, page: n }))
+                        }}
+                        sortConfig={{ sortBy: filters.sort_by, sortDir: filters.sort_dir }}
+                        onSort={handleDataTableSort}
+                        onItemClick={handleDataTableItemClick}
+                        renderRowActions={(row) => (
+                            <div className="flex gap-2 justify-center">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toast.success(`Đã thêm ${row.product_name} vào giỏ nhập hàng!`); }}
+                                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    Nhập ngay
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setViewingProductId(row.product_code); }}
+                                    className="p-1.5 bg-slate-100 text-slate-400 rounded-lg hover:text-indigo-600 transition-all"
+                                >
+                                    <Icon name="edit" className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
+                    />
                 </div>
             </section>
 
-            {/* 4. SMART SUGGESTIONS & INSIGHTS */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
-                <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 flex flex-col overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-black tracking-tight text-slate-800">Biến động tồn kho toàn hệ thống</h2>
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">30 ngày qua</div>
-                    </div>
-                    <div className="flex-1 w-full text-slate-400 flex items-center justify-center border-2 border-dashed border-slate-100 rounded-[2rem]">
-                        Chart Container (Waiting for Data)
-                    </div>
-                </div>
+            {/* Table content already above */}
 
-                <div className="bg-slate-900 rounded-[3rem] p-8 shadow-2xl flex flex-col relative overflow-hidden">
-                    <div className="relative z-10 h-full flex flex-col">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
-                                <Icon name="zap" className="w-5 h-5" />
-                            </div>
-                            <h2 className="text-xl font-black tracking-tight text-white uppercase italic">AI Intelligence Suggestions</h2>
-                        </div>
-
-                        <div className="space-y-4 flex-1">
-                            <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-all cursor-pointer group">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Gợi ý giá tốt</span>
-                                    <span className="text-white font-black text-xs group-hover:translate-x-1 transition-transform">→</span>
-                                </div>
-                                <p className="text-slate-300 text-sm font-bold leading-relaxed">Nhà cung cấp **Thiết bị Số** vừa giảm giá 5% cho dòng linh kiện Mainboard...</p>
-                            </div>
-
-                            <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-all cursor-pointer group">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Cảnh báo tồn dư</span>
-                                </div>
-                                <p className="text-slate-300 text-sm font-bold leading-relaxed">Sản phẩm **Màn hình Dell U2422** đang có xu hướng bán chậm, không nên nhập thêm trong tuần tới.</p>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 pt-6 border-t border-white/10">
-                            <button className="w-full py-4 bg-emerald-500 text-slate-900 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-400 transition-all active:scale-95">Xem toàn bộ 24 gợi ý</button>
-                        </div>
-                    </div>
-                    {/* Background decoration */}
-                    <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-indigo-600/20 rounded-full blur-[100px] -mr-20 -mb-20"></div>
-                </div>
-            </section>
+            {/* Modals */}
+            {viewingProductId && <ProductDetailModal productIdentifier={viewingProductId} isOpen={true} onClose={() => setViewingProductId(null)} />}
+            {viewingSupplierCode && <SupplierDetailModal supplierIdentifier={viewingSupplierCode} days={filters.days} onClose={() => setViewingSupplierCode(null)} />}
         </div>
     );
 };

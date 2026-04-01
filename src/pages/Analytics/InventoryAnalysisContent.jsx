@@ -1,4 +1,4 @@
-﻿// src/pages/Analytics/InventoryAnalysisContent.jsx
+// src/pages/Analytics/InventoryAnalysisContent.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -114,11 +114,21 @@ const CustomBarLabel = (props) => {
 
 export const InventoryAnalysisContent = ({ setAppTitle }) => {
     const [filters, setFilters] = useState({
-        days: 90, brand_code: '', category_code: '', search: '', tab: 'by_supplier',
-        page: 1, per_page: 20, sort_by: '', sort_dir: 'desc'
+        days: 90, brand: [], category: [], l3: [], search: '', tab: 'all_products',
+        page: 1, per_page: 100, sort_by: '', sort_dir: 'desc', include_oos: ''
     });
 
-    const { data: fullData, isLoading } = useApiData(API_ENDPOINT, filters, 500);
+    // Chuyển đổi mảng filter sang chuỗi comma-separated trước khi gửi API
+    const apiFilters = useMemo(() => {
+        return {
+            ...filters,
+            brand: filters.brand?.join(','),
+            category: filters.category?.join(','),
+            l3: filters.l3?.join(','),
+        };
+    }, [filters]);
+
+    const { data: fullData, isLoading } = useApiData(API_ENDPOINT, apiFilters, 500);
     const tableRef = useRef(null);
 
     const scrollToTable = () => {
@@ -141,6 +151,7 @@ export const InventoryAnalysisContent = ({ setAppTitle }) => {
     const kpis = fullData?.kpis || {};
     const charts = fullData?.charts || {};
     const listConfig = fullData?.list || { data: [], current_page: 1, last_page: 1, total: 0 };
+    const suggests = fullData?.suggests || [];
 
     const currentListData = useMemo(() => {
         const raw = listConfig.data || [];
@@ -177,6 +188,26 @@ export const InventoryAnalysisContent = ({ setAppTitle }) => {
         if (!identifier) return;
         if (type === 'product') setViewingProductId(identifier);
         if (type === 'supplier') setViewingSupplierCode(identifier);
+    };
+
+    // Khi bấm gợi ý autocomplete: tìm chính xác mã đó hoặc NCC đó và chuyển tab phù hợp
+    const handleSelectSuggest = (suggest) => {
+        if (suggest.type === 'supplier') {
+            // Chế độ tìm Nhà cung cấp
+            setFilters(prev => ({
+                ...prev,
+                search: suggest.supplier_name,
+                search_field: 'supplier',
+                tab: 'by_supplier',
+                page: 1
+            }));
+            scrollToTable();
+            return;
+        }
+
+        const targetTab = 'all_products';
+        setFilters(prev => ({ ...prev, search: suggest.product_code, search_field: 'code', tab: targetTab, page: 1, brand: [], category: [], l3: [] }));
+        scrollToTable();
     };
 
     const handleDataTableSort = (field) => {
@@ -242,123 +273,20 @@ export const InventoryAnalysisContent = ({ setAppTitle }) => {
                     </AnalysisCard>
                 </div>
 
-                {/* 2. Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-7">
-                        <AnalysisCard className="h-full">
-                            <div className="flex items-center justify-between px-6 pt-5">
-                                <p className="text-sm font-bold text-slate-700">Cơ cấu Tồn kho</p>
-                                <div className="flex bg-slate-100 rounded-lg p-0.5">
-                                    <button onClick={() => setPieMode('brand')} className={`px-3 py-1 text-[10px] font-bold rounded-md ${pieMode === 'brand' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>Nhãn hiệu</button>
-                                    <button onClick={() => setPieMode('category')} className={`px-3 py-1 text-[10px] font-bold rounded-md ${pieMode === 'category' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>Danh mục</button>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 items-center">
-                                <div className="h-[280px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="value"
-                                                label={({ percent, name }) => percent > 0.05 ? `${name}` : ''}
-                                                onClick={(data) => {
-                                                    if (data?.payload?.code) {
-                                                        const field = pieMode === 'brand' ? 'brand_code' : 'category_code';
-                                                        setFilters(prev => ({ ...prev, [field]: data.payload.code, page: 1 }));
-                                                        scrollToTable();
-                                                    }
-                                                }}
-                                                cursor="pointer"
-                                            >
-                                                {pieChartData.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                                            </Pie>
-                                            <Tooltip formatter={(v) => formatPrice(v)} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-2">
-                                    {pieChartData.map((e, i) => (
-                                        <div key={i} className="flex items-center justify-between text-[10px]">
-                                            <div className="flex items-center gap-2 truncate">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                                                <span className="font-bold text-slate-700 truncate">{e.name}</span>
-                                            </div>
-                                            <span className="font-mono text-slate-400">{formatPrice(e.value)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </AnalysisCard>
-                    </div>
 
-                    <div className="lg:col-span-5 space-y-4">
-                        <AnalysisCard className="bg-gradient-to-br from-slate-900 to-slate-800 border-none shadow-xl text-white">
-                            <div className="flex justify-between items-center p-5 pb-0">
-                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">SỨC KHỎE CHU KỲ BÁN</p>
-                                <UI.Icon name="activity" className="w-5 h-5 text-blue-500 animate-pulse" />
-                            </div>
-                            <div className="h-[160px] relative mt-2">
-                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 text-white">
-                                    <span className="text-3xl font-black">{kpis.low_stock_count || '—'}</span>
-                                    <span className="text-[10px] text-slate-400 uppercase">Cần nhập</span>
-                                </div>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'Cần nhập', value: kpis.low_stock_count || 0, color: '#f97316' },
-                                                { name: 'Tồn đọng', value: kpis.dead_stock_count || 0, color: '#64748b' },
-                                                { name: 'Bình thường', value: Math.max(0, (kpis.total_items || 0) - (kpis.low_stock_count || 0) - (kpis.dead_stock_count || 0)), color: '#3b82f6' }
-                                            ]}
-                                            cx="50%" cy="50%" innerRadius={50} outerRadius={70} stroke="none" dataKey="value"
-                                        >
-                                            {['#f97316', '#64748b', '#3b82f6'].map((color, index) => <Cell key={index} fill={color} />)}
-                                        </Pie>
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="flex justify-around p-5 pt-3 border-t border-slate-700 text-xs">
-                                <div onClick={() => setActiveListTab('low_stock_active')} className="cursor-pointer text-orange-400 font-bold">🚨 {formatPrice(kpis.low_stock_count)}</div>
-                                <div className="text-blue-400 font-bold">📦 {formatPrice(kpis.total_items)}</div>
-                                <div onClick={() => setActiveListTab('dead_stock')} className="cursor-pointer text-slate-400 font-bold">📉 {formatPrice(kpis.dead_stock_count)}</div>
-                            </div>
-                        </AnalysisCard>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 cursor-pointer" onClick={() => setActiveListTab('low_stock_active')}>
-                                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0"><UI.Icon name="flame" className="w-6 h-6" /></div>
-                                <div><p className="text-[9px] font-black text-slate-400 uppercase">Cần nhập</p><p className="text-lg font-black text-orange-600">{formatPrice(kpis.low_stock_count)}</p></div>
-                            </div>
-                            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 cursor-pointer" onClick={() => setActiveListTab('by_supplier')}>
-                                <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600 shrink-0"><UI.Icon name="users" className="w-6 h-6" /></div>
-                                <div><p className="text-[9px] font-black text-slate-400 uppercase">Tổng NCC</p><p className="text-lg font-black text-violet-600">{formatPrice(listConfig.total || '—')}</p></div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="lg:col-span-12">
-                        <AnalysisCard>
-                            <div className="p-6">
-                                <p className="text-sm font-bold text-slate-700 mb-6">Top 10 Nhà cung cấp cần tập trung (Số lượng đề xuất)</p>
-                                <div className="h-[350px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={barTopSuppliers} layout="vertical" margin={{ left: 20, right: 60 }}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 9, fontWeight: 700, fill: '#475569' }} axisLine={false} tickLine={false} />
-                                            <Tooltip formatter={(val, name, props) => [formatPrice(val) + ' SP', props.payload.full_name]} />
-                                            <Bar dataKey="value" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={24} cursor="pointer" onClick={(data) => { if (data?.supplier_code) { setActiveListTab('by_supplier'); setViewingSupplierCode(data.supplier_code); } }}>
-                                                <LabelList dataKey="value" content={<CustomBarLabel />} />
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </AnalysisCard>
-                    </div>
-                </div>
-
-                {/* 3. Table */}
+                {/* 2. Filter + Table */}
                 <div ref={tableRef}>
                     <AnalysisCard className="overflow-hidden">
+                        <div className="p-3 border-b bg-white">
+                            <InventoryAnalysisFilterBar
+                                initialFilters={{ ...filters, filterOptions: fullData?.filter_options }}
+                                onApplyFilters={setFilters}
+                                isLoading={isLoading}
+                            />
+                        </div>
                         <div className="px-5 pt-3 border-b bg-slate-50/80">
-                            <Tabs items={[{ id: 'low_stock_active', label: '🚨 Sắp hết' }, { id: 'dead_stock', label: '📉 Tồn đọng' }, { id: 'over_stock', label: '📦 Dư thừa' }, { id: 'by_supplier', label: '🤝 Phân tích NCC' }]} activeTab={activeListTab} onTabChange={setActiveListTab} />
+                            <Tabs items={[{ id: 'all_products', label: '📦 Sản phẩm' }, { id: 'by_supplier', label: '🤝 Nhà cung cấp' }]} activeTab={activeListTab} onTabChange={setActiveListTab} />
                         </div>
                         <InventoryAnalysisDataTable data={currentListData} activeTab={activeListTab}
                             pagination={{ currentPage: listConfig.current_page, lastPage: listConfig.last_page, total: listConfig.total, perPage: listConfig.per_page, onPageChange: (n) => setFilters(prev => ({ ...prev, page: n })) }}
@@ -379,7 +307,6 @@ export const InventoryAnalysisContent = ({ setAppTitle }) => {
                 </div>
                 <button onClick={() => setShowGuide(true)} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-lg transition-all">📖 Hướng dẫn</button>
             </div>
-            <InventoryAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
             {renderContent()}
             {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
             {viewingProductId && <ProductDetailModal productIdentifier={viewingProductId} isOpen={true} onClose={() => setViewingProductId(null)} />}

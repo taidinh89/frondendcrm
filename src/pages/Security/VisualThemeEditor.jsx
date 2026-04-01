@@ -53,11 +53,11 @@ const VisualThemeEditor = () => {
     const fetchSites = async () => {
         try {
             const res = await axios.get('/api/v2/security/sites');
-            setSites(res.data.data);
-            if (res.data.data.length > 0 && !selectedSite) {
+            setSites(res.data?.data || []);
+            if (res.data?.data?.length > 0 && !selectedSite) {
                 setSelectedSite(res.data.data[0]);
             }
-        } catch (e) { toast.error("Lỗi nạp Site"); }
+        } catch (e) { toast.error("Lỗi nạp Site"); setSites([]); }
         finally { setIsLoading(false); }
     };
 
@@ -89,16 +89,16 @@ const VisualThemeEditor = () => {
     const fetchPatterns = async () => {
         try {
             const res = await axios.get('/api/v2/web/patterns');
-            setPatterns(res.data.data);
-        } catch (e) { console.error("Lỗi nạp mẫu"); }
+            setPatterns(res.data?.data || {});
+        } catch (e) { console.error("Lỗi nạp mẫu"); setPatterns({}); }
     };
 
     const fetchVersions = async () => {
         if (!selectedSite) return;
         try {
             const res = await axios.get(`/api/v2/security/themes/${selectedSite.theme_id}/versions`);
-            setVersions(res.data.data);
-        } catch (e) { console.error("Lỗi nạp phiên bản"); }
+            setVersions(res.data?.data || []);
+        } catch (e) { console.error("Lỗi nạp phiên bản"); setVersions([]); }
     };
 
     const fetchVersionData = async (vId) => {
@@ -209,7 +209,7 @@ const VisualThemeEditor = () => {
                         onChange={(e) => setSelectedSite(sites.find(s => s.code === e.target.value))}
                         className="bg-slate-50 border-none rounded-2xl text-[11px] font-black text-indigo-600 px-4 py-2 outline-none focus:ring-2 ring-indigo-100"
                     >
-                        {sites.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
+                        {(sites || []).map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
                     </select>
                 </div>
 
@@ -258,7 +258,7 @@ const VisualThemeEditor = () => {
                     <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex-1 overflow-y-auto">
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Sample Patterns</p>
                         <div className="space-y-3">
-                            {patterns[activeTab.replace('html_', '').replace('_custom', '').replace('_template_html', '')]?.map(p => (
+                            {(patterns || {})[activeTab.replace('html_', '').replace('_custom', '').replace('_template_html', '')]?.map(p => (
                                 <button
                                     key={p.name}
                                     onClick={() => insertPattern(p.html)}
@@ -288,7 +288,7 @@ const VisualThemeEditor = () => {
                             <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-widest">Variable Registry</h3>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-2">
-                            {schema.map(v => (
+                            {(schema || []).map(v => (
                                 <div
                                     key={v.key}
                                     onClick={() => insertVariable(v.key)}
@@ -308,7 +308,7 @@ const VisualThemeEditor = () => {
                             <button onClick={() => handleSave(true)} className="text-[9px] bg-indigo-500 text-white px-4 py-2 rounded-xl font-black uppercase hover:bg-indigo-400 transition-all shadow-lg shadow-indigo-500/20">Snapshot</button>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
-                            {versions.map(v => (
+                            {(versions || []).map(v => (
                                 <div
                                     key={v.id}
                                     onClick={() => setEditingVersionId(v.id)}

@@ -72,44 +72,43 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     // --- INITIALIZATION ---
     useEffect(() => {
         if (isOpen && product) {
-            // [LOGIC Má»šI - FINAL]
+            // [LOGIC MỚI - FINAL]
             const isCreatingChild = (currentMode === 'create_child') || (product.id && !product.parent_id && currentMode !== 'edit');
             const isEditingChild = !!product.parent_id;
 
-            // 1. XÃ¡c Ä‘á»‹nh Parent Data
+            // 1. Xác định Parent Data
             let origin = null;
             if (isCreatingChild) {
-                origin = product; // Cha lÃ  chÃ­nh nÃ³
+                origin = product; // Cha là chính nó
             } else if (isEditingChild) {
-                origin = product.parent; // Cha lÃ  parent (náº¿u cÃ³)
+                origin = product.parent; // Cha là parent (nếu có)
             }
             setParentOrigin(origin);
 
             // 2. Setup Form
             if (isCreatingChild) {
-                // --- MODE: Táº O LIÃŠN Káº¾T (SITE CON) ---
+                // --- MODE: TẠO LIÊN KẾT (SITE CON) ---
                 const cleanMediaIds = (product.media || []).map(m => m.master_file?.id || m.media_file_id || m.id).filter(id => id);
 
                 const initialForm = {
                     ...product,
                     id: null,
                     parent_id: product.id,
-                    site_code: 'THIENDUC', // Máº·c Ä‘á»‹nh hardcode theo yÃªu cáº§u, hoáº·c Ä‘á»ƒ user chá»‰nh
+                    site_code: 'THIENDUC', // Mặc định hardcode theo yêu cầu, hoặc để user chỉnh
                     media_ids: cleanMediaIds,
                     isOn: false,
 
-                    // [IMPORTANT] Set Null Ä‘á»ƒ hiá»ƒn thá»‹ tráº¡ng thÃ¡i káº¿ thá»«a (Placeholder mode)
+                    // [IMPORTANT] Set Null để hiển thị trạng thái kế thừa (Placeholder mode)
                     proName: null,
                     price_web: null,
                     price: null,
                     description: null,
                     spec: null,
-                    proSummary: null
                 };
                 mapProductToForm(initialForm, 'THIENDUC', true); // isNew = true
                 setActiveTabId('temp');
             } else {
-                // --- MODE: EDIT HOáº¶C Táº O Má»šI TINH ---
+                // --- MODE: EDIT HOẶC TẠO MỚI TINH ---
                 if (currentMode === 'edit' && product.id && product.id !== 'temp') {
                     initializeTabs(product.id);
                 } else {
@@ -150,7 +149,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             mapProductToForm(mainProd, 'QVC', false); // isNew = false (Editing)
             setParentData(null);
         } catch (e) {
-            toast.error("Lá»—i khá»Ÿi táº¡o tabs: " + e.message);
+            toast.error("Lỗi khởi tạo tabs: " + e.message);
         } finally {
             setIsLoading(false);
         }
@@ -239,7 +238,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 setParentOrigin(null);
             }
         } catch (e) {
-            toast.error("Lá»—i chuyá»ƒn tab");
+            toast.error("Lỗi chuyển tab");
         } finally {
             setIsLoading(false);
         }
@@ -311,45 +310,45 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     // --- SAVE & LINKING ---
     const handleSave = async (shouldClose = true) => {
         setIsSaving(true);
-        const tid = toast.loading("Äang lÆ°u dá»¯ liá»‡u...");
+        const tid = toast.loading("Đang lưu dữ liệu...");
         try {
             // [DIRTY CHECK BEFORE API CALL]
             const dirtyCount = getDirtyFieldsCount;
             const isEditing = activeTabId !== 'temp' && currentMode !== 'create_child';
 
             if (isEditing && dirtyCount === 0) {
-                toast.success("Há»‡ thá»‘ng: KhÃ´ng cÃ³ thay Ä‘á»•i nÃ o cáº§n lÆ°u!");
+                toast.success("Hệ thống: Không có thay đổi nào cần lưu!");
                 if (shouldClose) onClose();
                 return;
             }
 
-            // [LOGIC CHUáº¨N HÃ“A Dá»® LIá»†U Äáº¦U RA]
+            // [LOGIC CHUẨN HÓA DỮ LIỆU ĐẦU RA]
             const payload = preparePayloadForSubmit(formData, parentOrigin, currentMode);
 
             // [DEBUG - RAW LOGS REQUESTED]
-            console.group("ðŸš€ [DEBUG] V3 Save Payload");
+            console.group("🚀 [DEBUG] V3 Save Payload");
             console.log("Stats: Dirty Fields =", dirtyCount);
             console.log("Cleaned Payload (Only Modified):", payload);
             console.groupEnd();
 
             if (!isEditing) {
                 const res = await productApi.createV2(payload);
-                toast.success("Táº¡o má»›i thÃ nh cÃ´ng!", { id: tid });
+                toast.success("Tạo mới thành công!", { id: tid });
                 onRefresh && onRefresh();
                 if (onSuccess) { onSuccess(res.data); return; }
                 initializeTabs(res.data.id || res.data.data.id);
             } else {
                 await productApi.updateV2(activeTabId, payload);
-                toast.success(`ÄÃ£ cáº­p nháº­t ${dirtyCount} thay Ä‘á»•i!`, { id: tid });
+                toast.success(`Đã cập nhật ${dirtyCount} thay đổi!`, { id: tid });
 
-                // [DIRTY TRACKING] Cáº­p nháº­t baseData Ä‘á»ƒ xÃ³a highlight
+                // [DIRTY TRACKING] Cập nhật baseData để xóa highlight
                 setBaseData(JSON.parse(JSON.stringify(formData)));
 
                 onRefresh && onRefresh();
                 if (shouldClose) onClose();
             }
         } catch (e) {
-            toast.error("Lá»—i: " + (e.response?.data?.message || e.message), { id: tid });
+            toast.error("Lỗi: " + (e.response?.data?.message || e.message), { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -410,7 +409,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
         const isEditing = activeTabId !== 'temp' && mode !== 'create_child';
         const isChildSite = (mode === 'create_child') || (form.parent_id && form.site_code !== 'QVC') || (mode === 'create' && form.site_code !== 'QVC' && parent);
 
-        // 1. [DIRTY CHECK] Chá»‰ láº¥y nhá»¯ng trÆ°á»ng Ä‘Ã£ thay Ä‘á»•i (náº¿u lÃ  Edit)
+        // 1. [DIRTY CHECK] Chỉ lấy những trường đã thay đổi (nếu là Edit)
         const payload = {};
         Object.keys(form).forEach(f => {
             const currentVal = form[f];
@@ -425,14 +424,14 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 isDirty = String(currentVal || '').trim() !== String(baseVal || '').trim();
             }
 
-            // [FIX] Náº¿u lÃ  Táº O Má»šI (isEditing = false) -> LuÃ´n gá»­i dá»¯ liá»‡u
-            // Náº¿u lÃ  EDIT -> Chá»‰ gá»­i dá»¯ liá»‡u Ä‘Ã£ thay Ä‘á»•i
+            // [FIX] Nếu là TẠO MỚI (isEditing = false) -> Luôn gửi dữ liệu
+            // Nếu là EDIT -> Chỉ gửi dữ liệu đã thay đổi
             if (!isEditing || isDirty || f === 'site_code' || f === 'parent_id') {
                 payload[f] = currentVal;
             }
         });
 
-        // 2. [RIM PRUNING] Náº¿u lÃ  Site con, náº¿u giÃ¡ trá»‹ giá»‘ng há»‡t Master -> Gá»­i NULL Ä‘á»ƒ káº¿ thá»«a
+        // 2. [RIM PRUNING] Nếu là Site con, nếu giá trị giống hệt Master -> Gửi NULL để kế thừa
         if (isChildSite && parent) {
             console.log(`ðŸ§¹ [RIM_PRUNING] Comparing Child (${form.site_code}) vs Master (${parent.proName})`);
             const rimFields = ['proName', 'price_web', 'market_price', 'proSummary', 'description', 'spec', 'brandId', 'product_cat_web', 'warranty_web', 'storeSKU', 'specialOffer', 'promotion'];
@@ -451,11 +450,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 }
 
                 if (isSameAsParent) {
-                    payload[field] = null; // Backend sáº½ reset vá» null Ä‘á»ƒ káº¿ thá»«a
+                    payload[field] = null; // Backend sẽ reset về null để kế thừa
                 }
             });
 
-            // áº¢NH: Náº¿u bá»™ sÆ°u táº­p áº£nh giá»‘ng há»‡t cha -> Gá»­i rá»—ng Ä‘á»ƒ káº¿ thá»«a
+            // ẢNH: Nếu bộ sưu tập ảnh giống hệt cha -> Gửi rỗng để kế thừa
             const currentMedia = (form.media_ids || []).filter(id => id).sort().join(',');
             const parentMediaIds = (parent.media || []).map(m => m.master_file?.id || m.media_file_id || m.id).filter(id => id).sort().join(',');
             if (currentMedia === parentMediaIds) {
@@ -463,7 +462,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             }
         }
 
-        // 3. CHUáº¨N HÃ“A Ká»¸ THUáº¬T (Chá»‰ cháº¡y trÃªn nhá»¯ng trÆ°á»ng cÃ³ trong payload)
+        // 3. CHUẨN HÓA KỸ THUẬT (Chỉ chạy trên những trường có trong payload)
 
         // Category
         if (payload.catId !== undefined) {
@@ -501,16 +500,16 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
         if (!activeTabId || activeTabId === 'temp') return;
 
         setIsLoading(true);
-        const tid = toast.loading(`Äang khá»Ÿi táº¡o site ${targetSiteCode}...`);
+        const tid = toast.loading(`Đang khởi tạo site ${targetSiteCode}...`);
         try {
             const rootTab = tabs.find(t => t.is_root);
             const resRoot = await productApi.getDetailV2(rootTab.id);
             const rootData = resRoot.data.data || resRoot.data;
 
             const payload = {
-                parent_id: rootTab.id, // KÃ­ch hoáº¡t RIM (Remote Inheritance Model)
+                parent_id: rootTab.id, // Kích hoạt RIM (Remote Inheritance Model)
                 site_code: targetSiteCode,
-                isOn: 0, // Máº·c Ä‘á»‹nh táº¯t hiá»ƒn thá»‹ Ä‘á»ƒ ngÆ°á»i dÃ¹ng kiá»ƒm tra trÆ°á»›c khi publish
+                isOn: 0, // Mặc định tắt hiển thị để người dùng kiểm tra trước khi publish
             };
 
             const createRes = await productApi.createV2(payload);
@@ -523,11 +522,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 site_code: targetSiteCode
             });
 
-            toast.success(`ÄÃ£ táº¡o site ${targetSiteCode}`, { id: tid });
+            toast.success(`Đã tạo site ${targetSiteCode}`, { id: tid });
             setIsAddSiteOpen(false);
             initializeTabs(rootTab.id);
         } catch (e) {
-            toast.error("Lá»—i: " + e.message, { id: tid });
+            toast.error("Lỗi: " + e.message, { id: tid });
         } finally {
             setIsLoading(false);
         }
@@ -537,16 +536,16 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
         if (!activeTabId || activeTabId === 'temp') return;
         const isMaster = tabs.find(t => t.id === activeTabId)?.is_root;
         const msg = isMaster
-            ? "Cáº¢NH BÃO: Báº¡n Ä‘ang xÃ³a Sáº¢N PHáº¨M MASTER. Viá»‡c nÃ y sáº½ xÃ³a toÃ n bá»™ cÃ¡c site liÃªn káº¿t liÃªn quan. Báº¡n cÃ³ cháº¯c cháº¯n?"
-            : "XÃ³a phiÃªn báº£n sáº£n pháº©m nÃ y trÃªn site hiá»‡n táº¡i? (Dá»¯ liá»‡u Master sáº½ váº«n cÃ²n)";
+            ? "CẢNH BÁO: Bạn đang xóa SẢN PHẨM MASTER. Việc này sẽ xóa toàn bộ các site liên kết liên quan. Bạn có chắc chắn?"
+            : "Xóa phiên bản sản phẩm này trên site hiện tại? (Dữ liệu Master sẽ vẫn còn)";
 
         if (!window.confirm(msg)) return;
 
         setIsSaving(true);
-        const tid = toast.loading("Äang xÃ³a sáº£n pháº©m...");
+        const tid = toast.loading("Đang xóa sản phẩm...");
         try {
             await productApi.deleteV2(activeTabId);
-            toast.success("ÄÃ£ xÃ³a thÃ nh cÃ´ng", { id: tid });
+            toast.success("Đã xóa thành công", { id: tid });
 
             if (isMaster) {
                 onRefresh && onRefresh();
@@ -558,7 +557,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 onRefresh && onRefresh();
             }
         } catch (e) {
-            toast.error("Lá»—i khi xÃ³a: " + e.message, { id: tid });
+            toast.error("Lỗi khi xóa: " + e.message, { id: tid });
         } finally {
             setIsSaving(false);
         }
@@ -566,7 +565,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
     // --- MEDIA HANDLERS ---
     const smartUploadHandler = async (fileOrUrl) => {
-        const tid = toast.loading("Äang xá»­ lÃ½ áº£nh...");
+        const tid = toast.loading("Đang xử lý Hình ảnh...");
         try {
             const fd = new FormData();
             if (fileOrUrl instanceof File) fd.append('image', fileOrUrl);
@@ -581,7 +580,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             const url = newImg.url || newImg.displayUrl || newImg.preview_url;
             const fileId = newImg.id || newImg.master_file_id || (newImg.data && newImg.data.id);
 
-            if (!fileId) throw new Error("KhÃ´ng láº¥y Ä‘Æ°á»£c ID áº£nh tá»« server");
+            if (!fileId) throw new Error("Không lấy được ID ảnh từ server");
 
             setFullImages(prev => [...prev, { ...newImg, id: fileId, displayUrl: url, is_temp: true }]);
             setFormData(prev => ({
@@ -589,30 +588,30 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 media_ids: [...new Set([...(prev.media_ids || []), fileId])] // Prevent duplicate IDs
             }));
 
-            toast.success("ÄÃ£ táº£i lÃªn!", { id: tid });
+            toast.success("Đã tải lên!", { id: tid });
             return { id: fileId, url };
         } catch (e) {
-            toast.error("Lá»—i upload: " + e.message, { id: tid });
+            toast.error("Lỗi upload: " + e.message, { id: tid });
             return null;
         }
     };
 
     const handleDeleteImage = (img) => {
-        if (!window.confirm("Gá»¡ bá» áº£nh nÃ y khá»i danh sÃ¡ch sáº£n pháº©m?")) return;
+        if (!window.confirm("Gỡ bỏ ảnh này khỏi danh sách sản phẩm?")) return;
 
-        // V3 Logic: Gá»¡ local trÆ°á»›c, sáº½ lÆ°u tháº­t khi báº¥m XÃ¡c Nháº­n
-        const imgId = img.id; // ÄÃ¢y lÃ  file_id
+        // V3 Logic: Gỡ local trước, sẽ lưu thật khi bấm Xác Nhận
+        const imgId = img.id; // Đây là file_id
         setFullImages(prev => prev.filter(i => i.id !== imgId));
         setFormData(prev => ({
             ...prev,
             media_ids: (prev.media_ids || []).filter(id => id !== imgId)
         }));
 
-        toast.success("ÄÃ£ gá»¡ áº£nh (Báº¥m XÃ¡c Nháº­n Ä‘á»ƒ lÆ°u thay Ä‘á»•i)");
+        toast.success("Đã gỡ ảnh (Bấm Xác Nhận để lưu thay đổi)");
     };
 
     const handleSetMain = (targetId) => {
-        // V3 Logic: ÄÆ°a lÃªn Ä‘áº§u danh sÃ¡ch (Sáº½ Ä‘Æ°á»£c syncMedia Ä‘áº·t lÃ m áº£nh chÃ­nh)
+        // V3 Logic: Đưa lên đầu danh sách (Sẽ được syncMedia đặt làm ảnh chính)
         setFullImages(prev => {
             const item = prev.find(img => img.id === targetId);
             if (!item) return prev;
@@ -625,7 +624,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
             return { ...prev, media_ids: [targetId, ...others] };
         });
 
-        toast.success("ÄÃ£ Ä‘áº·t lÃ m áº£nh chÃ­nh (Báº¥m XÃ¡c Nháº­n Ä‘á»ƒ lÆ°u)");
+        toast.success("Đã đặt làm ảnh chính (Bấm Xác Nhận để lưu)");
     };
 
     // --- SYNC STATUS ---
@@ -640,11 +639,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
         return (
             <div className="absolute right-0 top-0 -mt-2 -mr-2 z-10">
                 {separated ? (
-                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-1 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm" title="KhÃ¡c QVC">
+                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-1 py-0.5 rounded border border-orange-200 flex items-center gap-1 shadow-sm" title="Khác QVC">
                         <Icon name="unlink" className="w-3 h-3" /> RIM
                     </span>
                 ) : (
-                    <span className="text-[8px] font-black bg-indigo-100 text-indigo-400 px-1 py-0.5 rounded flex items-center gap-1 opacity-50 hover:opacity-100 cursor-help" title="Tiáº¿p tá»¥c Ä‘á»“ng bá»™">
+                    <span className="text-[8px] font-black bg-indigo-100 text-indigo-400 px-1 py-0.5 rounded flex items-center gap-1 opacity-50 hover:opacity-100 cursor-help" title="Tiếp tục đồng bộ">
                         <Icon name="link" className="w-3 h-3" /> SYNC
                     </span>
                 )}
@@ -672,17 +671,17 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
     const getPlatformUrl = (siteCode, slug, id) => {
         if (!slug && !id) return '#';
 
-        // Loáº¡i bá» gáº¡ch chÃ©o á»Ÿ Ä‘áº§u slug náº¿u cÃ³ Ä‘á»ƒ trÃ¡nh lá»—i double slash (//)
+        // Loại bỏ gạch chéo ở đầu slug nếu có để tránh lỗi double slash (//)
         const cleanPath = (slug || String(id)).replace(/^\/+/, '');
 
-        // 1. Link Web tháº­t (Chá»‰ dÃ¹ng cho QVC Master khi áº¥n nÃºt Public)
+        // 1. Link Web thật (Chỉ dùng cho QVC Master khi ấn nút Public)
         if (siteCode === 'QVC') {
             let finalSlug = cleanPath;
             if (!finalSlug.endsWith('.html')) finalSlug += '.html';
             return `https://qvc.vn/${finalSlug}`;
         }
 
-        // 2. Link Ná»™i bá»™ (DÃ¹ng cho táº¥t cáº£ cÃ¡c site con vÃ  xem ná»™i bá»™ QVC)
+        // 2. Link Nội bộ (Dùng cho tất cả các site con và xem nội bộ QVC)
         const currentOrigin = window.location.origin;
         const targetSite = siteCode === 'QVC_INTERNAL' ? 'QVC' : siteCode;
 
@@ -704,7 +703,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                             <Icon name="package" className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="font-black text-slate-800 uppercase tracking-tighter leading-none">Cáº¥u hÃ¬nh Site</h2>
+                            <h2 className="font-black text-slate-800 uppercase tracking-tighter leading-none">Cấu hình Site</h2>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Multi-Site Synchronization</p>
                         </div>
                     </div>
@@ -751,7 +750,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         >
                             <div className={`w-3 h-3 rounded-full ${formData.isOn ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                             <span className="text-xs font-black uppercase tracking-[0.2em]">
-                                {formData.isOn ? 'ÄANG HIá»†N (ONLINE)' : 'ÄANG áº¨N (OFFLINE)'}
+                                {formData.isOn ? 'ĐANG HIỆN (ONLINE)' : 'ĐANG ẨN (OFFLINE)'}
                             </span>
                             <Icon name={formData.isOn ? "eye" : "eye-off"} className="w-4 h-4" />
                         </button>
@@ -769,7 +768,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                         rel="noopener noreferrer"
                                         className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-lg shadow-slate-200"
                                     >
-                                        <Icon name="external-link" className="w-3.5 h-3.5" /> Xem trÃªn QVC.VN
+                                        <Icon name="external-link" className="w-3.5 h-3.5" /> Xem trên QVC.VN
                                     </a>
                                 )}
                                 <a
@@ -778,7 +777,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     rel="noopener noreferrer"
                                     className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100"
                                 >
-                                    <Icon name="eye" className="w-3.5 h-3.5" /> Xem Ná»™i Bá»™
+                                    <Icon name="eye" className="w-3.5 h-3.5" /> Xem Nội Bộ
                                 </a>
                             </div>
                         )}
@@ -786,11 +785,11 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         {typeof onSwitchVersion === 'function' && (
                             <button
                                 onClick={() => {
-                                    toast.success("Äang chuyá»ƒn...");
+                                    toast.success("Đang chuyển...");
                                     onSwitchVersion();
                                 }}
                                 className="flex flex-col items-center justify-center p-3 bg-white text-emerald-600 rounded-2xl hover:bg-emerald-50 transition-all shadow-sm border border-emerald-100 active:scale-90"
-                                title="Chuyá»ƒn sang báº£n Mobile Lite"
+                                title="Chuyển sang bản Mobile Lite"
                             >
                                 <Icon name="zap" className="w-5 h-5 mb-0.5" />
                                 <span className="text-[8px] font-black uppercase">Lite</span>
@@ -800,7 +799,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         <button
                             onClick={onClose}
                             className="p-3 bg-white text-slate-400 rounded-2xl hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm border border-slate-100 active:scale-90"
-                            title="ÄÃ³ng (ESC)"
+                            title="Đóng (ESC)"
                         >
                             <Icon name="x" className="w-6 h-6" />
                         </button>
@@ -808,7 +807,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
                     {isAddSiteOpen && (
                         <div className="absolute top-[80px] left-[60%] mt-2 w-72 bg-white rounded-[2rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] border-2 border-emerald-50 p-3 z-[100] animate-slideUp origin-top">
-                            <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 p-3 rounded-2xl uppercase mb-3 tracking-widest text-center">KÃ­ch hoáº¡t Site má»›i</div>
+                            <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 p-3 rounded-2xl uppercase mb-3 tracking-widest text-center">Kích hoạt Site mới</div>
                             <div className="space-y-1">
                                 {availableSites.map(s => (
                                     <button key={s.code} onClick={() => handleCreateForSite(s.code)} className="w-full text-left px-5 py-4 rounded-2xl hover:bg-emerald-50 text-xs font-black text-slate-700 flex justify-between items-center group transition-all active:scale-[0.98]">
@@ -819,7 +818,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     </button>
                                 ))}
                             </div>
-                            {availableSites.length === 0 && <div className="p-6 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">ÄÃ£ Ä‘á»§ táº¥t cáº£ site</div>}
+                            {availableSites.length === 0 && <div className="p-6 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">Đã đủ tất cả site</div>}
                         </div>
                     )}
                 </div>
@@ -829,7 +828,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                     {isLoading ? (
                         <div className="h-full flex flex-col items-center justify-center gap-4 opacity-50">
                             <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-xs font-black uppercase tracking-widest text-indigo-600">Äang náº¡p dá»¯ liá»‡u site...</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-indigo-600">Đang nạp dữ liệu site...</p>
                         </div>
                     ) : (
                         <div className="max-w-[1600px] mx-auto space-y-6">
@@ -839,7 +838,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
                                 {!formData.isOn && (
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-bounce z-20 border-2 border-white">
-                                        Sáº£n pháº©m chÆ°a hiá»ƒn thá»‹ trÃªn APP/WEB
+                                        Sản phẩm chưa hiển thị trên APP/WEB
                                     </div>
                                 )}
 
@@ -847,8 +846,8 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
                                     <div className="flex-[3] relative group">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">
-                                            TÃªn sáº£n pháº©m ({formData.site_code})
-                                            {(formData.parent_id && formData.proName === null) && <span className="ml-2 text-indigo-500">(Äang káº¿ thá»«a)</span>}
+                                            Tên sản phẩm ({formData.site_code})
+                                            {(formData.parent_id && formData.proName === null) && <span className="ml-2 text-indigo-500">(Đang kế thừa)</span>}
                                         </label>
 
                                         <input
@@ -864,23 +863,23 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                         : 'bg-white text-slate-800 border-transparent hover:border-slate-50 focus:border-indigo-500')
                                                 }
                                             `}
-                                            placeholder={formData.parent_id ? `(Káº¿ thá»«a): ${parentOrigin?.proName}` : "Nháº­p tÃªn sáº£n pháº©m..."}
+                                            placeholder={formData.parent_id ? `(Kế thừa): ${parentOrigin?.proName}` : "Nhập tên sản phẩm..."}
                                         />
                                         {isFieldDirty('proName') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
 
                                         {/* Undo Button */}
                                         {formData.parent_id && formData.proName && formData.proName !== parentOrigin?.proName && (
                                             <button
-                                                onClick={() => setFormData({ ...formData, proName: null })} // Set null Ä‘á»ƒ dÃ¹ng láº¡i tÃªn cha
+                                                onClick={() => setFormData({ ...formData, proName: null })} // Set null để dùng lại tên cha
                                                 className="absolute right-0 top-0 text-[10px] font-bold text-indigo-600 hover:underline opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-1 rounded shadow-sm"
-                                                title="Quay láº¡i dÃ¹ng tÃªn gá»‘c cá»§a cha"
+                                                title="Quay lại dùng tên gốc của cha"
                                             >
-                                                HoÃ n tÃ¡c (DÃ¹ng tÃªn gá»‘c)
+                                                Hoàn tác (Dùng tên gốc)
                                             </button>
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Slug / ÄÆ°á»ng dáº«n</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Slug / Đường dẫn</label>
                                         <input
                                             value={formData.request_path}
                                             readOnly={formData.site_code !== 'QVC'}
@@ -901,18 +900,18 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                         {renderSyncStatus('brandId')}
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50/50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
 
-                                        <SectionHeader title="Danh má»¥c & ThÆ°Æ¡ng hiá»‡u" icon="hash" color="indigo" />
+                                        <SectionHeader title="Danh mục & Thương hiệu" icon="hash" color="indigo" />
 
                                         <div className="space-y-6 mt-4 relative z-10">
                                             {/* Premium Brand Picker */}
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ThÆ°Æ¡ng hiá»‡u</label>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thương hiệu</label>
                                                     <button
                                                         onClick={() => setBrandManager({ open: true })}
                                                         className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
                                                     >
-                                                        TÃ¹y chá»‰nh
+                                                        Tùy chỉnh
                                                     </button>
                                                 </div>
                                                 <div
@@ -941,9 +940,9 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="text-sm font-black text-slate-900 truncate">
-                                                                        {displayBrand?.name || 'ChÆ°a chá»n thÆ°Æ¡ng hiá»‡u'}
+                                                                        {displayBrand?.name || 'Chưa chọn thương hiệu'}
                                                                     </div>
-                                                                    <div className="text-[10px] font-bold text-slate-400 uppercase">Báº¥m Ä‘á»ƒ thay Ä‘á»•i</div>
+                                                                    <div className="text-[10px] font-bold text-slate-400 uppercase">Bấm để thay đổi</div>
                                                                 </div>
                                                             </>
                                                         );
@@ -955,12 +954,12 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                             {/* Premium Category Picker */}
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh má»¥c sáº£n pháº©m</label>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh mục sản phẩm</label>
                                                     <button
                                                         onClick={() => setCatManager({ open: true })}
                                                         className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
                                                     >
-                                                        Quáº£n lÃ½
+                                                        Quản lý
                                                     </button>
                                                 </div>
 
@@ -973,7 +972,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                         if (catIds.length === 0) return (
                                                             <div className="flex items-center gap-2 text-slate-400">
                                                                 <Icon name="plus" className="w-5 h-5" />
-                                                                <span className="text-sm font-bold">Chá»n danh má»¥c</span>
+                                                                <span className="text-sm font-bold">Chọn danh mục</span>
                                                             </div>
                                                         );
 
@@ -1005,33 +1004,33 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
 
                                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative">
                                         {renderSyncStatus('storeSKU')}
-                                        <SectionHeader title="Äá»‹nh danh" icon="tag" color="blue" />
+                                        <SectionHeader title="Định danh" icon="tag" color="blue" />
                                         <div className="space-y-4 mt-6">
-                                            <FormField label="MÃ£ SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} isDirty={isFieldDirty('storeSKU')} />
+                                            <FormField label="Mã SKU" value={formData.storeSKU} onChange={v => setFormData({ ...formData, storeSKU: v })} isDirty={isFieldDirty('storeSKU')} />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField label="Model / NSX" value={formData.productModel} onChange={v => setFormData({ ...formData, productModel: v })} isDirty={isFieldDirty('productModel')} />
-                                                <FormField label="Báº£o hÃ nh" value={formData.warranty_web} onChange={v => setFormData({ ...formData, warranty_web: v })} isDirty={isFieldDirty('warranty_web')} placeholder="VD: 12 ThÃ¡ng" />
+                                                <FormField label="Bảo hành" value={formData.warranty_web} onChange={v => setFormData({ ...formData, warranty_web: v })} isDirty={isFieldDirty('warranty_web')} placeholder="VD: 12 Tháng" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <FormField label="Trá»ng lÆ°á»£ng (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} isDirty={isFieldDirty('weight')} />
+                                                <FormField label="Trọng lượng (g)" type="number" value={formData.weight} onChange={v => setFormData({ ...formData, weight: v })} isDirty={isFieldDirty('weight')} />
                                                 <div className="flex items-end pb-1">
-                                                    <ToggleField label="Hiá»‡n Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} isDirty={isFieldDirty('isOn')} color="indigo" />
+                                                    <ToggleField label="Hiện Web" checked={formData.isOn} onChange={v => setFormData({ ...formData, isOn: v })} isDirty={isFieldDirty('isOn')} color="indigo" />
                                                 </div>
                                             </div>
 
                                             <div className="pt-4 border-t border-slate-100">
                                                 <div className="flex justify-between items-center mb-4">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Tráº¡ng thÃ¡i Marketing</label>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Trạng thái Marketing</label>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3 mb-6">
-                                                    <ToggleField label="Sáº£n pháº©m HOT" checked={formData.is_hot} onChange={v => setFormData({ ...formData, is_hot: v })} isDirty={isFieldDirty('is_hot')} color="rose" />
-                                                    <ToggleField label="Sáº£n pháº©m Má»šI" checked={formData.is_new} onChange={v => setFormData({ ...formData, is_new: v })} isDirty={isFieldDirty('is_new')} color="emerald" />
-                                                    <ToggleField label="BÃN CHáº Y" checked={formData.is_best_sell} onChange={v => setFormData({ ...formData, is_best_sell: v })} isDirty={isFieldDirty('is_best_sell')} color="orange" />
-                                                    <ToggleField label="GIáº¢M GIÃ" checked={formData.is_sale_off} onChange={v => setFormData({ ...formData, is_sale_off: v })} isDirty={isFieldDirty('is_sale_off')} color="blue" />
+                                                    <ToggleField label="Sản phẩm HOT" checked={formData.is_hot} onChange={v => setFormData({ ...formData, is_hot: v })} isDirty={isFieldDirty('is_hot')} color="rose" />
+                                                    <ToggleField label="Sản phẩm MỚI" checked={formData.is_new} onChange={v => setFormData({ ...formData, is_new: v })} isDirty={isFieldDirty('is_new')} color="emerald" />
+                                                    <ToggleField label="BÁN CHẠY" checked={formData.is_best_sell} onChange={v => setFormData({ ...formData, is_best_sell: v })} isDirty={isFieldDirty('is_best_sell')} color="orange" />
+                                                    <ToggleField label="GIẢM GIÁ" checked={formData.is_sale_off} onChange={v => setFormData({ ...formData, is_sale_off: v })} isDirty={isFieldDirty('is_sale_off')} color="blue" />
                                                 </div>
 
                                                 <div className="space-y-1">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Thá»© tá»± hiá»ƒn thá»‹ (Order)</label>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Thứ tự hiển thị (Order)</label>
                                                     <div className="flex gap-4 items-start">
                                                         <div className="w-24 shrink-0 relative">
                                                             <input
@@ -1044,8 +1043,8 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                         </div>
                                                         <div className="flex-1 text-[9px] font-bold text-slate-400 leading-tight bg-slate-50/50 p-2 rounded-xl border border-slate-100/50">
                                                             <Icon name="info" className="w-3 h-3 inline mr-1 mb-0.5" />
-                                                            Náº¿u Ä‘á»ƒ <span className="text-slate-600">0, 1, 99, 101</span>: Há»‡ thá»‘ng tá»± Ä‘á»™ng Ä‘áº©y lÃªn 101 khi cÃ²n hÃ ng, vá» 1 khi háº¿t hÃ ng.
-                                                            Nháº­p sá»‘ khÃ¡c Ä‘á»ƒ cá»‘ Ä‘á»‹nh vá»‹ trÃ­.
+                                                            Nếu để <span className="text-slate-600">0, 1, 99, 101</span>: Hệ thống tự động đẩy lên 101 khi còn hàng, về 1 khi hết hàng.
+                                                            Nhập số khác để cố định vị trí.
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1060,16 +1059,16 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                         {renderSyncStatus('media_ids')}
                                         <div className="flex justify-between items-center mb-6">
                                             <div className="flex items-center gap-3">
-                                                <SectionHeader title={`ThÆ° viá»‡n áº£nh (${standardImages.length})`} icon="image" color="orange" />
+                                                <SectionHeader title={`Thư viện ảnh (${standardImages.length})`} icon="image" color="orange" />
                                                 {formData.is_media_inherited && (
                                                     <span className="bg-indigo-50 text-indigo-600 text-[9px] font-black px-2 py-0.5 rounded-lg border border-indigo-100 flex items-center gap-1 animate-pulse">
-                                                        <Icon name="link" className="w-2.5 h-2.5" /> Thá»«a káº¿ tá»« QVC
+                                                        <Icon name="link" className="w-2.5 h-2.5" /> Thừa kế từ QVC
                                                     </span>
                                                 )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => setIsMediaManagerOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center gap-2 hover:-translate-y-0.5 transition-all">
-                                                    <Icon name="search" className="w-3.5 h-3.5" /> Kho áº£nh V3
+                                                    <Icon name="search" className="w-3.5 h-3.5" /> Kho ảnh V3
                                                 </button>
                                                 <label className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all cursor-pointer shadow-sm">
                                                     Upload
@@ -1098,7 +1097,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                             {standardImages.length > 0 ? standardImages.map((img, i) => (
                                                 <div key={img.id || i} className={`relative aspect-square rounded-2xl border-2 overflow-hidden bg-white group hover:border-indigo-400 transition-all shadow-sm ${img.is_main ? 'border-indigo-600 ring-4 ring-indigo-50' : 'border-slate-100'}`}>
                                                     <img src={img.displayUrl} className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500" alt="" />
-                                                    {img.is_main && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl shadow-md">CHÃNH</div>}
+                                                    {img.is_main && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl shadow-md">CHÍNH</div>}
                                                     <div className="absolute inset-0 bg-indigo-900/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-all backdrop-blur-[2px]">
                                                         {!img.is_main && <button onClick={() => handleSetMain(img.id)} className="w-8 h-8 bg-white text-indigo-600 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><Icon name="check" className="w-4 h-4" /></button>}
                                                         <button onClick={() => setPreviewImage(img.displayUrl)} className="w-8 h-8 bg-white text-blue-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><Icon name="eye" className="w-4 h-4" /></button>
@@ -1110,7 +1109,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                                     <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center">
                                                         <Icon name="image" className="w-10 h-10" />
                                                     </div>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">ChÆ°a cÃ³ hÃ¬nh áº£nh nÃ o</span>
+                                                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Chưa có hình ảnh nào</span>
                                                 </div>
                                             )}
                                         </div>
@@ -1121,19 +1120,19 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                 <div className="xl:col-span-4 space-y-6">
                                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative">
                                         {renderSyncStatus('price_web')}
-                                        <SectionHeader title="GiÃ¡ & Kho" icon="dollar-sign" color="red" />
+                                        <SectionHeader title="Giá & Kho" icon="dollar-sign" color="red" />
                                         <div className="mt-8 grid grid-cols-2 gap-8">
                                             <div className="col-span-2 md:col-span-1">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">GiÃ¡ bÃ¡n láº»</label>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Giá bán lẻ</label>
                                                 <div className="relative group">
                                                     <input type="number" value={formData.price_web} onChange={e => setFormData({ ...formData, price_web: e.target.value })}
                                                         className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('price_web') ? 'text-orange-600 border-orange-400' : 'text-red-600 border-slate-100 focus:border-red-500'}`} />
-                                                    <span className="absolute right-1 bottom-3 text-xs font-black text-red-400 group-focus-within:text-red-600 transition-colors">VNÄ</span>
+                                                    <span className="absolute right-1 bottom-3 text-xs font-black text-red-400 group-focus-within:text-red-600 transition-colors">VNĐ</span>
                                                     {isFieldDirty('price_web') && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>}
                                                 </div>
                                             </div>
                                             <div className="col-span-2 md:col-span-1">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Tá»“n kho</label>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Tồn kho</label>
                                                 <div className="relative group">
                                                     <input type="number" value={formData.quantity_web} onChange={e => setFormData({ ...formData, quantity_web: e.target.value })}
                                                         className={`w-full font-black text-3xl border-b-4 outline-none pb-2 px-1 transition-all bg-transparent ${isFieldDirty('quantity_web') ? 'text-orange-600 border-orange-400' : 'text-slate-800 border-slate-100 focus:border-indigo-500'}`} />
@@ -1145,23 +1144,23 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                                     </div>
                                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative">
                                         {renderSyncStatus('proSummary')}
-                                        <SectionHeader title="MÃ´ táº£ nhanh" icon="file-text" color="purple" />
+                                        <SectionHeader title="Mô tả nhanh" icon="file-text" color="purple" />
                                         <div className="mt-6">
                                             <textarea
                                                 value={formData.proSummary}
                                                 onChange={e => setFormData({ ...formData, proSummary: e.target.value })}
                                                 className={`w-full p-5 border-2 rounded-[2rem] text-sm font-bold text-slate-700 outline-none transition-all min-h-[160px] resize-none shadow-inner leading-relaxed
                                                     ${isFieldDirty('proSummary') ? 'border-orange-400 bg-orange-50/10' : 'bg-slate-50 border-slate-100 focus:bg-white focus:border-purple-500'}`}
-                                                placeholder="Nháº­p mÃ´ táº£ tÃ³m táº¯t..."
+                                                placeholder="Nhập mô tả tóm tắt..."
                                             ></textarea>
                                             {isFieldDirty('proSummary') && <div className="absolute top-10 right-10 w-3 h-3 bg-orange-500 rounded-full animate-pulse shadow-md"></div>}
                                         </div>
                                         <div className="flex gap-4 mt-4">
                                             <button onClick={() => setFullEditor({ open: true, type: 'description' })} className="flex-1 py-4 bg-indigo-50 text-indigo-600 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                                                <Icon name="edit" className="w-3.5 h-3.5 inline mr-2" /> Soáº¡n bÃ i viáº¿t
+                                                <Icon name="edit" className="w-3.5 h-3.5 inline mr-2" /> Soạn bài viết
                                             </button>
                                             <button onClick={() => setFullEditor({ open: true, type: 'spec' })} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm">
-                                                <Icon name="list" className="w-3.5 h-3.5 inline mr-2" /> ThÃ´ng sá»‘
+                                                <Icon name="list" className="w-3.5 h-3.5 inline mr-2" /> Thông số
                                             </button>
                                         </div>
                                     </div>
@@ -1193,9 +1192,9 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 {/* 3. FOOTER (Floating Style) */}
                 <div className="bg-white/80 backdrop-blur-xl p-6 border-t flex gap-6 items-center px-12 shrink-0">
                     <div className="hidden lg:block flex-1">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Äang chá»‰nh sá»­a cho:</p>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Đang chỉnh sửa cho:</p>
                         <p className="text-sm font-black text-indigo-600 uppercase tracking-tight truncate max-w-[400px]">
-                            {formData.proName || 'Sáº£n pháº©m má»›i'}
+                            {formData.proName || 'Sản phẩm mới'}
                         </p>
                     </div>
 
@@ -1205,13 +1204,13 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                             disabled={isSaving}
                             className="px-6 py-4 bg-rose-50 text-rose-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all active:scale-95 flex items-center gap-2 border border-rose-100"
                         >
-                            <Icon name="trash" className="w-4 h-4" /> XÃ³a
+                            <Icon name="trash" className="w-4 h-4" /> Xóa
                         </button>
                     )}
 
-                    <button onClick={onClose} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all active:scale-95">ÄÃ³ng</button>
+                    <button onClick={onClose} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all active:scale-95">Đóng</button>
                     <button onClick={() => handleSave(false)} className="px-8 py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 transition-all active:scale-95 shadow-sm">
-                        LÆ¯U & TIáº¾P Tá»¤C {getDirtyFieldsCount > 0 && <span className="ml-2 bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[8px]">{getDirtyFieldsCount}</span>}
+                        LƯU & TIẾP TỤC {getDirtyFieldsCount > 0 && <span className="ml-2 bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[8px]">{getDirtyFieldsCount}</span>}
                     </button>
                     <button
                         onClick={() => handleSave(true)}
@@ -1219,7 +1218,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                         className={`px-12 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 shadow-2xl
                             ${(getDirtyFieldsCount > 0 || activeTabId === 'temp') ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1' : 'bg-slate-200 text-slate-500 shadow-none hover:bg-slate-300'}`}
                     >
-                        {isSaving ? 'ÄANG LÆ¯U Há»† THá»NG...' : (activeTabId === 'temp' ? `XÃC NHáº¬N Táº O Sáº¢N PHáº¨M (${getDirtyFieldsCount} TRÆ¯á»œNG Má»šI)` : (getDirtyFieldsCount > 0 ? `XÃC NHáº¬N LÆ¯U ${getDirtyFieldsCount} THAY Äá»”I` : 'XÃC NHáº¬N & ÄÃ“NG'))}
+                        {isSaving ? 'ĐANG LƯU HỆ THỐNG...' : 'XÁC NHẬN'}
                     </button>
                 </div>
             </div>
@@ -1257,7 +1256,7 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 }}
             />
 
-            <Modal isOpen={fullEditor.open} onClose={() => setFullEditor({ ...fullEditor, open: false })} title="TrÃ¬nh soáº¡n tháº£o">
+            <Modal isOpen={fullEditor.open} onClose={() => setFullEditor({ ...fullEditor, open: false })} title="Trình soạn thảo">
                 <RichTextEditor
                     value={fullEditor.type === 'description' ? formData.description : formData.spec}
                     onChange={v => setFormData({ ...formData, [fullEditor.type]: v })}
@@ -1267,12 +1266,14 @@ const ProductMobileDetailV3 = ({ isOpen, onClose, product, mode, onRefresh, dict
                 />
             </Modal>
 
-            {previewImage && (
-                <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-10" onClick={() => setPreviewImage(null)}>
-                    <img src={previewImage} className="max-w-full max-h-full object-contain rounded-lg" alt="" />
-                </div>
-            )}
-        </div>
+            {
+                previewImage && (
+                    <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-10" onClick={() => setPreviewImage(null)}>
+                        <img src={previewImage} className="max-w-full max-h-full object-contain rounded-lg" alt="" />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import { InventoryDetailCard, InventoryDenseTable, InventoryCompactList, ProductDetailModal, InventoryVirtualizedTable, InventoryLegacyTable } from '../../components/Core/InventoryViews.jsx';
@@ -68,6 +68,10 @@ export const DirectInventoryChecker = () => {
     const [syncStatus, setSyncStatus] = useState({ ecount: null, misa: null });
     const [triggeringTypes, setTriggeringTypes] = useState([]);
 
+    // Sort states
+    const [sortBy, setSortBy] = useState('total_ecount_quantity');
+    const [sortDirection, setSortDirection] = useState('desc');
+
     const scrollParentRef = React.useRef(null);
 
     // Modal state
@@ -102,6 +106,16 @@ export const DirectInventoryChecker = () => {
         setHistoryProductId(item.ecount_code || item.primary_code);
     };
 
+    const handleSort = (sortKey) => {
+        if (!sortKey) return;
+        if (sortBy === sortKey) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(sortKey);
+            setSortDirection('desc');
+        }
+    };
+
     const fetchFilterOptions = async () => {
         try {
             const res = await axios.get(API_FILTERS_ENDPOINT);
@@ -128,7 +142,13 @@ export const DirectInventoryChecker = () => {
 
         try {
             const res = await axios.get(API_INDEX_ENDPOINT, {
-                params: { ...filters, page, source_type: sourceType }
+                params: { 
+                    ...filters, 
+                    page, 
+                    source_type: sourceType,
+                    sort_by: sortBy,
+                    sort_direction: sortDirection
+                }
             });
 
             const { data: newData, current_page, last_page, total } = res.data;
@@ -168,7 +188,7 @@ export const DirectInventoryChecker = () => {
                 isFetchingRef.current = false;
             }, 100);
         }
-    }, [filters, sourceType]);
+    }, [filters, sourceType, sortBy, sortDirection]);
 
     useEffect(() => {
         fetchFilterOptions();
@@ -213,7 +233,7 @@ export const DirectInventoryChecker = () => {
             nextPageRef.current = 1;
             fetchList(1);
         }
-    }, [mode, filters.brand, filters.category, filters.has_stock, filters.vat_rate, sourceType, fetchList]);
+    }, [mode, filters.brand, filters.category, filters.has_stock, filters.vat_rate, sourceType, sortBy, sortDirection, fetchList]);
 
     // Infinite Scroll via IntersectionObserver
     useEffect(() => {
@@ -279,7 +299,10 @@ export const DirectInventoryChecker = () => {
             onSelectName: openDetail,
             parentRef: scrollParentRef,
             loadMoreRef: loadMoreRef,
-            isLoading: isFetchingNextPage
+            isLoading: isFetchingNextPage,
+            sortBy,
+            sortDirection,
+            onSort: handleSort
         };
         if (viewMode === 'table_legacy') return <InventoryLegacyTable {...props} />;
         if (viewMode === 'table_v2') return <InventoryVirtualizedTable {...props} />;

@@ -175,6 +175,12 @@ axios.interceptors.response.use(response => {
     // B. Mặc định trả về response gốc
     return response;
 }, error => {
+    // --- BỔ SUNG: KHÔNG BÁO LỖI NẾU REQUEST BỊ HỦY CHỦ ĐỘNG (AbortController) ---
+    if (axios.isCancel(error)) {
+        logger('warning', '🚫 REQUEST ABORTED - Bỏ qua thông báo lỗi');
+        return Promise.reject(error);
+    }
+
     const { response } = error;
     let errorMsg = 'Lỗi hệ thống';
     let errorCode = 'SYSTEM_ERROR';

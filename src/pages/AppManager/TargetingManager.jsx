@@ -143,6 +143,7 @@ const TargetingManager = () => {
                                     <Option value="user_id">Mã người dùng (User ID)</Option>
                                     <Option value="platform">Nền tảng (iOS/Android)</Option>
                                     <Option value="app_version">Phiên bản App</Option>
+                                    <Option value="device_id">Mã thiết bị (Device ID)</Option>
                                 </Select>
                             </Form.Item>
                         </Col>

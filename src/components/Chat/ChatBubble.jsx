@@ -16,9 +16,11 @@ const ChatBubble = ({ user }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
     const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+    const [yPosition, setYPosition] = useState(window.innerHeight / 2 - 50);
+    const [side, setSide] = useState('right'); // 'left' or 'right'
     const [isDragging, setIsDragging] = useState(false);
-    const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 100 });
-    // Global Store Bindings
+
+    // Global Store Bindings (Optimized)
     const {
         internalConversations: staffConversations,
         unreadInternalCount: unreadStaffCount,
@@ -31,13 +33,23 @@ const ChatBubble = ({ user }) => {
         markNotifyReadLocal
     } = useChatStore();
 
-    // 1. Khởi tạo Global Data & Socket
+    // 1. Khởi tạo Global Data & Socket (Delayed for performance)
     useEffect(() => {
         if (!user.id) return;
 
-        // Ensure Global Data & Socket are initialized exactly once upon login
-        initGlobalData();
-        initGlobalSocket(user.id);
+        // Trì hoãn việc gọi API để ưu tiên tài nguyên cho trang hiện tại tải xong
+        // (Tránh tranh chấp băng thông/CPU ngay lúc vừa vào trang)
+        const initTimeout = setTimeout(() => {
+            console.log("[ChatWidget] 🚀 Initializing global data (deferred)...");
+            initGlobalData();
+            initGlobalSocket(user.id);
+        }, 2200); // Trì hoãn ~2.2 giây
+
+        // Định kỳ sync lại (ví dụ 5 phút 1 lần) làm backup cho Socket
+        const syncInterval = setInterval(() => {
+            console.log("[ChatWidget] ⏳ Periodic sync triggered...");
+            initGlobalData({ force: true });
+        }, 5 * 60 * 1000);
 
         // Lắng nghe window event nếu có cuộc gọi đến
         const handleCall = (e) => {
@@ -47,22 +59,16 @@ const ChatBubble = ({ user }) => {
         };
         window.addEventListener('global-incoming-call', handleCall);
 
-        // 2. [Web-Push] Request Notification Permission & Subscribe
+        // 2. [Web-Push] Request Notification Permission & Subscribe (Non-blocking)
         import('../../utils/pushManager').then(({ checkNotificationPermission, subscribeUserToPush }) => {
             checkNotificationPermission().then(permission => {
-                console.log('%c[ChatWidget] Notification Permission:', 'color: orange; font-weight: bold;', permission);
-                if (permission === 'granted') {
-                    subscribeUserToPush();
-                }
+                if (permission === 'granted') subscribeUserToPush();
             });
-        }).catch(err => console.error('[ChatWidget] PushManager Init Error:', err));
+        }).catch(err => console.debug('[ChatWidget] PushManager skip:', err));
 
         // 3. [FCM] Listen for Foreground Messages
         import('../../services/firebase').then(({ onMessageListener }) => {
             onMessageListener((payload) => {
-                console.log('[ChatWidget] Received Foreground Push:', payload);
-
-                // Hiển thị thông báo bằng antd
                 antMessage.info({
                     content: (
                         <div>
@@ -73,14 +79,18 @@ const ChatBubble = ({ user }) => {
                     duration: 5,
                     icon: <NotificationOutlined style={{ color: '#1890ff' }} />
                 });
-
-                return () => {
-                    window.removeEventListener('global-incoming-call', handleCall);
-                };
             });
-        });
+        }).catch(err => console.debug('[ChatWidget] FCM skip:', err));
+
+        // Dọn dẹp
+        return () => {
+            clearTimeout(initTimeout);
+            clearInterval(syncInterval);
+            window.removeEventListener('global-incoming-call', handleCall);
+        };
     }, [user.id, initGlobalData, initGlobalSocket]);
-    // DRAG EVENT HANDLERS (Mouse & Touch)
+
+    // DRAG EVENT HANDLER (Horizontal Snapping + Vertical Move)
     const handleStartDrag = (e) => {
         const isTouch = e.type === 'touchstart';
         const clientX = isTouch ? e.touches[0].clientX : e.clientX;
@@ -88,48 +98,43 @@ const ChatBubble = ({ user }) => {
 
         if (!isTouch && e.button !== 0) return;
 
-        setIsDragging(false); // Reset before move
+        setIsDragging(false);
         let hasMoved = false;
-
-        const startX = clientX - position.x;
-        const startY = clientY - position.y;
+        const startY = clientY - yPosition;
 
         const onMove = (moveEvent) => {
             const currentX = isTouch ? moveEvent.touches[0].clientX : moveEvent.clientX;
             const currentY = isTouch ? moveEvent.touches[0].clientY : moveEvent.clientY;
-
-            if (Math.abs(currentX - clientX) > 5 || Math.abs(currentY - clientY) > 5) {
+            
+            if (Math.abs(currentY - clientY) > 5 || Math.abs(currentX - clientX) > 20) {
                 setIsDragging(true);
                 hasMoved = true;
             }
 
-            let newX = currentX - startX;
+            // Always update Y
             let newY = currentY - startY;
+            newY = Math.max(50, Math.min(newY, window.innerHeight - 150));
+            setYPosition(newY);
 
-            // Boundary checks
-            newX = Math.max(10, Math.min(newX, window.innerWidth - 70));
-            newY = Math.max(10, Math.min(newY, window.innerHeight - 70));
-
-            setPosition({ x: newX, y: newY });
+            // X-axis snapping preview on release, but we can visual feedback here if needed
         };
 
-        const onEnd = () => {
+        const onEnd = (endEvent) => {
+            const finalX = isTouch ? endEvent.changedTouches[0].clientX : endEvent.clientX;
+            
+            if (hasMoved) {
+                // Snap to Side
+                if (finalX < window.innerWidth / 2) setSide('left');
+                else setSide('right');
+            }
+
             document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
             document.removeEventListener(isTouch ? 'touchend' : 'mouseup', onEnd);
-
-            if (hasMoved) {
-                // Snapping Logic: Snap to nearest side
-                setPosition(current => {
-                    const snapX = current.x < window.innerWidth / 2 ? 10 : window.innerWidth - 70;
-                    return { ...current, x: snapX };
-                });
-            }
         };
 
         document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onMove, { passive: false });
         document.addEventListener(isTouch ? 'touchend' : 'mouseup', onEnd);
     };
-
 
     const handleMarkAllRead = async (type = 'chat') => {
         try {
@@ -273,29 +278,34 @@ const ChatBubble = ({ user }) => {
 
     if (!user.id) return null;
 
+    const sideStyles = side === 'left' ? { left: 6, right: 'auto' } : { right: 6, left: 'auto' };
+
     return (
         <>
-            <Popover
-                content={content}
-                trigger="click"
-                open={isOpen}
-                onOpenChange={(open) => !isDragging && setIsOpen(open)}
-                placement={position.x < window.innerWidth / 2 ? "rightTop" : "leftTop"}
-                overlayClassName="chat-widget-popover"
-            >
-                <div
-                    className={`chat-widget-bubble ${isOpen ? 'active' : ''} ${isDragging ? 'dragging' : ''}`}
-                    style={{ left: position.x, top: position.y, right: 'auto', bottom: 'auto' }}
-                    onMouseDown={handleStartDrag}
-                    onTouchStart={handleStartDrag}
+            <div className="chat-side-widget-container" style={{ ...sideStyles, top: yPosition, bottom: 'auto', transform: 'none' }}>
+                {/* Chat/Support Tab */}
+                <Popover
+                    content={content}
+                    trigger="click"
+                    open={isOpen}
+                    onOpenChange={(open) => !isDragging && setIsOpen(open)}
+                    placement={side === 'left' ? "rightTop" : "leftTop"}
+                    overlayClassName="chat-widget-popover"
                 >
-                    <Badge count={(unreadStaffCount || 0) + (unreadNotifyCount || 0)} offset={[0, 0]}>
-                        <div className="bubble-icon">
-                            <MessageOutlined style={{ fontSize: '24px', color: '#fff' }} />
+                    <div
+                        className={`chat-side-tab messenger ${isOpen ? 'active' : ''} ${isDragging ? 'dragging' : ''} side-${side}`}
+                        onMouseDown={handleStartDrag}
+                        onTouchStart={handleStartDrag}
+                    >
+                        <div className="tab-content">
+                            <Badge count={(unreadStaffCount || 0) + (unreadNotifyCount || 0)} offset={side === 'left' ? [5, 5] : [-5, 5]}>
+                                <div className="status-indicator" title="Online"></div>
+                                <span className="tab-label">Hỗ trợ</span>
+                            </Badge>
                         </div>
-                    </Badge>
-                </div>
-            </Popover>
+                    </div>
+                </Popover>
+            </div>
 
             {/* Global Incoming Call Modal */}
             <Modal
