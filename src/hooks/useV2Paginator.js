@@ -91,34 +91,28 @@ export const useV2Paginator = (apiEndpoint, initialParams = {}) => {
     // --- CÁC HÀM ĐIỀU KHIỂN ---
 
     // 1. fetchNextPage (Dành cho Infinite Scroll - Cũ)
-    const fetchNextPage = () => {
+    const fetchNextPage = useCallback(() => {
         if (!isFetchingMore && paginationInfo.current_page < paginationInfo.last_page) {
             // Gọi fetchData với cờ isAppending = true
             fetchData(paginationInfo.current_page + 1, true);
         }
-    };
+    }, [isFetchingMore, paginationInfo, fetchData]);
 
     // 2. changePage (Dành cho Pagination truyền thống - Mới)
-    const changePage = (pageNumber) => {
+    const changePage = useCallback((pageNumber) => {
         if (pageNumber < 1 || pageNumber > paginationInfo.last_page) return;
-        // Cập nhật params.page để kích hoạt fetchData
-        // Lưu ý: Chúng ta cập nhật state params để đồng bộ
         setParams(prev => ({ ...prev, page: pageNumber }));
-        // Tuy nhiên fetchData trong useEffect sẽ tự chạy khi params đổi.
-        // Nhưng để UI phản hồi nhanh, ta có thể không cần gọi thủ công ở đây nếu useEffect đã bắt params.
-        // Ở code useEffect trên: [fetchData] phụ thuộc [params].
-        // Khi setParams -> params đổi -> fetchData đổi -> useEffect chạy.
-    };
+    }, [paginationInfo.last_page]);
 
     // 3. applyFilters (Reset về trang 1)
-    const applyFilters = (newParams) => {
+    const applyFilters = useCallback((newParams) => {
         setParams(prev => ({ ...prev, ...newParams, page: 1 }));
-    };
+    }, []);
 
     // 4. refresh
-    const refresh = () => {
+    const refresh = useCallback(() => {
         fetchData(1, false);
-    };
+    }, [fetchData]);
 
     return {
         data,

@@ -244,7 +244,7 @@ export const LoginPage = () => {
     );
 };
 
-export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebarPinned, onTogglePin, onSearchClick }) => {
+export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebarPinned, onTogglePin, onSearchClick, navigate }) => {
     const isChatV2 = currentView?.id === 'chat-v2' || currentView?.id === 'chat';
     const headerBg = isChatV2 ? 'bg-[#003366]' : 'bg-white';
     const textColor = isChatV2 ? 'text-white' : 'text-gray-800';
@@ -270,6 +270,13 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     const statusLed = getConnectionIndicator();
 
     const [isOpen, setIsOpen] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const handleMarkRead = async (n) => {
         try {
@@ -279,15 +286,25 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                 // Background update
                 chatApi.post(`v1/notifications/${n.id}/read`).catch(console.error);
             }
-            if (n.data?.url) {
-                // Nếu là URL nội bộ (bản thân CRM)
-                if (n.data.url.startsWith('/')) {
-                    // Cần dùng navigate từ react-router-dom nếu Header có access
-                    // Ở đây Header không có hook navigate sẵn, ta có thể dùng window.location hoặc tìm cách khác
-                    // Tuy nhiên Header này nằm trong App, có thể truyền navigate vào hoặc dùng window.location
-                    window.location.href = n.data.url;
+            const targetUrl = n.url || n.action_url || n.data?.url || n.data?.action_url || (n.data?.payload && n.data?.payload?.route) || n.route || n.payload?.route;
+            const convoId = n.conversation_id || n.data?.conversation_id || n.chat_id || n.data?.chat_id || n.data?.room_id;
+
+            if (convoId) {
+                if (navigate) {
+                    navigate(`/chat-v2?convo=${convoId}`);
                 } else {
-                    window.open(n.data.url, '_blank');
+                    window.location.href = `/main/chat-v2?convo=${convoId}`;
+                }
+            } else if (targetUrl) {
+                // Nếu là URL nội bộ (bản thân CRM)
+                if (targetUrl.startsWith('/')) {
+                    if (navigate) {
+                        navigate(targetUrl);
+                    } else {
+                        window.location.href = targetUrl.startsWith('/main') ? targetUrl : `/main${targetUrl}`;
+                    }
+                } else {
+                    window.open(targetUrl, '_blank');
                 }
             }
         } catch (err) {
@@ -296,7 +313,7 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     };
 
     return (
-        <header className={`h-16 ${headerBg} border-b border-opacity-10 flex items-center justify-between px-6 flex-shrink-0 z-50 transition-colors duration-300`}>
+        <header className={`h-14 lg:h-16 ${headerBg} border-b border-opacity-10 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-50 transition-colors duration-300`}>
             <div className="flex items-center">
                 <button onClick={onToggleSidebar} className={`lg:hidden mr-3 ${iconColor} transition-colors`}>
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -306,7 +323,7 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </button>
 
-                <h1 className={`text-lg font-bold ${textColor}`}>{currentView.label}</h1>
+                <h1 className={`text-base lg:text-lg font-bold ${textColor}`}>{currentView.label}</h1>
             </div>
             <div className="flex items-center space-x-4">
                 <div className="flex items-center" title={statusLed.text}>
@@ -331,40 +348,91 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                     </button>
 
                     {isOpen && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border border-gray-100 overflow-hidden z-50">
-                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                                <span className="font-bold text-gray-800">Thông báo</span>
-                                <Link to="/notifications/admin" className="text-xs text-blue-600 font-bold" onClick={() => setIsOpen(false)}>Quản lý</Link>
-                            </div>
-                            <div className="max-h-96 overflow-y-auto">
-                                {notifications.length > 0 ? (
-                                    notifications.map(n => (
-                                        <div
-                                            key={n.id}
-                                            onClick={() => { handleMarkRead(n); setIsOpen(false); }}
-                                            className={`p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read_at ? 'bg-blue-50/30' : ''}`}
-                                        >
-                                            <div className="flex gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-                                                    <Icon name="bell" />
-                                                </div>
-                                                <div>
-                                                    <p className={`text-sm ${!n.read_at ? 'font-bold' : 'font-medium'} text-gray-800`}>
-                                                        {n.data?.title || 'Thông báo hệ thống'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.data?.body || n.data?.message}</p>
-                                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">
-                                                        {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                                    </p>
-                                                </div>
-                                            </div>
+                        <>
+                            {isMobile ? (
+                                /* BOTTOM SHEET FOR MOBILE: Fix lỗi vỡ layout ảnh 4 */
+                                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end" onClick={() => setIsOpen(false)}>
+                                    <div className="bg-white w-full rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up" onClick={e => e.stopPropagation()}>
+                                        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 shrink-0"></div>
+                                        <div className="p-4 border-b flex justify-between items-center">
+                                            <span className="font-black text-slate-800 uppercase text-xs tracking-widest">Trung tâm thông báo</span>
+                                            <Link to="/notifications/admin" className="text-blue-600 font-black text-xs uppercase" onClick={() => setIsOpen(false)}>Quản lý</Link>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="p-10 text-center text-gray-400 text-sm italic">Không có thông báo mới</div>
-                                )}
-                            </div>
-                        </div>
+                                        <div className="overflow-y-auto flex-1 h-full">
+                                            {notifications.length > 0 ? (
+                                                notifications.map(n => (
+                                                    <div
+                                                        key={n.id}
+                                                        onClick={() => { handleMarkRead(n); setIsOpen(false); }}
+                                                        className={`p-4 border-b last:border-0 active:bg-slate-50 transition-colors ${!n.read_at ? 'bg-blue-50/40' : 'bg-white'}`}
+                                                    >
+                                                        <div className="flex gap-4">
+                                                            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
+                                                                <Icon name="bell" className="w-5 h-5" />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className={`text-sm ${!n.read_at ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>
+                                                                    {n.title || n.data?.title || 'Thông báo hệ thống'}
+                                                                </p>
+                                                                <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                                                                    {n.body || n.message || n.content || n.data?.body || n.data?.message || n.data?.content || '(Không có nội dung)'}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-400 mt-2 font-black uppercase tracking-tighter">
+                                                                    {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • {new Date(n.created_at).toLocaleDateString('vi-VN')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-20 text-center text-slate-300 text-sm font-bold italic">Không có thông báo mới</div>
+                                            )}
+                                        </div>
+                                        <div className="p-4 border-t bg-slate-50 pb-safe">
+                                            <button onClick={() => setIsOpen(false)} className="w-full py-4 bg-white border border-slate-200 rounded-2xl font-black text-slate-600 uppercase tracking-widest text-[10px]">Đóng</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* DROPDOWN FOR DESKTOP: Giữ nguyên logic cũ */
+                                <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border border-slate-100 overflow-hidden z-[60]">
+                                    <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                                        <span className="font-bold text-gray-800">Thông báo</span>
+                                        <Link to="/notifications/admin" className="text-xs text-blue-600 font-bold" onClick={() => setIsOpen(false)}>Quản lý</Link>
+                                    </div>
+                                    <div className="max-h-96 overflow-y-auto">
+                                        {notifications.length > 0 ? (
+                                            notifications.map(n => (
+                                                <div
+                                                    key={n.id}
+                                                    onClick={() => { handleMarkRead(n); setIsOpen(false); }}
+                                                    className={`p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read_at ? 'bg-blue-50/30' : ''}`}
+                                                >
+                                                    <div className="flex gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                                            <Icon name="bell" />
+                                                        </div>
+                                                        <div>
+                                                            <p className={`text-sm ${!n.read_at ? 'font-bold' : 'font-medium'} text-gray-800`}>
+                                                                {n.title || n.data?.title || 'Thông báo hệ thống'}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                                                                {n.body || n.message || n.content || n.data?.body || n.data?.message || n.data?.content || '(Không có nội dung)'}
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">
+                                                                {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="p-10 text-center text-gray-400 text-sm italic">Không có thông báo mới</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -388,6 +456,10 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
 
 export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOpen, setIsSidebarOpen, isSidebarPinned, checkAccess }) => {
     const [isTempOpen, setIsTempOpen] = React.useState(false);
+    const [collapsedGroups, setCollapsedGroups] = React.useState({});
+    const toggleGroup = (groupName) => {
+        setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+    };
     const pinnedClasses = "w-64";
     const unpinnedClasses = "w-20";
     const sidebarWidthClass = isSidebarPinned ? pinnedClasses : (isTempOpen ? pinnedClasses : unpinnedClasses);
@@ -446,8 +518,18 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
 
                         return (
                             <div key={groupName}>
-                                <h3 className={`px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase transition-opacity ${isSidebarPinned || isTempOpen ? 'opacity-100' : 'opacity-0'}`}>{groupName}</h3>
-                                <div className="space-y-1">
+                                <div 
+                                    className={`flex justify-between items-center px-3 mb-2 cursor-pointer group transition-opacity ${isSidebarPinned || isTempOpen ? 'opacity-100' : 'opacity-0'} ${(!isSidebarPinned && !isTempOpen) ? 'pointer-events-none' : ''}`}
+                                    onClick={() => (isSidebarPinned || isTempOpen) && toggleGroup(groupName)}
+                                >
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase select-none group-hover:text-blue-500 transition-colors">
+                                        {groupName}
+                                    </h3>
+                                    <svg className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-transform duration-300 ${collapsedGroups[groupName] ? '-rotate-90' : 'rotate-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                                <div className={`space-y-1 overflow-hidden transition-all duration-300 ${collapsedGroups[groupName] ? 'max-h-0 opacity-0' : 'max-h-[1500px] opacity-100'}`}>
                                     {visibleItems.map(item => (
                                         <button
                                             key={item.id}

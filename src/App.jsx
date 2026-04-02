@@ -205,6 +205,7 @@ const MainLayout = ({
                     isSidebarPinned={isSidebarPinned}
                     onTogglePin={() => setIsSidebarPinned(!isSidebarPinned)}
                     onSearchClick={() => setIsSearchOpen(true)}
+                    navigate={navigate}
                 />
                 <main className="flex-1 overflow-y-auto bg-gray-50 relative">
                     <Routes>
