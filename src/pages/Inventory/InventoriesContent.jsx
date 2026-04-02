@@ -924,7 +924,7 @@ export const InventoriesContent = () => {
                 className="border rounded-lg bg-white shadow-sm flex-1 flex flex-col overflow-auto w-full relative"
             >
                 {/* 0. Pagination Info */}
-                <div className="sticky top-0 z-30 bg-white p-2 border-b text-sm text-gray-600 shadow-sm flex justify-between items-center">
+                <div className="relative bg-white p-2 border-b text-sm text-gray-600 shadow-sm flex justify-between items-center">
                     {paginationInfo && paginationInfo.total > 0 && !error ? (
                         <span>
                             Tìm thấy <strong>{paginationInfo.total.toLocaleString('vi-VN')}</strong> sản phẩm. 
@@ -940,7 +940,7 @@ export const InventoriesContent = () => {
 
                 {/* 1. HEADER */}
                 <div 
-                    className="sticky top-[37px] z-20 flex bg-gray-100 font-semibold text-gray-700 text-sm select-none border-b shadow-sm"
+                    className="relative flex bg-gray-100 font-semibold text-gray-700 text-sm select-none border-b shadow-sm"
                     style={{ width: `${totalWidth}px`, minWidth: '100%' }}
                 >
                     {(columnDefs || []).map(colDef => (

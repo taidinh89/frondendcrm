@@ -363,6 +363,7 @@ export const KpiManagerPage = () => {
     const [activeTab, setActiveTab] = useState('all');  // 'all' | 'global' | 'personal' | 'suggestions'
 
     // Filters
+    const [department, setDepartment]   = useState('sales');
     const [periodType,  setPeriodType]  = useState('month');
     const [periodYear,  setPeriodYear]  = useState(moment().year());
     const [periodValue, setPeriodValue] = useState(moment().month() + 1);
@@ -371,7 +372,7 @@ export const KpiManagerPage = () => {
         setIsLoading(true);
         try {
             const res = await axios.get('/api/v2/kpi/dashboard', {
-                params: { period_type: periodType, period_year: periodYear, period_value: periodValue }
+                params: { department, period_type: periodType, period_year: periodYear, period_value: periodValue }
             });
             setDash(res.data);
         } catch (e) {
@@ -379,7 +380,7 @@ export const KpiManagerPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [periodType, periodYear, periodValue]);
+    }, [department, periodType, periodYear, periodValue]);
 
     useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
@@ -439,7 +440,14 @@ export const KpiManagerPage = () => {
 
             {/* Period Selector */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Kỳ báo cáo</div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Bộ phận</div>
+                <select className="input-base" value={department} onChange={e => setDepartment(e.target.value)}>
+                    <option value="sales">💰 Kinh doanh</option>
+                    <option value="accounting">📊 Kế toán</option>
+                    <option value="purchasing">🛒 Mua hàng</option>
+                    <option value="hr">👥 Nhân sự</option>
+                </select>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-4">Kỳ báo cáo</div>
                 <select className="input-base" value={periodType} onChange={e => { setPeriodType(e.target.value); setPeriodValue(moment().month() + 1); }}>
                     {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>

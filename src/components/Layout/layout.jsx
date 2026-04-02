@@ -401,7 +401,7 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
     }, {});
 
     // [MOD] SẮP XẾP NHÓM MENU: Đưa Hệ thống xuống cuối và ưu tiên thứ tự nghiệp vụ
-    const groupOrder = ['Chung', 'Báo cáo', 'Tồn kho - Web', 'Kinh doanh', 'Giao tiếp', 'Hệ thống - Bảo mật', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
+    const groupOrder = ['Chung', 'KPI & Mục tiêu', 'Báo cáo', 'Tồn kho - Web', 'Kinh doanh', 'Giao tiếp', 'Hệ thống - Bảo mật', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
     const bottomGroups = ['Media', 'Thanh toán', 'Hệ thống - Giám sát', 'Quản Trị Ứng Dụng (V3)', 'Thiên Đức V4'];
 
     const sortedGroups = Object.entries(groupedItems).sort(([groupA], [groupB]) => {

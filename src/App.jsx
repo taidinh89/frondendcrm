@@ -24,6 +24,11 @@ import { InventoryAnalysisContent } from './pages/Analytics/InventoryAnalysisCon
 import { DebtRiskPage } from './pages/Finance/DebtRiskPage.jsx';
 import { Customer360Content } from './pages/Business/Customer360Content.jsx';
 import KpiManagerPage from './pages/Analytics/KpiManagerPage.jsx';
+import KpiEntryPage from './pages/Analytics/KpiEntryPage.jsx';
+import KpiGroupManagerPage from './pages/Analytics/KpiGroupManagerPage.jsx';
+import KpiScorecardPage from './pages/Analytics/KpiScorecardPage.jsx';
+import KpiDashboardPage from './pages/Analytics/KpiDashboardPage.jsx';
+import KpiPerformancePage from './pages/Analytics/KpiPerformancePage.jsx';
 import { DictionaryManagementPage } from './pages/System/DictionaryManagementPage.jsx';
 import { GlobalSearchModal } from './components/modals/GlobalSearchModal.jsx';
 import { SepayDashboard } from './pages/Sepay/SepayDashboard.jsx';
@@ -115,7 +120,12 @@ const navItems = [
     { id: 'purchasing-hub', path: '/purchasing-hub', label: 'Trung tâm Quyết định Nhập', group: 'Báo cáo', permission: 'purchase.view', iconName: 'activity', component: <PurchasingIntelligenceHub /> },
     { id: 'debt-risk', path: '/debt-risk', label: 'Quản trị Rủi ro Công nợ', group: 'Báo cáo', permission: 'report.debt', iconName: 'alert-triangle', component: <DebtRiskPage /> },
     { id: 'customer-360', path: '/customer-360', label: 'Chân dung Khách hàng', group: 'Báo cáo', permission: 'customer.view', iconName: 'user', component: <Customer360Content /> },
-    { id: 'kpi-manager', path: '/kpi', label: 'KPI & Mục tiêu', group: 'Báo cáo', permission: 'report.sales', iconName: 'award', component: <KpiManagerPage /> },
+    { id: 'kpi-dashboard',    path: '/kpi/dashboard',    label: 'Dashboard KPI',       group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'bar-chart',   component: <KpiDashboardPage /> },
+    { id: 'kpi-performance',  path: '/kpi/performance',  label: '🔥 Hiệu suất & Gán KPI', group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'activity',    component: <KpiPerformancePage /> },
+    { id: 'kpi-scorecard',    path: '/kpi/scorecard',    label: '🏆 Bảng điểm KPI',    group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'award',       component: <KpiScorecardPage /> },
+    { id: 'kpi-manager',      path: '/kpi/manager',      label: '⚙️ Quản lý KPI (Detail)', group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'cog',         component: <KpiManagerPage /> },
+    { id: 'kpi-setup',        path: '/kpi/setup',        label: '🚀 Thiết lập KPI (Bulk)',  group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'plus-circle', component: <KpiEntryPage /> },
+    { id: 'kpi-groups',       path: '/kpi/groups',       label: 'Quản lý Nhóm KPI',     group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'users',       component: <KpiGroupManagerPage /> },
 
     { id: 'qr-history', path: '/qr-history', label: 'Lịch sử QR Code', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <QrHistoryPage /> },
     { id: 'sepay-sync-management', path: '/sepay-sync-management', label: 'Quản lý Đồng bộ Sepay', group: 'Thanh toán', permission: 'sepay.viewall', iconName: 'refresh', component: <SepaySyncManager /> },
@@ -199,6 +209,8 @@ const MainLayout = ({
                 <main className="flex-1 overflow-y-auto bg-gray-50 relative">
                     <Routes>
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/kpi" element={<Navigate to="/kpi/dashboard" replace />} />
+                        <Route path="/kpi/entry" element={<Navigate to="/kpi/setup" replace />} />
                         {navItems.map(item => (
                             <Route
                                 key={item.id}
@@ -283,7 +295,7 @@ const App = () => {
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/png';
         link.rel = 'icon';
-        link.href = '/logo2.png';
+        link.href = (import.meta.env.BASE_URL || '/') + 'logo2.png';
         document.getElementsByTagName('head')[0].appendChild(link);
     }, []);
 

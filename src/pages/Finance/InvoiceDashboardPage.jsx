@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import {
@@ -226,7 +226,7 @@ export const InvoiceDashboardPage = () => {
     return (
         <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans" onClick={() => setShowColMenu(false)}>
             {/* HEADER & FILTER SECTION */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
+            <div className="bg-white p-4 rounded-xl shadow-sm border mb-6">
                 <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
                     <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <UI.Icon path="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z" className="w-6 h-6 text-blue-600" />
@@ -340,7 +340,7 @@ export const InvoiceDashboardPage = () => {
             <div className="bg-white rounded-xl shadow-sm border flex flex-col overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar flex-1" style={{ minHeight: '300px' }}>
                     <table className="min-w-full divide-y divide-gray-200 border-separate border-spacing-0 table-fixed">
-                        <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-gray-100 shadow-sm">
                             <tr>
                                 {columns.filter(c => c.visible).map((col) => (
                                     <th
@@ -380,7 +380,7 @@ export const InvoiceDashboardPage = () => {
 
                 {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (
-                    <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center sticky bottom-0 z-10">
+                    <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
                         <span className="text-xs text-gray-500">Trang {page} / {pagination.last_page} ({pagination.total} bản ghi)</span>
                         <div className="flex gap-2">
                             <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 text-sm border rounded bg-white hover:bg-gray-100 disabled:opacity-50 transition">Trước</button>

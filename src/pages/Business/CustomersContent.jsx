@@ -269,7 +269,7 @@ export const CustomersContent = () => {
             <div className="flex-1 bg-white border rounded shadow-sm overflow-hidden flex flex-col relative">
                 <div className="flex-1 overflow-auto" onScroll={handleScroll}>
                     <table className="w-full border-collapse table-fixed" style={{ minWidth: 'max-content' }}>
-                        <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
+                        <thead className="bg-gray-100 shadow-sm border-b">
                             <tr>
                                 <th className="w-[100px] p-2 border-b border-r bg-gray-100 sticky left-0 z-30 text-center text-xs font-bold uppercase text-gray-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                                     Thao tác

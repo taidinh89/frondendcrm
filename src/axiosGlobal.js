@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { message } from 'antd';
+import { useChatStore } from './stores/useChatStore';
 
 // =============================================================================
 // 1. CẤU HÌNH HỆ THỐNG
@@ -175,13 +176,51 @@ axios.interceptors.response.use(response => {
     // B. Mặc định trả về response gốc
     return response;
 }, error => {
-    // --- BỔ SUNG: KHÔNG BÁO LỖI NẾU REQUEST BỊ HỦY CHỦ ĐỘNG (AbortController) ---
-    if (axios.isCancel(error)) {
+    // --- 1. KHÔNG BÁO LỖI NẾU REQUEST BỊ HỦY (AbortController) ---
+    // Cập nhật thêm các cờ báo CanceledError cho các phiên bản Axios mới
+    if (axios.isCancel(error) || error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
         logger('warning', '🚫 REQUEST ABORTED - Bỏ qua thông báo lỗi');
         return Promise.reject(error);
     }
 
-    const { response } = error;
+    const { response, config } = error;
+    
+    // --- 2. XÓA BÁO LỖI UI ĐỐI VỚI CÁC API CHẠY NGẦM HOẶC CHAT ---
+    // Nếu là API chat hoặc gõ tìm kiếm liên tục, hệ thống có thể bị timeout hoặc server chat đang bảo trì.
+    // Việc văng Toast liên tục sẽ làm phiền user. Ta dùng cờ `silent: true` hoặc check URL.
+    const isSilentApi = config && (
+        config.silent === true || 
+        (config.url && (
+            config.url.includes('/chat') || 
+            config.url.includes('/messages') || 
+            config.url.includes('/search') ||
+            config.url.includes('/v3/') || // Tắt báo lỗi popup cho mobile v3
+            config.url.includes('/lookup')
+        ))
+    );
+
+    // Hàm đẩy lỗi vào khay thông báo (Bell) thay vì hiện Popup
+    const pushToNotificationTray = (msg, type = 'error') => {
+        try {
+            const state = useChatStore.getState();
+            const newNote = {
+                id: 'sys-err-' + Date.now(),
+                title: type === 'error' ? '🔴 Lỗi hệ thống' : '⚠️ Cảnh báo',
+                content: msg,
+                read_at: null,
+                created_at: new Date().toISOString(),
+                type: 'system_error'
+            };
+            useChatStore.setState({
+                notifications: [newNote, ...state.notifications].slice(0, 50),
+                unreadNotifyCount: state.unreadNotifyCount + 1
+            });
+            console.error(`[System Error Pushed to Tray]: ${msg}`);
+        } catch (e) {
+            console.error("Failed to push to tray", e);
+        }
+    };
+
     let errorMsg = 'Lỗi hệ thống';
     let errorCode = 'SYSTEM_ERROR';
 
@@ -194,18 +233,27 @@ axios.interceptors.response.use(response => {
             errorCode = (body.error?.code) || errorCode;
         }
 
-        // Thông báo cho user qua Toast (Defensive UI)
-        if (response.status === 401) {
-            // Layout handled redirect
-        } else if (response.status === 403) {
-            message.error('Bạn không có quyền thực hiện hành động này');
-        } else if (response.status >= 500) {
-            message.error('Lỗi máy chủ: ' + errorMsg);
+        // Chuyển tất cả thông báo lỗi vào khay thông báo nếu không silent
+        if (!isSilentApi) {
+            if (response.status === 401) {
+                // Layout handled redirect
+            } else if (response.status === 403) {
+                pushToNotificationTray('Bạn không có quyền thực hiện hành động này: ' + config.url, 'warning');
+            } else if (response.status >= 500) {
+                if (errorMsg === 'Server Error') {
+                    errorMsg = 'Đường truyền hoặc máy chủ đang phản hồi chậm (Timeout)';
+                }
+                pushToNotificationTray('Lỗi máy chủ (' + response.status + '): ' + errorMsg);
+            } else {
+                pushToNotificationTray(errorMsg);
+            }
         } else {
-            message.error(errorMsg);
+            console.warn('[Silent Error] Quá trình chạy ngầm gặp lỗi: ', errorMsg);
         }
     } else {
-        message.error('Không thể kết nối tới máy chủ');
+        if (!isSilentApi) {
+            pushToNotificationTray('Không thể kết nối tới hoặc máy chủ đang quá tải (Network Error)');
+        }
     }
 
     return Promise.reject(error);
