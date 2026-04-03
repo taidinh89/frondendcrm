@@ -1,4 +1,4 @@
-﻿// src/pages/Business/QuotationList.jsx
+// src/pages/Business/QuotationList.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Table, Button, Input, Tag,
@@ -37,8 +37,7 @@ export const QuotationList = ({ setAppTitle }) => {
     });
 
     // --- API DATA ---
-    const { data: qData, isLoading, refresh } = useApiData('/api/v2/quotations', filters, 300);
-    const quotations = qData?.data || [];
+    const { data: quotations = [], isLoading, refetch: refresh } = useApiData('/api/v2/quotations', filters, 300);
 
     useEffect(() => {
         setAppTitle('Danh sách Báo Giá');
@@ -77,16 +76,16 @@ export const QuotationList = ({ setAppTitle }) => {
 
         const excelData = quotations.map((q, idx) => ({
             "STT": idx + 1,
-            "Số Phiếu": q.so_ct,
-            "Ngày Báo Giá": formatDate(q.ngay_ct),
-            "Khách Hàng": q.ten_kh,
-            "Số Điện Thoại": q.dien_thoai,
-            "Tổng Tiền": q.tong_tien,
-            "Chiết Khấu": q.tong_ck,
-            "Thuế GTGT": q.tong_thue,
-            "Tổng Thanh Toán": q.tong_thanh_toan,
-            "Trạng Thái": q.trang_thai_text || 'Mới',
-            "Người Tạo": q.user_name,
+            "Số Phiếu": q.code,
+            "Ngày Báo Giá": formatDate(q.date),
+            "Khách Hàng": q.customer_name,
+            "Số Điện Thoại": q.customer_phone || '-',
+            "Tổng Tiền": q.subtotal,
+            "Chiết Khấu": q.total_discount || 0,
+            "Thuế GTGT": q.total_vat,
+            "Tổng Thanh Toán": q.total_amount,
+            "Trạng Thái": q.status_text || q.status,
+            "Người Tạo": q.creator?.name || q.user_name,
             "Ngày Tạo": formatDate(q.created_at)
         }));
 
@@ -108,19 +107,19 @@ export const QuotationList = ({ setAppTitle }) => {
         },
         {
             title: 'SỐ PHIẾU',
-            dataIndex: 'so_ct',
-            key: 'so_ct',
+            dataIndex: 'code',
+            key: 'code',
             width: 140,
             render: (text) => <span className="font-black text-blue-600 tracking-tight">{text}</span>,
-            sorter: (a, b) => (a.so_ct || '').localeCompare(b.so_ct || '')
+            sorter: (a, b) => (a.code || '').localeCompare(b.code || '')
         },
         {
             title: 'NGÀY CT',
-            dataIndex: 'ngay_ct',
-            key: 'ngay_ct',
+            dataIndex: 'date',
+            key: 'date',
             width: 100,
             render: (date) => <div className="flex flex-col"><span className="text-xs font-bold text-gray-700">{formatDate(date)}</span></div>,
-            sorter: (a, b) => dayjs(a.ngay_ct).unix() - dayjs(b.ngay_ct).unix()
+            sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix()
         },
         {
             title: 'KHÁCH HÀNG / CÔNG TY',
@@ -128,29 +127,29 @@ export const QuotationList = ({ setAppTitle }) => {
             ellipsis: true,
             render: (_, row) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-gray-800 text-sm truncate uppercase tracking-tight">{row.ten_kh || 'Khách lẻ'}</span>
+                    <span className="font-bold text-gray-800 text-sm truncate uppercase tracking-tight">{row.customer_name || 'Khách lẻ'}</span>
                     <div className="flex items-center gap-2 mt-0.5">
-                        {row.dien_thoai && <span className="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">{row.dien_thoai}</span>}
-                        {row.ma_kh && <span className="text-[10px] text-blue-400 font-mono">{row.ma_kh}</span>}
+                        {row.customer_phone && <span className="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">{row.customer_phone}</span>}
+                        {row.customer_code && <span className="text-[10px] text-blue-400 font-mono">{row.customer_code}</span>}
                     </div>
                 </div>
             )
         },
         {
             title: 'TỔNG THANH TOÁN',
-            dataIndex: 'tong_thanh_toan',
-            key: 'tong_thanh_toan',
+            dataIndex: 'total_amount',
+            key: 'total_amount',
             width: 180,
             align: 'right',
             render: (val) => <span className="font-mono font-black text-gray-800">{formatCurrency(val)}</span>,
-            sorter: (a, b) => a.tong_thanh_toan - b.tong_thanh_toan
+            sorter: (a, b) => a.total_amount - b.total_amount
         },
         {
             title: 'NV PHỤ TRÁCH',
-            dataIndex: 'user_name',
-            key: 'user_name',
+            dataIndex: 'creator',
+            key: 'creator',
             width: 150,
-            render: (name) => <div className="flex items-center gap-1.5"><div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[10px] text-blue-600 font-bold uppercase">{name?.charAt(0)}</div><span className="text-xs font-medium text-gray-600">{name}</span></div>
+            render: (creator) => <div className="flex items-center gap-1.5"><div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[10px] text-blue-600 font-bold uppercase">{creator?.name?.charAt(0)}</div><span className="text-xs font-medium text-gray-600">{creator?.name}</span></div>
         },
         {
             title: 'TRẠNG THÁI',
@@ -159,9 +158,9 @@ export const QuotationList = ({ setAppTitle }) => {
             width: 120,
             align: 'center',
             render: (_, row) => {
-                const colors = { 'Mới': 'processing', 'Đã gửi': 'warning', 'Đã duyệt': 'success', 'Từ chối': 'error' };
-                const label = row.trang_thai_text || 'Mới';
-                return <Tag color={colors[label] || 'default'} className="rounded-full px-3 text-[10px] font-bold border-0 uppercase">{label}</Tag>
+                const colors = { 'draft': 'default', 'pending': 'warning', 'approved': 'success', 'rejected': 'error' };
+                const label = row.status_text || row.status || 'Mới';
+                return <Tag color={colors[row.status] || 'default'} className="rounded-full px-3 text-[10px] font-bold border-0 uppercase">{label}</Tag>
             }
         },
         {

@@ -39,8 +39,9 @@ export const useApiData = (endpoint, params = {}, debounceDelay = 300) => {
     // 2. Helper xử lý params cho Laravel
     const serializedParams = useMemo(() => {
         const p = new URLSearchParams();
-        Object.keys(params).forEach(key => {
-            const value = params[key];
+        const safeParams = params || {};
+        Object.keys(safeParams).forEach(key => {
+            const value = safeParams[key];
             if (value === null || value === undefined || value === '') return;
             if (Array.isArray(value)) {
                 value.forEach(val => p.append(`${key}[]`, val));
@@ -138,5 +139,5 @@ export const useApiData = (endpoint, params = {}, debounceDelay = 300) => {
 
     }, [endpoint, paramsKey, trigger, serializedParams]); // Thêm serializedParams vào dep
 
-    return { data, isLoading, error, pagination, refetch };
+    return { data, isLoading, error, pagination, refetch, refresh: refetch };
 };

@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './index.css'
 import axios from 'axios';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // 1. Kích hoạt Smart API (Đã có Blacklist fix lỗi)
 import './axiosGlobal';
@@ -13,6 +14,16 @@ import './axiosGlobal';
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
+
+// 3. Khởi tạo TanStack Query Client (v5)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // =============================================================================
 // 🔥 [LOGIC MỚI] KẾT NỐI VỚI MOBILE APP (SERVER-DRIVEN UI) 🔥
@@ -70,7 +81,9 @@ const initializeApp = () => {
     // Bỏ StrictMode nếu muốn log sạch hơn, nhưng React 18+ khuyến khích giữ lại
     <React.StrictMode>
       <BrowserRouter basename={basename}>
-        <App />
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
       </BrowserRouter>
     </React.StrictMode>,
   )

@@ -212,8 +212,8 @@ axios.interceptors.response.use(response => {
                 type: 'system_error'
             };
             useChatStore.setState({
-                notifications: [newNote, ...state.notifications].slice(0, 50),
-                unreadNotifyCount: state.unreadNotifyCount + 1
+                notifications: [newNote, ...(state.notifications || [])].slice(0, 50),
+                unreadNotifyCount: (state.unreadNotifyCount || 0) + 1
             });
             console.error(`[System Error Pushed to Tray]: ${msg}`);
         } catch (e) {

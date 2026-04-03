@@ -1,4 +1,4 @@
-﻿// src/pages/Analytics/ProductGroupAnalysisContent.jsx
+// src/pages/Analytics/ProductGroupAnalysisContent.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,6 +9,7 @@ import { SalesAnalysisFilterBar } from '../../components/analysis/SalesAnalysisF
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
 import { Tabs } from '../../components/analysis/Tabs.jsx';
 import { ProductGroupAnalysisDataTable } from '../../components/analysis/ProductGroupAnalysisDataTable.jsx';
+import { Button, Icon } from '../../components/ui.jsx';
 import { ProductDetailModal } from '../../components/modals/ProductDetailModal.jsx';
 import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal.jsx';
 import { SalesOrderDetailModal } from '../../components/modals/SalesOrderDetailModal.jsx';
@@ -216,6 +217,33 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
                     </AnalysisCard>
                 </div>
 
+                {/* Filter Bar & Settings: Moved here per user request */}
+                <div className="relative space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                        <div className="relative flex-1 w-full text-left">
+                            <div className="absolute -top-3 left-6 inline-flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full z-10 shadow-lg">
+                                <Icon name="filter-variant" className="w-3 h-3" /> Bộ lọc & Tìm kiếm
+                            </div>
+                            <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
+                        </div>
+                        
+                        <div className="shrink-0 mb-1">
+                            <label className="inline-flex items-center cursor-pointer space-x-3 bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-300 transition-all h-[54px] xl:h-[78px]">
+                                <input
+                                    type="checkbox"
+                                    className="form-checkbox h-5 w-5 text-indigo-600 rounded-lg border-slate-300 focus:ring-indigo-500"
+                                    checked={filters.include_returns}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}
+                                />
+                                <div className="flex flex-col text-left">
+                                    <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Net Sales Mode</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bao gồm hàng trả</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Detailed Table */}
                 <AnalysisCard title="Bảng Dữ liệu Chi tiết">
                     <div className="px-4 pt-2 border-b bg-gray-50 rounded-t-lg">
@@ -256,19 +284,6 @@ export const ProductGroupAnalysisContent = ({ setAppTitle }) => {
         <div className="p-6 space-y-6 bg-gray-100 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800">Phân tích Kinh doanh Tổng hợp</h2>
 
-            <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
-
-            <div className="flex justify-end px-2">
-                <label className="inline-flex items-center cursor-pointer space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
-                    <input
-                        type="checkbox"
-                        className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                        checked={filters.include_returns}
-                        onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}
-                    />
-                    <span className="text-sm font-medium text-gray-700">Bao gồm Đơn trả hàng (Net Sales)</span>
-                </label>
-            </div>
 
             {renderContent()}
 

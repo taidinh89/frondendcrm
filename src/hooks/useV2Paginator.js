@@ -49,13 +49,13 @@ export const useV2Paginator = (apiEndpoint, initialParams = {}) => {
             const response = await axios.get(apiEndpoint, config);
             
             // Xử lý dữ liệu trả về từ Laravel (Resource Collection)
-            const responseData = response.data;
+            const responseData = response.data || {};
             const dataArray = responseData.data || [];
             
             // Lấy thông tin phân trang từ 'meta' (chuẩn mới) hoặc root (chuẩn cũ)
-            const meta = responseData.meta || responseData; 
+            const meta = responseData.meta || responseData || {}; 
 
-            if (!Array.isArray(dataArray)) throw new Error("API response data format is incorrect.");
+            if (!Array.isArray(dataArray)) throw new Error("Dữ liệu trả về không phải mảng (Array).");
 
             // LOGIC QUAN TRỌNG:
             // - Nếu isAppending = true (dùng fetchNextPage) -> Nối dữ liệu cũ + mới

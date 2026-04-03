@@ -1,4 +1,4 @@
-﻿// src/pages/PartnerAnalysisContent.jsx
+// src/pages/PartnerAnalysisContent.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, Area, AreaChart, Treemap } from 'recharts';
 import { AnalysisCard } from '../../components/analysis/AnalysisCard.jsx';
@@ -108,63 +108,6 @@ export const PartnerAnalysisContent = ({ setAppTitle }) => {
 
     return (
         <div className="p-4 space-y-6 bg-gray-100 min-h-screen">
-            {/* TOOLBAR: Giao diện Cũ (3 Cột) - KHÔNG Sticky */}
-            <div className="bg-white p-4 rounded-lg shadow border border-gray-200 relative flex flex-col xl:flex-row gap-4">
-
-                {/* COL 1: Date */}
-                <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 font-bold text-gray-700"><Icon path="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" className="w-5 h-5 text-blue-600" />Thời gian</div>
-                        <select onChange={onDatePre} defaultValue="custom" className="text-xs border border-blue-300 bg-blue-50 text-blue-700 rounded px-2 py-1 font-bold outline-none cursor-pointer">
-                            <option value="custom" disabled>⚡ Chọn nhanh...</option>
-                            <optgroup label="Ngắn hạn"><option value="today">Hôm nay</option><option value="yesterday">Hôm qua</option><option value="last3">3 ngày qua</option><option value="last7">7 ngày qua</option></optgroup>
-                            <optgroup label="Trung hạn"><option value="thisWeek">Tuần này</option><option value="thisMonth">Tháng này</option><option value="lastMonth">Tháng trước</option><option value="last30">30 ngày qua</option></optgroup>
-                            <optgroup label="Dài hạn"><option value="thisQuarter">Quý này</option><option value="thisYear">Năm nay</option><option value="lastYear">Năm ngoái</option></optgroup>
-                        </select>
-                    </div>
-                    <div className="flex gap-2 items-center bg-gray-50 p-1 rounded border w-full shadow-sm">
-                        <input type="date" value={d.from} onChange={e => setD({ ...d, from: e.target.value })} className="bg-transparent text-sm font-bold w-full outline-none" /> ➜ <input type="date" value={d.to} onChange={e => setD({ ...d, to: e.target.value })} className="bg-transparent text-sm font-bold w-full outline-none text-right" />
-                    </div>
-                </div>
-
-                {/* COL 2: Filters & Search */}
-                <div className="flex-[2] space-y-2 border-l pl-4 border-gray-100">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 font-bold text-gray-700">
-                            <Icon path="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75" className="w-5 h-5 text-purple-600" />Bộ lọc
-                            {preList?.length > 0 && <select value={pId} onChange={onPreset} className="ml-2 text-xs border-orange-300 bg-orange-50 text-orange-800 rounded px-2 py-0.5 font-bold outline-none"><option value="">-- Lọc nhanh --</option>{preList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}
-                        </div>
-
-                        {/* [NEW] SEARCH BOX ADDED HERE */}
-                        <div className="flex gap-2 items-center">
-                            <div className="relative">
-                                <Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="absolute left-2 top-1.5 w-3.5 h-3.5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Tìm nhanh..."
-                                    className="pl-7 pr-5 py-0.5 text-sm border border-gray-300 rounded shadow-sm outline-none focus:border-blue-500 w-32 focus:w-48 transition-all"
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                />
-                                {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-1 top-1 text-gray-400 hover:text-red-500 font-bold text-xs">✖</button>}
-                            </div>
-                            <button onClick={onReset} className="text-xs text-red-500 hover:underline whitespace-nowrap">Đặt lại</button>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <MultiDrop label="Nhóm L1" opts={opts.brands} val={fil.brand} setVal={v => setFil({ ...fil, brand: v })} />
-                        <MultiDrop label="Nhóm L2" opts={opts.categories} val={fil.category} setVal={v => setFil({ ...fil, category: v })} />
-                        <MultiDrop label="Nhóm L3" opts={opts.sub_categories} val={fil.l3} setVal={v => setFil({ ...fil, l3: v })} />
-                    </div>
-                </div>
-
-                {/* COL 3: Actions */}
-                <div className="flex flex-col justify-end gap-2 min-w-[120px]">
-                    <Button onClick={onApply} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold">{isLoading ? 'Loading...' : 'ÁP DỤNG'}</Button>
-                    <Button onClick={() => handlePartnerExport(list, tab, apiP, fil.brand.join('_'))} variant="secondary" className="w-full border-green-600 text-green-700 h-8 text-xs">Excel</Button>
-                </div>
-            </div>
 
             {/* CONTENT BODY */}
             {!full ? (isLoading ? <div className="h-64 flex center text-blue-500">Đang tải...</div> : <div className="text-center p-10 text-gray-400">Không có dữ liệu</div>) : (
@@ -190,8 +133,72 @@ export const PartnerAnalysisContent = ({ setAppTitle }) => {
                          <AnalysisCard title="Top 5 NCC Cơ cấu"><div className="h-80"><ResponsiveContainer><BarChart data={mac.top_suppliers_breakdown}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name" tick={{fontSize:11}}/><YAxis tickFormatter={v=>(v/1e6).toFixed(0)+'M'}/><Tooltip formatter={fmt}/><Legend/>{Object.keys(mac.top_suppliers_breakdown[0]||{}).filter(k=>k!=='name').map((k,i)=><Bar key={k} dataKey={k} stackId="a" fill={COLORS[i%COLORS.length]}/>)}</BarChart></ResponsiveContainer></div></AnalysisCard>
                     </div>} */}
 
-                    {/* TABLE AREA */}
-                    <AnalysisCard title="Chi tiết dữ liệu">
+                {/* TOOLBAR: Moved here per user request, wrapped in Premium Style */}
+                <div className="relative space-y-4">
+                    <div className="relative">
+                        <div className="absolute -top-3 left-6 inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full z-10 shadow-lg">
+                            <Icon path="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75" className="w-3 h-3" /> Bộ lọc & Tìm kiếm
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col xl:flex-row gap-6">
+
+                            {/* COL 1: Date */}
+                            <div className="flex-1 space-y-3">
+                                <div className="flex justify-between items-center font-black text-slate-800 text-[10px] uppercase tracking-widest">
+                                    <div className="flex items-center gap-2"><Icon path="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" className="w-4 h-4 text-blue-600" />Thời gian</div>
+                                    <select onChange={onDatePre} defaultValue="custom" className="text-[10px] border border-blue-200 bg-blue-50 text-blue-700 rounded-lg px-2 py-1 font-black outline-none cursor-pointer uppercase tracking-tighter">
+                                        <option value="custom" disabled>⚡ Chọn nhanh...</option>
+                                        <optgroup label="Ngắn hạn"><option value="today">Hôm nay</option><option value="yesterday">Hôm qua</option><option value="last3">3 ngày qua</option><option value="last7">7 ngày qua</option></optgroup>
+                                        <optgroup label="Trung hạn"><option value="thisWeek">Tuần này</option><option value="thisMonth">Tháng này</option><option value="lastMonth">Tháng trước</option><option value="last30">30 ngày qua</option></optgroup>
+                                        <optgroup label="Dài hạn"><option value="thisQuarter">Quý này</option><option value="thisYear">Năm nay</option><option value="lastYear">Năm ngoái</option></optgroup>
+                                    </select>
+                                </div>
+                                <div className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200 w-full shadow-inner">
+                                    <input type="date" value={d.from} onChange={e => setD({ ...d, from: e.target.value })} className="bg-transparent text-xs font-black w-full outline-none" /> ➜ <input type="date" value={d.to} onChange={e => setD({ ...d, to: e.target.value })} className="bg-transparent text-xs font-black w-full outline-none text-right" />
+                                </div>
+                            </div>
+
+                            {/* COL 2: Filters & Search */}
+                            <div className="flex-[2] space-y-3 border-l pl-6 border-slate-100">
+                                <div className="flex justify-between items-center font-black text-slate-800 text-[10px] uppercase tracking-widest">
+                                    <div className="flex items-center gap-2">
+                                        <Icon path="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75" className="w-4 h-4 text-purple-600" />Phân loại
+                                        {preList?.length > 0 && <select value={pId} onChange={onPreset} className="ml-2 text-[10px] border-orange-200 bg-orange-50 text-orange-800 rounded-lg px-2 py-1 font-black outline-none uppercase tracking-tighter"><option value="">-- Lọc nhanh --</option>{preList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}
+                                    </div>
+
+                                    <div className="flex gap-2 items-center">
+                                        <div className="relative">
+                                            <Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Tìm nhanh..."
+                                                className="pl-8 pr-6 py-1.5 text-xs border border-slate-200 rounded-xl shadow-inner outline-none focus:border-blue-500 w-32 focus:w-48 transition-all font-bold"
+                                                value={searchTerm}
+                                                onChange={e => setSearchTerm(e.target.value)}
+                                            />
+                                            {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 font-bold text-xs">✖</button>}
+                                        </div>
+                                        <button onClick={onReset} className="text-[9px] font-black text-red-500 hover:underline whitespace-nowrap uppercase">Đặt lại</button>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    <MultiDrop label="Nhóm L1" opts={opts.brands} val={fil.brand} setVal={v => setFil({ ...fil, brand: v })} />
+                                    <MultiDrop label="Nhóm L2" opts={opts.categories} val={fil.category} setVal={v => setFil({ ...fil, category: v })} />
+                                    <MultiDrop label="Nhóm L3" opts={opts.sub_categories} val={fil.l3} setVal={v => setFil({ ...fil, l3: v })} />
+                                </div>
+                            </div>
+
+                            {/* COL 3: Actions */}
+                            <div className="flex flex-col justify-end gap-2 min-w-[140px]">
+                                <Button onClick={onApply} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl h-10 shadow-lg shadow-blue-100 uppercase tracking-widest text-[10px]">{isLoading ? '...' : 'LỌC DỮ LIỆU'}</Button>
+                                <Button onClick={() => handlePartnerExport(list, tab, apiP, fil.brand.join('_'))} variant="secondary" className="w-full border-emerald-500 text-emerald-700 rounded-xl font-black h-8 uppercase tracking-widest text-[9px]">Xuất Excel</Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* TABLE AREA */}
+                <AnalysisCard title="Chi tiết dữ liệu">
                         <div className="px-4 pt-2 border-b bg-gray-50"><Tabs items={[{ id: 'by_supplier', label: 'Hiệu quả NCC' }, { id: 'top_customers', label: 'DS Khách Hàng' }]} activeTab={tab} onTabChange={setTab} /></div>
                         <div className="p-4">
                             <PartnerAnalysisDataTable

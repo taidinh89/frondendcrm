@@ -238,6 +238,33 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                     </AnalysisCard>
                 </div>
 
+                {/* Filter Bar & Settings: Consolidated above the table */}
+                <div className="relative space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                        <div className="relative flex-1 w-full">
+                            <div className="absolute -top-3 left-6 inline-flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full z-10 shadow-lg">
+                                <Icon name="filter-variant" className="w-3 h-3" /> Bộ lọc & Tìm kiếm
+                            </div>
+                            <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
+                        </div>
+                        
+                        <div className="shrink-0 mb-1">
+                            <label className="inline-flex items-center cursor-pointer space-x-3 bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-300 transition-all h-[54px] xl:h-[78px]">
+                                <input
+                                    type="checkbox"
+                                    className="form-checkbox h-5 w-5 text-indigo-600 rounded-lg border-slate-300 focus:ring-indigo-500"
+                                    checked={filters.include_returns}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Net Sales Mode</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bao gồm hàng trả</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Table Data */}
                 <AnalysisCard title={
                     <div className="flex justify-between items-center w-full">
@@ -323,28 +350,8 @@ export const SalesAnalysisContent = ({ setAppTitle }) => {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <label className="inline-flex items-center cursor-pointer space-x-3 bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-300 transition-all">
-                        <input
-                            type="checkbox"
-                            className="form-checkbox h-5 w-5 text-indigo-600 rounded-lg border-slate-300 focus:ring-indigo-500"
-                            checked={filters.include_returns}
-                            onChange={(e) => setFilters(prev => ({ ...prev, include_returns: e.target.checked }))}
-                        />
-                        <div className="flex flex-col">
-                            <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Net Sales Mode</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bao gồm hàng trả</span>
-                        </div>
-                    </label>
-                </div>
             </div>
 
-            <div className="relative">
-                <div className="absolute -top-3 left-6 inline-flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full z-10 shadow-lg">
-                    <Icon name="filter-variant" className="w-3 h-3" /> Bộ lọc nâng cao
-                </div>
-                <SalesAnalysisFilterBar initialFilters={filters} onApplyFilters={setFilters} isLoading={isLoading} />
-            </div>
 
             {renderContent()}
 

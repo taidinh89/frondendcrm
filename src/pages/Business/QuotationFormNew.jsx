@@ -1,4 +1,4 @@
-﻿// src/pages/Business/QuotationFormNew.jsx
+// src/pages/Business/QuotationFormNew.jsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Button, Input, Card, Table,
@@ -12,7 +12,7 @@ import {
     Search, Plus, Trash2, Printer,
     Save, ArrowLeft, Image as ImageIcon,
     PlusCircle, MinusCircle, Copy,
-    ChevronDown, Settings, AlertTriangle,
+    ChevronDown, ChevronUp, Settings, AlertTriangle,
     Info, FileText, CheckCircle2,
     Calendar, User, Globe, Calculator,
     Package, Filter, X
@@ -20,11 +20,14 @@ import {
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { useApiData } from '../../hooks/useApiData.jsx';
+import { CustomerSearch } from '../../components/Trading/CustomerSearch';
 
 // --- CÁC COMPONENT CON ---
 const ProductSearch = ({ onSelect, type = 'sale' }) => {
     const [search, setSearch] = useState('');
-    const { data: products, isLoading } = useApiData('/api/v2/products/search', { q: search, limit: 10 }, 300);
+    const { data: products, isLoading } = useApiData('/api/v2/quotations/products/search', { search: search, limit: 10 }, 300);
+
+    const formatCurrencyLocal = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);
 
     return (
         <div className="relative w-full">
@@ -34,36 +37,42 @@ const ProductSearch = ({ onSelect, type = 'sale' }) => {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 allowClear
-                className="hover:border-blue-500 focus:border-blue-500 transition-all rounded-lg h-9"
+                className="hover:border-blue-500 focus:border-blue-500 transition-all rounded-xl h-10 border-slate-300 shadow-sm"
             />
             {search && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2">
-                    {isLoading ? (
-                        <div className="p-4 text-center text-gray-400"><Spin size="small" className="mr-2" /> Đang tìm kiếm...</div>
-                    ) : products?.length > 0 ? (
-                        products.map(p => (
-                            <div
-                                key={p.id}
-                                className="p-3 hover:bg-blue-50 cursor-pointer flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0"
-                                onClick={() => { onSelect(p); setSearch(''); }}
-                            >
-                                <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center overflow-hidden shrink-0">
-                                    {p.thumb ? <img src={p.thumb} alt={p.ten_vt} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-gray-300" />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-gray-800 truncate text-sm">{p.ma_vt} - {p.ten_vt}</div>
-                                    <div className="flex items-center gap-4 mt-1">
-                                        <span className="text-xs text-blue-600 font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.gia_ban_le || 0)}</span>
-                                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">Tồn: <span className="font-bold">{p.ton_hien_tai || 0}</span> {p.dvt}</span>
-                                    </div>
-                                </div>
+                <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.2)] border border-slate-200 overflow-hidden z-[999]">
+                    <ul className="max-h-[50vh] overflow-y-auto custom-scrollbar p-1.5 divide-y divide-slate-50">
+                        {isLoading ? (
+                            <div className="p-4 text-center text-gray-400 italic">
+                                <Spin size="small" className="mr-2" /> Đang tìm hàng...
                             </div>
-                        ))
-                    ) : (
-                        <div className="p-6 text-center text-gray-400">
-                            <Empty description="Không tìm thấy sản phẩm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                        </div>
-                    )}
+                        ) : products?.length > 0 ? (
+                            products.map((p) => (
+                                <li
+                                    key={p.product_code}
+                                    className="p-3.5 hover:bg-slate-50 cursor-pointer flex flex-col gap-1.5 rounded-xl active:bg-blue-50 active:scale-[0.98] transition-all"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault(); // CHỐNG LỖI MẤT FOCUS
+                                        onSelect(p);
+                                        setSearch('');
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start gap-3">
+                                        <span className="font-bold text-sm text-slate-800 leading-snug">{p.display_name}</span>
+                                        <span className="font-black text-blue-600 text-sm whitespace-nowrap">{formatCurrencyLocal(p.prices?.retail || 0)}</span>
+                                    </div>
+                                    <div className="flex gap-2 text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-1">
+                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">{p.product_code}</span>
+                                        <span>Tồn: <strong className={(p.inventory?.total || 0) > 0 ? 'text-emerald-600' : 'text-rose-500'}>{p.inventory?.total || 0}</strong></span>
+                                    </div>
+                                </li>
+                            ))
+                        ) : (
+                            <div className="p-6 text-center text-gray-400 font-medium border-none shadow-none">
+                                <Empty description="Không tìm thấy sản phẩm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                            </div>
+                        )}
+                    </ul>
                 </div>
             )}
         </div>
@@ -75,6 +84,33 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
     const isEdit = !!quotationId;
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [isHeaderExpanded, setIsHeaderExpanded] = useState(false); // Điều khiển đóng mở Header trên Mobile
+
+    // --- SAFARI SCROLL LOGIC CHO THANH TÌM KIẾM ---
+    const [showStickySearch, setShowStickySearch] = useState(true);
+    const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY; // Đo lường thanh cuộn của toàn trang
+            
+            // Vuốt xuống (Qua 50px mới tính để tránh giật) -> Ẩn thanh tìm kiếm
+            if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+                if (showStickySearch) setShowStickySearch(false);
+            } 
+            // Vuốt lên -> Hiện lại thanh tìm kiếm
+            else if (currentScrollY < lastScrollY.current) {
+                if (!showStickySearch) setShowStickySearch(true);
+            }
+            
+            lastScrollY.current = currentScrollY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [showStickySearch]);
+
+    const formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);
 
     // --- STATE DỮ LIỆU ---
     const [formData, setFormData] = useState({
@@ -92,6 +128,9 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
         tong_thue: 0,
         tong_ck: 0,
         tong_thanh_toan: 0,
+        display_options: {
+            show_vat: false
+        },
         details: []
     });
 
@@ -107,7 +146,26 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
         try {
             const res = await axios.get(`/api/v2/quotations/${quotationId}`);
             if (res.data) {
-                setFormData(res.data);
+                // Map dữ liệu từ V2 backend về frontend state
+                const data = res.data;
+                setFormData({
+                    ...data,
+                    ngay_ct: data.date,
+                    ma_kh: data.customer_id,
+                    ten_kh: data.customer_name,
+                    dien_giai: data.note,
+                    details: (data.items || []).map(it => ({
+                        ...it,
+                        id: it.id,
+                        ma_vt: it.product_code,
+                        ten_vt: it.product_name,
+                        sl: parseFloat(it.quantity) || 0,
+                        gia: parseFloat(it.price) || 0,
+                        thue_suat: parseFloat(it.vat_rate) || 0,
+                        ck: 0, 
+                        loai_ck: '%'
+                    }))
+                });
             }
         } catch (err) {
             message.error('Không thể tải thông tin báo giá');
@@ -146,24 +204,26 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
 
     // --- HANDLERS ---
     const handleAddProduct = (p) => {
-        const exists = formData.details.find(d => d.ma_vt === p.ma_vt);
+        const product_code = p.product_code || p.ma_mat_hang;
+        const exists = formData.details.find(d => d.ma_vt === product_code);
         if (exists) {
-            message.info(`Sản phẩm ${p.ma_vt} đã có trong danh sách`);
+            message.info(`Sản phẩm ${product_code} đã có trong danh sách`);
             return;
         }
 
         const newItem = {
             id: `new_${Date.now()}`,
-            ma_vt: p.ma_vt,
-            ten_vt: p.ten_vt,
-            dvt: p.dvt,
+            ma_vt: product_code,
+            ten_vt: p.display_name || p.ten_mat_hang,
+            dvt: p.unit || p.dvt || 'Cái',
             sl: 1,
-            gia: p.gia_ban_le || 0,
-            thue_suat: p.thue_suat || 0,
+            gia: p.prices?.retail || p.don_gia_1 || 0,
+            thue_suat: p.vat_rate || 0,
             ck: 0,
             loai_ck: '%',
             ghi_chu: '',
-            thumb: p.thumb
+            thumb: null,
+            original_data: p
         };
 
         updateTotals([...formData.details, newItem]);
@@ -193,18 +253,45 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
 
         setSaving(true);
         try {
+            // MAPPING PAYLOAD CHO V2 API
+            const payload = {
+                customer_id: formData.ma_kh,
+                customer_name: formData.ten_kh,
+                date: formData.ngay_ct,
+                note: formData.dien_giai,
+                warehouse_code: '02',
+                items: formData.details.map(item => ({
+                    product_code: item.ma_vt,
+                    product_name: item.ten_vt,
+                    unit: item.dvt,
+                    quantity: item.sl,
+                    price: item.gia,
+                    vat_rate: item.thue_suat,
+                    note: item.ghi_chu || '',
+                    original_data: item.original_data || {}
+                }))
+            };
+
             const url = isEdit ? `/api/v2/quotations/${quotationId}` : '/api/v2/quotations';
             const method = isEdit ? 'put' : 'post';
-            const res = await axios[method](url, formData);
+            const res = await axios[method](url, payload);
 
-            message.success('Đã lưu báo giá thành công');
+            message.success(res.data.message || 'Đã lưu báo giá thành công');
             if (isPrint) {
                 handlePrint(res.data.id || quotationId);
             }
             if (!isPrint && onSaveSuccess) onSaveSuccess();
         } catch (err) {
-            message.error('Lỗi khi lưu báo giá');
-            console.error(err);
+            console.error('Lỗi khi lưu báo giá:', err);
+            const msg = err.response?.data?.message || 'Lỗi khi lưu báo giá';
+            message.error(msg);
+            
+            // Xử lý hiển thị chi tiết lỗi validation nếu có
+            if (err.response?.data?.errors) {
+                Object.values(err.response.data.errors).forEach(errs => {
+                    errs.forEach(e => message.error(e));
+                });
+            }
         } finally {
             setSaving(false);
         }
@@ -220,202 +307,304 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
         </div>
     );
 
+    const columns = [
+        {
+            title: '#',
+            width: 50,
+            render: (_, __, index) => <span className="text-slate-400 font-bold">{index + 1}</span>,
+            align: 'center'
+        },
+        {
+            title: 'Sản phẩm',
+            render: (_, record) => (
+                <div>
+                    <div className="font-bold text-slate-800">{record.ten_vt}</div>
+                    <div className="text-[10px] text-slate-400 font-black font-mono mt-0.5">{record.ma_vt}</div>
+                </div>
+            )
+        },
+        {
+            title: 'ĐVT',
+            dataIndex: 'dvt',
+            width: 80,
+            align: 'center',
+            render: (val) => <span className="text-[10px] bg-slate-100 px-2 py-1 rounded font-black text-slate-600 uppercase">{val}</span>
+        },
+        {
+            title: 'Số lượng',
+            dataIndex: 'sl',
+            width: 120,
+            render: (val, record) => (
+                <Input 
+                    type="number" 
+                    value={val} 
+                    onChange={e => handleUpdateItem(record.id, 'sl', parseFloat(e.target.value) || 0)}
+                    className="text-center font-black h-9 border-slate-200"
+                />
+            )
+        },
+        {
+            title: 'Đơn giá',
+            dataIndex: 'gia',
+            width: 160,
+            render: (val, record) => (
+                <Input 
+                    type="number" 
+                    value={val} 
+                    onChange={e => handleUpdateItem(record.id, 'gia', parseFloat(e.target.value) || 0)}
+                    className="text-right font-black text-blue-600 bg-blue-50/30 border-blue-100 h-9"
+                />
+            )
+        },
+        {
+            title: 'Thành tiền',
+            align: 'right',
+            width: 150,
+            render: (_, record) => <span className="font-black text-slate-800">{formatCurrency(record.sl * record.gia)}</span>
+        },
+        {
+            title: '',
+            width: 50,
+            render: (_, record) => (
+                <button onClick={() => handleRemoveItem(record.id)} className="text-slate-300 hover:text-rose-500 transition-colors p-1">
+                    <Trash2 size={16} />
+                </button>
+            ),
+            align: 'center'
+        }
+    ];
+
     return (
         <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden font-inter animate-in fade-in duration-500">
-            {/* Header Sticky */}
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-30">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={onBack}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-blue-600"
+            {/* ================================================================= */}
+            {/* HEADER: GỌN GÀNG TRÊN MOBILE - RỘNG RÃI TRÊN DESKTOP */}
+            {/* ================================================================= */}
+            <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between shadow-sm z-30 sticky top-0">
+                
+                {/* Trái: Nút Back + Tiêu đề */}
+                <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                    <button 
+                        onClick={onBack} 
+                        className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-200 text-slate-600 transition-colors shrink-0"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={18} />
                     </button>
-                    <div>
-                        <h1 className="text-xl font-black text-gray-800 flex items-center gap-2 m-0">
-                            {isEdit ? 'CHỈNH SỬA BÁO GIÁ' : 'TẠO BÁO GIÁ MỚI'}
-                            {isEdit && <span className="text-blue-600">#{formData.so_ct || quotationId}</span>}
-                        </h1>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider m-0">Quản lý báo giá & đàm phán khách hàng</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-base md:text-xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 m-0 truncate">
+                            {isEdit ? <span>Báo Giá <span className="text-blue-600">#{formData.so_ct || quotationId}</span></span> : 'TẠO BÁO GIÁ MỚI'}
+                            {formData.status === 'approved' && <CheckCircle2 className="text-emerald-500 shrink-0" size={16} />}
+                        </h2>
+                        <p className="hidden md:block text-[10px] uppercase font-black text-slate-400 mt-0.5 tracking-widest">Phần mềm quản lý kinh doanh</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        icon={<Printer size={16} />}
-                        onClick={() => handleSave(true)}
-                        className="flex items-center gap-2 font-bold h-9 bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100"
+
+                {/* Phải: Các nút thao tác */}
+                <div className="flex items-center gap-2 shrink-0">
+                    
+                    {/* NHÓM NÚT IN (Chỉ hiện khi đang ở chế độ Edit) */}
+                    {isEdit && (
+                        <div className="flex items-center gap-1 md:gap-2">
+                            {/* Mobile View: Chỉ hiện Icon In nhỏ gọn */}
+                            <div className="flex md:hidden gap-1.5">
+                                <button onClick={() => window.open(`/api/v2/quotations/${quotationId}/print`, '_blank')} className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 active:bg-indigo-100 text-indigo-600 shadow-sm transition-colors"><Printer size={16}/></button>
+                                <button onClick={() => window.open(`/api/v2/quotations/${quotationId}/contract`, '_blank')} className="w-8 h-8 flex items-center justify-center rounded-xl bg-amber-50 active:bg-amber-100 text-amber-600 shadow-sm transition-colors"><FileText size={16}/></button>
+                            </div>
+                            
+                            {/* Desktop View: Hiện full Text */}
+                            <div className="hidden md:flex gap-2">
+                                <Button icon={<Printer size={16} />} onClick={() => window.open(`/api/v2/quotations/${quotationId}/print`, '_blank')} className="rounded-xl border-slate-200 font-bold h-9 bg-indigo-50/30 text-indigo-700 hover:bg-indigo-50">In Báo giá</Button>
+                                <Button icon={<FileText size={16} />} onClick={() => window.open(`/api/v2/quotations/${quotationId}/contract`, '_blank')} className="rounded-xl border-slate-200 font-bold h-9 bg-amber-50/30 text-amber-700 hover:bg-amber-50">In Hợp đồng</Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NÚT LƯU TOP: ẨN TRÊN MOBILE VÌ ĐÃ CÓ BOTTOM BAR */}
+                    <Button 
+                        type="primary" 
+                        icon={<Save size={16} />} 
+                        onClick={() => handleSave(false)} 
+                        loading={saving} 
+                        className="hidden md:flex rounded-xl bg-blue-600 font-bold h-9 shadow-sm shadow-blue-100"
                     >
-                        Lưu & In
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<Save size={16} />}
-                        loading={saving}
-                        onClick={() => handleSave(false)}
-                        className="flex items-center gap-2 font-bold h-9 shadow-blue-200 shadow-md"
-                    >
-                        Lưu Báo Giá
+                        {saving ? 'Đang lưu...' : 'Lưu Báo Giá'}
                     </Button>
                 </div>
             </div>
 
+
+
             {/* Content Scrollable */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
-                <div className="grid grid-cols-12 gap-6 pb-20">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin">
+                <div className="grid grid-cols-12 gap-4 md:gap-6 pb-32">
 
-                    {/* Panel Trái: Thông tin chung */}
-                    <div className="col-span-12 lg:col-span-8 space-y-6">
+                    {/* Panel Trái: Thông tin chung & Sản phẩm */}
+                    <div className="col-span-12 lg:col-span-8 space-y-4 md:space-y-6">
 
-                        {/* 1. Thông tin khách hàng */}
-                        <Card
-                            title={<div className="flex items-center gap-2 text-blue-700"><User size={18} /><span>Thông tin Khách hàng</span></div>}
-                            className="shadow-sm border-gray-100 rounded-xl overflow-hidden"
-                            bodyStyle={{ padding: '20px' }}
-                        >
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Tên Khách hàng / Công ty <span className="text-red-500">*</span></label>
-                                    <Input
-                                        placeholder="Nhập tên khách hàng..."
-                                        value={formData.ten_kh}
-                                        onChange={e => setFormData({ ...formData, ten_kh: e.target.value })}
-                                        className="rounded-lg h-9 border-gray-200"
-                                    />
+                        {/* ================================================================= */}
+                        {/* 1. KHU VỰC THÔNG TIN BÁO GIÁ (MOBILE: ACCORDION, DESKTOP: GRID) */}
+                        {/* ================================================================= */}
+                        {/* KHỐI THÔNG TIN CƠ BẢN (COMPACT MODE) */}
+                        <div className="bg-white md:rounded-2xl shadow-sm border-b md:border border-slate-200 mb-4 p-3 md:p-4 -mx-4 md:mx-0">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                {/* Tìm khách hàng */}
+                                <div className="flex-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Khách hàng</label>
+                                    <div className="relative z-50">
+                                        <CustomerSearch 
+                                            selectedCustomer={formData.ma_kh ? { 
+                                                ma_khncc: formData.ma_kh, 
+                                                ten_cong_ty_khach_hang: formData.ten_kh 
+                                            } : null}
+                                            onSelect={(cust) => {
+                                                if (cust) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        ma_kh: cust.ma_khncc,
+                                                        ten_kh: cust.ten_cong_ty_khach_hang,
+                                                        dien_thoai: cust.dien_thoai_1,
+                                                        dia_chi: cust.dia_chi
+                                                    });
+                                                } else {
+                                                    setFormData({
+                                                        ...formData,
+                                                        ma_kh: '',
+                                                        ten_kh: '',
+                                                        dien_thoai: '',
+                                                        dia_chi: ''
+                                                    });
+                                                }
+                                            }} 
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Số điện thoại</label>
-                                    <Input
-                                        placeholder="09xx xxx xxx"
-                                        value={formData.dien_thoai}
-                                        onChange={e => setFormData({ ...formData, dien_thoai: e.target.value })}
-                                        className="rounded-lg h-9 border-gray-200"
-                                    />
-                                </div>
-                                <div className="col-span-2 space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Địa chỉ giao hàng / Gửi báo giá</label>
-                                    <Input
-                                        placeholder="Số nhà, đường, phường/xã, quận/huyện..."
-                                        value={formData.dia_chi}
-                                        onChange={e => setFormData({ ...formData, dia_chi: e.target.value })}
-                                        className="rounded-lg h-9 border-gray-200"
-                                    />
+
+                                {/* Ngày tháng (Xếp 2 cột trên Mobile) */}
+                                <div className="grid grid-cols-2 gap-4 md:w-1/3 shrink-0">
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Ngày Báo Giá</label>
+                                        <Input type="date" value={formData.ngay_ct} onChange={(e) => setFormData({ ...formData, ngay_ct: e.target.value })} className="w-full h-11 font-bold text-sm bg-slate-50 border-slate-200 rounded-xl"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Hiệu lực</label>
+                                        <Input type="date" value={formData.han_thanh_toan} onChange={(e) => setFormData({ ...formData, han_thanh_toan: e.target.value })} className="w-full h-11 font-bold text-sm bg-slate-50 border-slate-200 rounded-xl"/>
+                                    </div>
                                 </div>
                             </div>
-                        </Card>
+                        </div>
 
-                        {/* 2. Chi tiết sản phẩm */}
-                        <Card
-                            title={
-                                <div className="flex items-center justify-between w-full">
-                                    <div className="flex items-center gap-2 text-blue-700"><Package size={18} /><span>Sản phẩm & Dịch vụ</span></div>
-                                    <div className="w-80"><ProductSearch onSelect={handleAddProduct} /></div>
-                                </div>
-                            }
-                            className="shadow-sm border-gray-100 rounded-xl overflow-hidden"
-                            bodyStyle={{ padding: 0 }}
-                        >
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse">
-                                    <thead className="bg-gray-50/80 border-b border-gray-100">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider w-10 text-center">#</th>
-                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sản phẩm</th>
-                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-24">ĐVT</th>
-                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-28">Số lượng</th>
-                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-36">Đơn giá</th>
-                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-32">Chiết khấu</th>
-                                            <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-wider w-40">Thành tiền</th>
-                                            <th className="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider w-12"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50">
-                                        {formData.details.length > 0 ? formData.details.map((item, idx) => {
-                                            const lineTien = (item.gia || 0) * (item.sl || 0);
-                                            const lineCk = item.loai_ck === '%' ? (lineTien * (item.ck || 0) / 100) : (item.ck || 0);
-                                            const lineTotal = lineTien - lineCk;
+                        {/* ================================================================= */}
+                        {/* 2. THANH TÌM KIẾM SẢN PHẨM (AUTO-HIDE SAFARI STYLE TRÊN MOBILE) */}
+                        {/* ================================================================= */}
+                        <div className={`sticky top-[58px] md:top-auto z-[90] bg-white/95 backdrop-blur-md pb-3 pt-2 md:pb-4 md:bg-transparent md:relative border-b md:border-none border-slate-200 shadow-sm md:shadow-none mb-4 -mx-4 px-4 md:mx-0 md:px-0 transition-all duration-300 ease-in-out origin-top ${
+                            !showStickySearch 
+                                ? '-translate-y-full opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto' 
+                                : 'translate-y-0 opacity-100'
+                        }`}>
+                            <div className="relative shadow-sm rounded-xl overflow-visible z-50"> 
+                                <ProductSearch onSelect={handleAddProduct} />
+                            </div>
+                        </div>
 
-                                            return (
-                                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                    <td className="px-4 py-4 text-center text-xs text-gray-400 font-bold">{idx + 1}</td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 bg-gray-100 rounded border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-200 transition-all">
-                                                                {item.thumb ? <img src={item.thumb} alt={item.ten_vt} className="w-full h-full object-cover" /> : <ImageIcon size={16} className="text-gray-300" />}
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <div className="text-sm font-bold text-gray-800 truncate" title={item.ten_vt}>{item.ten_vt}</div>
-                                                                <div className="text-[10px] text-gray-400 font-mono italic mt-0.5">{item.ma_vt}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">{item.dvt}</span>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <Input
-                                                            type="number"
+                        {/* ================================================================= */}
+                        {/* DANH SÁCH SẢN PHẨM (HYBRID: TABLE CHO PC - CARD CHO MOBILE) */}
+                        {/* ================================================================= */}
+                        <div className="w-full mt-4">
+                            {/* Tiêu đề & Badge (Chỉ hiện trên PC để tăng tính chuyên nghiệp) */}
+                            <div className="hidden md:flex items-center gap-2 text-slate-800 mb-3 px-1">
+                                <Package size={18} className="text-blue-600" />
+                                <span className="font-black text-xs uppercase tracking-widest">Danh sách sản phẩm</span>
+                                <Badge count={formData.details.length} showZero offset={[5, -2]} style={{ backgroundColor: '#3b82f6', fontWeight: 900, fontSize: '10px' }} />
+                            </div>
+
+                            {/* 🖥️ DESKTOP VIEW: Giữ nguyên Table của Ant Design */}
+                            <div className="hidden md:block bg-white rounded-xl border border-slate-200 p-2 shadow-sm">
+                                <Table
+                                    columns={columns}
+                                    dataSource={formData.details}
+                                    rowKey={(record) => record.id || (record.ma_vt + Math.random())}
+                                    pagination={false}
+                                    bordered
+                                    size="small"
+                                    className="custom-antd-table"
+                                />
+                            </div>
+
+                            {/* 📱 MOBILE VIEW: Giỏ hàng dạng Thẻ (Card Layout) */}
+                            <div className="block md:hidden space-y-3 pb-24">
+                                {formData.details.length === 0 ? (
+                                    <div className="p-10 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                                        <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                        <p className="text-sm font-bold">Chưa có sản phẩm nào</p>
+                                    </div>
+                                ) : (
+                                    formData.details.map((item, index) => (
+                                        <div key={item.id} className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 relative">
+                                            {/* Nút Xóa góc phải */}
+                                            <button 
+                                                onClick={() => handleRemoveItem(item.id)}
+                                                className="absolute top-3 right-3 text-rose-400 p-1.5 bg-rose-50 rounded-lg active:bg-rose-100"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+
+                                            {/* Tên & Mã SP */}
+                                            <div className="pr-10 mb-3">
+                                                <h4 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{item.ten_vt}</h4>
+                                                <span className="text-[10px] font-black font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1.5 inline-block tracking-widest">
+                                                    {item.ma_vt}
+                                                </span>
+                                            </div>
+
+                                            {/* Grid Nhập Số lượng & Giá */}
+                                            <div className="grid grid-cols-2 gap-3 items-end border-t border-slate-50 pt-3">
+                                                {/* Stepper Số lượng */}
+                                                <div>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Số lượng ({item.dvt})</label>
+                                                    <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden h-10 w-full bg-white shadow-sm">
+                                                        <button onClick={() => handleUpdateItem(item.id, 'sl', Math.max(1, (item.sl || 1) - 1))} className="w-10 h-full flex justify-center items-center bg-slate-50 active:bg-slate-200 text-slate-600 font-bold border-r border-slate-200">-</button>
+                                                        <input 
+                                                            type="number" 
                                                             value={item.sl}
-                                                            onChange={e => handleUpdateItem(item.id, 'sl', parseFloat(e.target.value) || 0)}
-                                                            className="text-center h-8 rounded-lg font-bold border-gray-200"
+                                                            onChange={(e) => handleUpdateItem(item.id, 'sl', parseFloat(e.target.value) || 0)}
+                                                            className="flex-1 w-full text-center font-black text-sm outline-none m-0 p-0" 
+                                                            style={{ WebkitAppearance: 'none' }}
                                                         />
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <Input
-                                                            type="number"
-                                                            value={item.gia}
-                                                            onChange={e => handleUpdateItem(item.id, 'gia', parseFloat(e.target.value) || 0)}
-                                                            className="text-right h-8 rounded-lg font-mono font-bold text-blue-600 bg-blue-50/30 border-blue-100"
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="flex items-center gap-1">
-                                                            <Input
-                                                                type="number"
-                                                                value={item.ck}
-                                                                onChange={e => handleUpdateItem(item.id, 'ck', parseFloat(e.target.value) || 0)}
-                                                                className="text-right h-8 rounded-lg border-gray-200 w-full"
-                                                            />
-                                                            <select
-                                                                className="text-[10px] font-bold border rounded-md h-8 px-1 bg-gray-50 text-gray-500"
-                                                                value={item.loai_ck}
-                                                                onChange={e => handleUpdateItem(item.id, 'loai_ck', e.target.value)}
-                                                            >
-                                                                <option value="%">%</option>
-                                                                <option value="đ">đ</option>
-                                                            </select>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-right">
-                                                        <div className="text-sm font-black text-gray-800 font-mono">
-                                                            {new Intl.NumberFormat('vi-VN').format(lineTotal)}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        <button
-                                                            onClick={() => handleRemoveItem(item.id)}
-                                                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        }) : (
-                                            <tr>
-                                                <td colSpan="8" className="py-20 text-center">
-                                                    <div className="flex flex-col items-center justify-center text-gray-300">
-                                                        <PlusCircle size={48} strokeWidth={1} className="mb-3" />
-                                                        <p className="text-sm font-medium">Chưa có sản phẩm nào. Hãy tìm kiếm để thêm.</p>
+                                                        <button onClick={() => handleUpdateItem(item.id, 'sl', Number(item.sl || 0) + 1)} className="w-10 h-full flex justify-center items-center bg-slate-50 active:bg-slate-200 text-slate-600 font-bold border-l border-slate-200">+</button>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                                                </div>
 
-                        {/* 3. Ghi chí & Điều khoản */}
+                                                {/* Input Đơn giá */}
+                                                <div>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Đơn giá (VNĐ)</label>
+                                                    <input 
+                                                        type="number"
+                                                        value={item.gia}
+                                                        onChange={(e) => handleUpdateItem(item.id, 'gia', parseFloat(e.target.value) || 0)}
+                                                        className="w-full h-10 px-2 border border-slate-200 rounded-xl text-right font-black text-sm text-blue-600 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Thành tiền dòng */}
+                                            <div className="mt-3 pt-2 border-t border-slate-50 flex justify-between items-center">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thành tiền</span>
+                                                <span className="font-black text-slate-800">{formatCurrency(item.sl * item.gia)}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+
+                                {formData.details.length > 0 && (
+                                    <div className="text-center pt-4 pb-2">
+                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest border-b border-slate-200 pb-1">
+                                            Hết danh sách sản phẩm
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 3. Ghi chú & Điều khoản */}
                         <Card className="shadow-sm border-gray-100 rounded-xl">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-tight flex items-center gap-2">
@@ -433,12 +622,12 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
                     </div>
 
                     {/* Panel Phải: Tổng hợp & Cấu hình */}
-                    <div className="col-span-12 lg:col-span-4 space-y-6">
+                    <div className="col-span-12 lg:col-span-4 space-y-6 pb-20 md:pb-0">
 
-                        {/* 1. Cấu hình chứng từ */}
+                        {/* 1. Cấu hình chứng từ (Desktop Only - Mobile version moved to top) */}
                         <Card
                             title={<div className="flex items-center gap-2 text-blue-700"><Calculator size={18} /><span>Thiết lập Phiếu</span></div>}
-                            className="shadow-sm border-gray-100 rounded-xl"
+                            className="hidden md:block shadow-sm border-gray-100 rounded-xl"
                         >
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
@@ -483,34 +672,36 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
                             </div>
                         </Card>
 
-                        {/* 2. Tổng cộng tiền */}
-                        <Card className="shadow-lg border-blue-100 border-2 rounded-xl bg-gradient-to-br from-white to-blue-50/30 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                                <Calculator size={120} strokeWidth={1} />
-                            </div>
-                            <div className="space-y-4 relative z-10">
-                                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
-                                    <span>Tổng tiền hàng</span>
-                                    <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_tien)}</span>
+                        {/* 2. Tổng cộng tiền (Desktop View) */}
+                        <div className="hidden md:block">
+                            <Card className="shadow-lg border-blue-100 border-2 rounded-xl bg-gradient-to-br from-white to-blue-50/30 overflow-hidden relative">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                    <Calculator size={120} strokeWidth={1} />
                                 </div>
-                                <div className="flex justify-between items-center text-sm font-medium text-red-500 bg-red-50 px-2 py-1.5 rounded-lg border border-red-100">
-                                    <span className="flex items-center gap-1">Tổng chiết khấu <Info size={12} className="cursor-help" title="Cộng dồn chiết khấu từng dòng" /></span>
-                                    <span className="font-mono font-bold">- {new Intl.NumberFormat('vi-VN').format(formData.tong_ck)}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
-                                    <span>Thuế GTGT</span>
-                                    <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_thue)}</span>
-                                </div>
-                                <Divider className="my-2 border-gray-200" />
-                                <div className="space-y-1">
-                                    <div className="text-xs font-black text-blue-600 uppercase tracking-widest text-right">Tổng thanh toán</div>
-                                    <div className="text-3xl font-black text-right text-gray-800 font-mono tracking-tighter">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(formData.tong_thanh_toan)}
+                                <div className="space-y-4 relative z-10">
+                                    <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                                        <span>Tổng tiền hàng</span>
+                                        <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_tien)}</span>
                                     </div>
-                                    <div className="text-[10px] text-gray-400 italic text-right mt-1">Đã bao gồm VAT & Chiết khấu</div>
+                                    <div className="flex justify-between items-center text-sm font-medium text-red-500 bg-red-50 px-2 py-1.5 rounded-lg border border-red-100">
+                                        <span className="flex items-center gap-1">Tổng chiết khấu <Info size={12} className="cursor-help" title="Cộng dồn chiết khấu từng dòng" /></span>
+                                        <span className="font-mono font-bold">- {new Intl.NumberFormat('vi-VN').format(formData.tong_ck)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                                        <span>Thuế GTGT</span>
+                                        <span className="font-mono">{new Intl.NumberFormat('vi-VN').format(formData.tong_thue)}</span>
+                                    </div>
+                                    <Divider className="my-2 border-gray-200" />
+                                    <div className="space-y-1">
+                                        <div className="text-xs font-black text-blue-600 uppercase tracking-widest text-right">Tổng thanh toán</div>
+                                        <div className="text-3xl font-black text-right text-gray-800 font-mono tracking-tighter">
+                                            {formatCurrency(formData.tong_thanh_toan)}
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 italic text-right mt-1">Đã bao gồm VAT & Chiết khấu</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        </div>
 
                         {/* 3. Information Alert */}
                         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-800">
@@ -528,8 +719,26 @@ export const QuotationFormNew = ({ quotationId, onBack, onSaveSuccess }) => {
                 </div>
             </div>
 
-            {/* Footer Status Bar */}
-            <div className="bg-gray-100 border-t border-gray-200 px-6 py-2 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest z-30">
+            {/* --- MOBILE STICKY BOTTOM BAR (TỔNG THANH TOÁN) --- */}
+            <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-[100] md:hidden pb-safe">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Tổng thanh toán</div>
+                        <div className="text-xl font-black text-blue-600 truncate font-mono">
+                            {formatCurrency(formData.tong_thanh_toan)}
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => handleSave(false)} 
+                        className="bg-slate-800 active:bg-slate-900 active:scale-95 transition-all text-white font-black px-8 py-3.5 rounded-2xl uppercase text-xs tracking-widest shadow-xl shadow-slate-200"
+                    >
+                        Chốt Đơn
+                    </button>
+                </div>
+            </div>
+
+            {/* Footer Status Bar (Desktop Only) */}
+            <div className="hidden md:flex bg-gray-100 border-t border-gray-200 px-6 py-2 items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest z-30">
                 <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> Hệ thống ổn định</span>
                     <span>Tài liệu: {formData.details.length} dòng</span>

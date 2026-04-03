@@ -74,6 +74,41 @@ const Input = ({ label, ...props }) => (
     </div>
 );
 
+// --- COMPONENT QUICK NOTE MODAL ---
+const QuickNoteModal = ({ data, onClose }) => {
+    const [note, setNote] = useState('');
+    if (!data) return null;
+    return (
+        <Modal 
+            isOpen={true} 
+            onClose={onClose} 
+            title={`Ghi chú nhanh`}
+            footer={
+                <>
+                    <Button variant="secondary" onClick={onClose}>Hủy</Button>
+                    <Button variant="primary" onClick={() => {
+                        // Gọi API lưu ghi chú (giả lập)
+                        alert('Đã lưu ghi chú cho: ' + (data.ten_cong_ty_khach_hang || data.ma_khncc));
+                        onClose();
+                    }}>Lưu Ghi Chú</Button>
+                </>
+            }
+        >
+            <div className="p-4 flex flex-col gap-3">
+                <div className="text-sm font-medium text-slate-700">Khách hàng: <span className="font-bold text-blue-600">{data.ten_cong_ty_khach_hang || data.ma_khncc}</span></div>
+                <textarea 
+                    className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm shadow-sm" 
+                    rows={4} 
+                    placeholder="Nhập nội dung trao đổi, nhắc hẹn..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    autoFocus
+                />
+            </div>
+        </Modal>
+    );
+};
+
 // --- COMPONENT MODAL RAW DATA ---
 const RawDataModal = ({ data, onClose, isMobile }) => {
     if (!data) return null;
@@ -111,21 +146,27 @@ export const CustomersContent = () => {
     const [columns, setColumns] = useState(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
+            if (saved && saved !== 'undefined' && saved !== 'null') {
                 const parsed = JSON.parse(saved);
-                const merged = [...parsed];
-                DEFAULT_COLUMNS.forEach(defCol => {
-                    if (!merged.find(c => c.key === defCol.key)) merged.push(defCol);
-                });
-                return merged;
+                if (Array.isArray(parsed)) {
+                    const merged = [...parsed];
+                    DEFAULT_COLUMNS.forEach(defCol => {
+                        if (!merged.some(c => c && c.key === defCol.key)) merged.push(defCol);
+                    });
+                    return merged;
+                }
             }
-        } catch (e) { console.error("Lỗi load config", e); }
+        } catch (e) { 
+            console.error("Lỗi load config", e); 
+            localStorage.removeItem(STORAGE_KEY);
+        }
         return DEFAULT_COLUMNS;
     });
 
     const [showColumnSettings, setShowColumnSettings] = useState(false);
     const [viewingRaw, setViewingRaw] = useState(null);
     const [viewingDetail, setViewingDetail] = useState(null);
+    const [quickNoteData, setQuickNoteData] = useState(null);
 
     // --- SAFARI SCROLL LOGIC STATES ---
     const [showToolbar, setShowToolbar] = useState(true);
@@ -340,44 +381,59 @@ export const CustomersContent = () => {
                     ) : (
                         <div className="flex flex-col gap-2 p-2">
                             {customers.map((row) => (
-                                <div 
-                                    key={row.id} 
-                                    onClick={() => setViewingDetail(row.ma_khncc)}
-                                    className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3 active:scale-[0.98] active:bg-slate-50 transition-all cursor-pointer"
-                                >
-                                    {/* 1. Avatar / Logo Icon để làm điểm neo thị giác */}
-                                    <div className="w-11 h-11 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black shrink-0 border border-indigo-100 uppercase text-sm">
-                                        {row.ten_cong_ty_khach_hang ? row.ten_cong_ty_khach_hang.charAt(0) : 'K'}
+                                <div key={row.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden mb-1">
+                                    {/* PHẦN THÔNG TIN (Bấm để xem chi tiết) */}
+                                    <div 
+                                        onClick={() => setViewingDetail(row.ma_khncc)}
+                                        className="p-3 flex items-center gap-3 active:bg-slate-50 transition-all cursor-pointer"
+                                    >
+                                        <div className="w-11 h-11 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black shrink-0 border border-indigo-100 uppercase text-sm">
+                                            {row.ten_cong_ty_khach_hang ? row.ten_cong_ty_khach_hang.charAt(0) : 'K'}
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-slate-800 text-sm leading-tight truncate">
+                                                    {row.ten_cong_ty_khach_hang || 'Chưa cập nhật tên'}
+                                                </h3>
+                                                {row.is_active ? 
+                                                    <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0 border border-emerald-100">BẬT</span> : 
+                                                    <span className="bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0 border border-rose-100">TẮT</span>
+                                                }
+                                            </div>
+                                            <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                                <span className="flex items-center gap-1 shrink-0">
+                                                    <Icon path="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.595-5.219-3.918-6.815-6.815l1.293-.97c.362-.271.527-.733.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" className="w-3 h-3 text-slate-300"/> 
+                                                    <span className={row.dien_thoai_1 ? '' : 'italic opacity-50'}>{row.dien_thoai_1 || 'Trống'}</span>
+                                                </span>
+                                                <span className="flex items-center gap-1 truncate border-l border-slate-200 pl-3">
+                                                    <Icon name="user" className="w-3 h-3 text-slate-300"/> 
+                                                    <span className="truncate">{row.nhan_vien_phu_trach || 'Chưa gán'}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 text-slate-300 pr-1">
+                                            <Icon path="M9 5l7 7-7 7" className="w-4 h-4" />
+                                        </div>
                                     </div>
 
-                                    {/* 2. Nội dung chính */}
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-slate-800 text-sm leading-tight truncate">
-                                                {row.ten_cong_ty_khach_hang || 'Chưa cập nhật tên'}
-                                            </h3>
-                                            {/* Thay dấu chấm bằng Badge xịn xò */}
-                                            {row.is_active ? 
-                                                <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0 border border-emerald-100">BẬT</span> : 
-                                                <span className="bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0 border border-rose-100">TẮT</span>
-                                            }
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
-                                            <span className="flex items-center gap-1 shrink-0">
-                                                <Icon name="phone" className="w-3 h-3 text-slate-300"/> 
-                                                <span className={row.dien_thoai_1 ? '' : 'italic opacity-50'}>{row.dien_thoai_1 || 'Trống'}</span>
-                                            </span>
-                                            <span className="flex items-center gap-1 truncate border-l border-slate-200 pl-3">
-                                                <Icon name="user" className="w-3 h-3 text-slate-300"/> 
-                                                <span className="truncate">{row.nhan_vien_phu_trach || 'Chưa gán'}</span>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* 3. Mũi tên điều hướng (Ẩn nút info rườm rà đi) */}
-                                    <div className="shrink-0 text-slate-300 pr-1">
-                                        <Icon path="M9 5l7 7-7 7" className="w-4 h-4" />
+                                    {/* PHẦN THAO TÁC NHANH (Quick Actions Bar) */}
+                                    <div className="flex border-t border-slate-100 bg-slate-50/50 p-1.5 gap-1">
+                                        <a href={`tel:${row.dien_thoai_1 || ''}`} className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl active:bg-blue-100 text-blue-600 transition-colors" onClick={(e) => { if(!row.dien_thoai_1) { e.preventDefault(); alert('Khách hàng chưa có số điện thoại'); } else { e.stopPropagation(); } }}>
+                                            <Icon path="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.595-5.219-3.918-6.815-6.815l1.293-.97c.362-.271.527-.733.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" className="w-5 h-5 mb-1" />
+                                            <span className="text-[10px] font-bold">Gọi điện</span>
+                                        </a>
+                                        <a href={`https://zalo.me/${row.so_zalo || row.dien_thoai_1 || ''}`} target="_blank" rel="noreferrer" className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl active:bg-sky-100 text-sky-600 transition-colors" onClick={(e) => { if(!(row.so_zalo || row.dien_thoai_1)) { e.preventDefault(); alert('Khách hàng chưa có số Zalo'); } else { e.stopPropagation(); } }}>
+                                            <Icon name="chat" className="w-5 h-5 mb-1" />
+                                            <span className="text-[10px] font-bold">Zalo</span>
+                                        </a>
+                                        <button onClick={(e) => { e.stopPropagation(); setQuickNoteData(row); }} className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl active:bg-amber-100 text-amber-600 transition-colors">
+                                            <Icon name="file-text" className="w-5 h-5 mb-1" />
+                                            <span className="text-[10px] font-bold">Ghi chú</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); alert('Tính năng lên đơn nhanh đang phát triển'); }} className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl active:bg-emerald-100 text-emerald-600 transition-colors">
+                                            <Icon name="shopping-cart" className="w-5 h-5 mb-1" />
+                                            <span className="text-[10px] font-bold">Lên đơn</span>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -390,7 +446,7 @@ export const CustomersContent = () => {
                 <table className="hidden md:table w-full border-collapse table-fixed bg-white" style={{ minWidth: 'max-content' }}>
                     <thead className="sticky top-0 z-40 bg-slate-50 border-b shadow-sm">
                         <tr>
-                            <th className="w-[100px] p-2 bg-slate-50 sticky left-0 z-30 text-center text-[10px] font-black uppercase text-slate-400">Thao tác</th>
+                            <th className="w-[380px] p-2 bg-slate-50 sticky left-0 z-30 text-center text-[10px] font-black uppercase text-slate-400">Thao tác</th>
                             {columns.filter(c => c.visible).map((col) => (
                                 <th key={col.key} className="relative group select-none hover:bg-slate-100 transition-colors" style={{ width: col.width }}>
                                     <div 
@@ -411,9 +467,25 @@ export const CustomersContent = () => {
                         ) : customers.map((row) => (
                             <tr key={row.id} className="hover:bg-blue-50/50 group transition-colors">
                                 <td className="p-2 border-r bg-white group-hover:bg-blue-50/50 sticky left-0 z-10 text-center shadow-sm">
-                                    <div className="flex justify-center gap-1">
-                                        <button onClick={() => setViewingDetail(row.ma_khncc)} className="text-blue-600 hover:scale-110 transition-transform p-1"><Icon name="eye" className="w-4 h-4" /></button>
-                                        <button onClick={() => setViewingRaw(row)} className="text-slate-400 hover:text-slate-800 p-1"><Icon name="info" className="w-4 h-4" /></button>
+                                    <div className="flex justify-start items-center gap-2 pl-2">
+                                        <a href={`tel:${row.dien_thoai_1 || ''}`} className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 bg-blue-50 rounded-lg transition-colors border border-blue-100/50" onClick={(e) => { if(!row.dien_thoai_1) { e.preventDefault(); alert('Chưa có SĐT'); } }}>
+                                            <Icon path="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.595-5.219-3.918-6.815-6.815l1.293-.97c.362-.271.527-.733.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" className="w-3 h-3" />
+                                            Gọi
+                                        </a>
+                                        <a href={`https://zalo.me/${row.so_zalo || row.dien_thoai_1 || ''}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-bold text-sky-600 hover:bg-sky-100 bg-sky-50 rounded-lg transition-colors border border-sky-100/50" onClick={(e) => { if(!(row.so_zalo || row.dien_thoai_1)) { e.preventDefault(); alert('Chưa có Zalo'); } }}>
+                                            <Icon name="chat" className="w-3 h-3" />
+                                            Zalo
+                                        </a>
+                                        <button onClick={() => setQuickNoteData(row)} className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-100 bg-amber-50 rounded-lg transition-colors border border-amber-100/50">
+                                            <Icon name="file-text" className="w-3 h-3" />
+                                            Ghi chú
+                                        </button>
+                                        <button onClick={() => alert('Đang phát triển')} className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded-lg transition-colors border border-emerald-100/50">
+                                            <Icon name="shopping-cart" className="w-3 h-3" />
+                                            Lên đơn
+                                        </button>
+                                        <div className="flex-1"></div>
+                                        <button onClick={() => setViewingDetail(row.ma_khncc)} className="text-slate-400 hover:text-slate-800 p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Xem chi tiết gốc"><Icon name="eye" className="w-4 h-4" /></button>
                                     </div>
                                 </td>
                                 {columns.filter(c => c.visible).map(col => {
@@ -470,6 +542,13 @@ export const CustomersContent = () => {
                     data={viewingRaw}
                     onClose={() => setViewingRaw(null)}
                     isMobile={isMobile}
+                />
+            )}
+
+            {quickNoteData && (
+                <QuickNoteModal
+                    data={quickNoteData}
+                    onClose={() => setQuickNoteData(null)}
                 />
             )}
 
