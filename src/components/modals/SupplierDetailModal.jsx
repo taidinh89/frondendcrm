@@ -320,21 +320,25 @@ const AllSupplierProductsList = ({ data, onProductClick, days = 90 }) => {
     );
 };
 
-// --- COMPONENT CON: BIỂU ĐỒ XU HƯỚNG NHẬP (MỚI) ---
+// --- COMPONENT CON: BIỂU ĐỒ XU HƯỚNG GIAO DỊCH (MỚI) ---
 const PurchaseTrendCharts = ({ data }) => {
     if (!data || data.length === 0) return <div className="p-20 text-center text-gray-400 border-2 border-dashed rounded-xl">Chưa có đủ dữ liệu giao dịch trong 12 tháng qua để vẽ xu hướng.</div>;
 
     return (
         <div className="space-y-6 overflow-auto max-h-[600px] p-2">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm font-inter">
                 <h4 className="font-black text-slate-800 text-sm uppercase mb-6 flex items-center gap-2">
-                    <span className="text-blue-500">📈</span> Biến động giá trị nhập hàng (12 Tháng)
+                    <span className="text-blue-500">📈</span> Biến động giá trị giao dịch (12 Tháng)
                 </h4>
                 <div className="h-72 w-full">
                     <ResponsiveContainer>
                         <AreaChart data={data}>
                             <defs>
-                                <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="colorPur" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                                </linearGradient>
+                                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
                                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                                 </linearGradient>
@@ -343,7 +347,8 @@ const PurchaseTrendCharts = ({ data }) => {
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} tickFormatter={v => (v/1e6).toFixed(0) + 'M'} />
                             <Tooltip formatter={(v) => formatPrice(v)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                            <Area type="monotone" dataKey="total_value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                            <Area type="monotone" name="Nhập hàng" dataKey="total_purchase" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorPur)" />
+                            <Area type="monotone" name="Bán hàng" dataKey="total_revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -351,7 +356,7 @@ const PurchaseTrendCharts = ({ data }) => {
 
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h4 className="font-black text-slate-800 text-sm uppercase mb-6 flex items-center gap-2">
-                    <span className="text-emerald-500">📊</span> Tần suất đặt hàng (Số PO/Tháng)
+                    <span className="text-emerald-500">📊</span> Tần suất giao dịch (Số Đơn/Tháng)
                 </h4>
                 <div className="h-48 w-full">
                     <ResponsiveContainer>
@@ -360,7 +365,8 @@ const PurchaseTrendCharts = ({ data }) => {
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                             <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                            <Bar dataKey="order_count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
+                            <Bar name="Đơn nhập" dataKey="purchase_count" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar name="Đơn bán" dataKey="order_count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -481,12 +487,13 @@ export const SupplierDetailModal = ({ supplierIdentifier, supplierName, days = 9
 
     // Fetch dữ liệu chi tiết NCC từ API mới
     useEffect(() => {
-        if (!supplierIdentifier) return;
+        if (!supplierIdentifier && !supplierName) return;
         const fetchDetail = async () => {
             setIsLoading(true);
             try {
-                const res = await axios.get(`/api/v2/supplier-analysis/${supplierIdentifier}`, {
-                    params: { days, date_from: dateRange.start, date_to: dateRange.end }
+                const code = (supplierIdentifier && supplierIdentifier !== 'null') ? supplierIdentifier : 'null';
+                const res = await axios.get(`/api/v2/supplier-analysis/${code}`, {
+                    params: { days, date_from: dateRange.start, date_to: dateRange.end, name: supplierName }
                 });
                 setSupplierData(res.data);
 
@@ -512,7 +519,7 @@ export const SupplierDetailModal = ({ supplierIdentifier, supplierName, days = 9
 
     return (
         <Modal
-            isOpen={!!supplierIdentifier}
+            isOpen={!!supplierIdentifier || !!supplierName}
             onClose={onClose}
             title={
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full pr-4">
@@ -524,7 +531,7 @@ export const SupplierDetailModal = ({ supplierIdentifier, supplierName, days = 9
                         <div className="min-w-0">
                             <h3 className="text-lg font-bold text-gray-800 leading-tight truncate">{info.ten_cong_ty_khach_hang || supplierName}</h3>
                             <div className="flex items-center gap-2 text-[10px] text-gray-500 font-normal mt-0.5 whitespace-nowrap overflow-x-auto">
-                                <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono border border-gray-300">CODE: {supplierIdentifier}</span>
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono border border-gray-300">CODE: {info.ma_khncc || supplierIdentifier || 'N/A'}</span>
                                 {info.current_debt > 0 && (
                                     <span className="bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-black border border-rose-200 uppercase">
                                         NỢ: {formatPrice(info.current_debt)}

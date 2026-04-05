@@ -37,7 +37,7 @@ export const QuotationList = ({ setAppTitle }) => {
     });
 
     // --- API DATA ---
-    const { data: quotations = [], isLoading, refetch: refresh } = useApiData('/api/v2/quotations', filters, 300);
+    const { data: quotations = [], isLoading, refetch: refresh } = useApiData('/api/v2/quotations', filters, 300, []);
 
     useEffect(() => {
         setAppTitle('Danh sách Báo Giá');
@@ -220,7 +220,7 @@ export const QuotationList = ({ setAppTitle }) => {
                         Dự Phóng Doanh Thu <span className="text-blue-500">& Báo Giá</span>
                     </h1>
                     <p className="text-xs text-gray-400 font-medium m-0 flex items-center gap-1.5 mt-1">
-                        <Clock size={12} /> Cập nhật lúc: {dayjs().format('HH:mm:ss')} • <span className="text-blue-500 font-bold">{quotations.length}</span> báo giá trong tháng
+                        <Clock size={12} /> Cập nhật lúc: {dayjs().format('HH:mm:ss')} • <span className="text-blue-500 font-bold">{(quotations || []).length}</span> báo giá trong tháng
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

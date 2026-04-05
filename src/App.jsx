@@ -52,6 +52,7 @@ import { SystemMonitorPage } from './pages/System/SystemMonitorPage.jsx';
 import ImportManagement from './pages/System/ImportManagement.jsx';
 import { QrHistoryPage } from "./pages/Sepay/QrHistoryPage.jsx";
 import { InvoiceDashboardPage } from './pages/Finance/InvoiceDashboardPage.jsx';
+import { InvoiceDashboardV2 } from './pages/Finance/InvoiceDashboardV2.jsx';
 import { QuotationList } from './pages/Business/QuotationList';
 import { QuotationFormNew } from './pages/Business/QuotationFormNew';
 import MobileScreenManager from './pages/Admin/MobileScreenManager';
@@ -91,8 +92,17 @@ import { ResetPasswordPage } from './pages/Auth/ResetPasswordPage.jsx';
 import ProductList from './pages/ThienDuc/Products/ProductList.jsx';
 import SyncDashboard from './pages/ThienDuc/SyncCenter/SyncDashboard.jsx';
 
+// --- NEW V3 DOMAIN PAGES ---
+import ForecastPage from './pages/Analytics/ForecastPage.jsx';
+import AccountingPage from './pages/Finance/AccountingPage.jsx';
+import HRPerformancePage from './pages/Analytics/HRPerformancePage.jsx';
+
 // --- 3. CẤU HÌNH MENU (NAV ITEMS) ---
 const navItems = [
+    { id: 'forecast-v3', path: '/v3/kpi/forecast', label: 'Dự báo Nhập hàng (V3)', group: 'KPI & Mục tiêu', permission: 'purchase.view', iconName: 'activity', component: <ForecastPage /> },
+    { id: 'hr-performance-v3', path: '/v3/kpi/hr-performance', label: 'Hiệu suất Nhân viên (V3)', group: 'KPI & Mục tiêu', permission: 'report.sales', iconName: 'users', component: <HRPerformancePage /> },
+    { id: 'accounting-v3', path: '/v3/finance/accounting', label: 'Không gian Kế toán (V3)', group: 'Tài chính', permission: 'report.debt', iconName: 'credit-card', component: <AccountingPage /> },
+    
     { id: 'chat-v2', path: '/chat-v2', label: 'Chat Đa kênh V2', group: 'Giao tiếp', permission: null, iconName: 'chat', component: <OmnichannelChatPage /> },
     { id: 'internal-chat', path: '/internal-chat', label: 'Chat Nội bộ', group: 'Giao tiếp', permission: null, iconName: 'chat', component: <InternalChatPage /> },
     { id: 'chat-admin', path: '/chat-admin', label: 'Quản lý Kênh Chat', group: 'Giao tiếp', permission: 'system.security', iconName: 'cog', component: <ChannelManager /> },
@@ -106,6 +116,7 @@ const navItems = [
     { id: 'Quotation-form-new', path: '/quotations/create', label: 'Tạo Báo giá Mới', group: 'Kinh doanh', permission: 'inventory.view', iconName: 'plus-circle', component: <QuotationFormNew /> },
     { id: 'inventories', path: '/inventories', label: 'Quản lý Tồn Kho', group: 'Tồn kho - Web', permission: 'inventory.view', iconName: 'package', component: <InventoriesContent /> },
     { id: 'invoice-dashboard', path: '/invoice-dashboard', label: 'Dashboard Hóa đơn', group: 'Báo cáo', permission: 'invoice.view', iconName: 'bar-chart', component: <InvoiceDashboardPage /> },
+    { id: 'invoice-dashboard-v2', path: '/invoice-dashboard-v2', label: 'Dashboard Hóa đơn (V2)', group: 'Báo cáo', permission: 'invoice.view', iconName: 'activity', component: <InvoiceDashboardV2 /> },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Tồn kho - Web', permission: 'invoice.view', iconName: 'file-text', component: <InvoicesContent /> },
     { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'arrow-up-down', component: <ProductStandardization /> },
     { id: 'product-mobile-manager-v3', path: '/product-mobile-v3', label: 'Quản lý SP web v3 (Mới)', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'monitor', component: <ProductMobileManagerV3 /> },

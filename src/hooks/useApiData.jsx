@@ -12,8 +12,8 @@ axios.defaults.withCredentials = true;
  * 2. AbortController: Hủy request cũ nếu người dùng đổi filter quá nhanh.
  * 3. Auto Array Param: Tự sửa mảng cho Laravel.
  */
-export const useApiData = (endpoint, params = {}, debounceDelay = 300) => {
-    const [data, setData] = useState(null);
+export const useApiData = (endpoint, params = {}, debounceDelay = 300, initialData = null) => {
+    const [data, setData] = useState(initialData);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [pagination, setPagination] = useState(null);

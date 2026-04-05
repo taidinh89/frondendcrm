@@ -137,24 +137,32 @@ const PurchaseTrendCharts = ({ data }) => {
 
     return (
         <div className="space-y-6 overflow-auto max-h-[600px] p-2 pb-24">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm font-inter">
                 <h4 className="font-black text-slate-800 text-sm uppercase mb-6 flex items-center gap-2">
-                    <span className="text-blue-500">📈</span> Biến động doanh thu (12 Tháng)
+                    <span className="text-blue-500">📈</span> Biến động giao dịch (12 Tháng)
                 </h4>
                 <div className="h-72 w-full">
                     <ResponsiveContainer>
                         <AreaChart data={data}>
                             <defs>
-                                <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
                                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                </linearGradient>
+                                <linearGradient id="colorPurchase" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} tickFormatter={formatCompact} />
-                            <Tooltip formatter={(v) => formatPrice(v)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                            <Area type="monotone" dataKey="total_revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                            <Tooltip 
+                                formatter={(v) => formatPrice(v)} 
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} 
+                            />
+                            <Area type="monotone" name="Bán hàng" dataKey="total_revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                            <Area type="monotone" name="Nhập hàng" dataKey="total_purchase" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchase)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -162,7 +170,7 @@ const PurchaseTrendCharts = ({ data }) => {
 
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h4 className="font-black text-slate-800 text-sm uppercase mb-6 flex items-center gap-2">
-                    <span className="text-emerald-500">📊</span> Tần suất mua hàng (Số đơn/Tháng)
+                    <span className="text-emerald-500">📊</span> Tần suất giao dịch (Số đơn/Tháng)
                 </h4>
                 <div className="h-48 w-full">
                     <ResponsiveContainer>
@@ -171,7 +179,8 @@ const PurchaseTrendCharts = ({ data }) => {
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} tickFormatter={formatCompact} />
                             <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                            <Bar dataKey="order_count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
+                            <Bar name="Đơn bán" dataKey="order_count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar name="Đơn mua" dataKey="purchase_count" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -502,9 +511,27 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, isFullScreen 
                         <div className="flex-1 overflow-hidden">
                             {activeTab === 'summary' && (
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full overflow-auto p-1 pb-24">
-                                    <StatCard label="Tổng Doanh Thu" value={formatCompact(data.stats?.lifetime_value)} unit="đ" color="blue" subValue={`Từ ${formatDate(data.stats?.first_buy)}`} />
-                                    <StatCard label="Tổng Phiếu Bán" value={data.stats?.total_orders} unit="Phiếu" color="slate" />
-                                    <StatCard label="Sản phẩm Top" value={data.top_products?.[0]?.name ? data.top_products[0].name.split(' ').slice(0, 2).join(' ') + '...' : 'N/A'} unit="" color="amber" subValue={`${Number(data.top_products?.[0]?.qty || 0).toLocaleString('vi-VN')} lượt lấy`} />
+                                                                         <StatCard 
+                                         label="Doanh số (Bán)" 
+                                         value={formatCompact(data.stats?.lifetime_value)} 
+                                         unit="đ" 
+                                         color="blue" 
+                                         subValue={data.stats?.total_orders ? `${data.stats.total_orders} đơn hàng` : 'Chưa có đơn bán'} 
+                                     />
+                                                                         <StatCard 
+                                         label="Giá trị Nhập" 
+                                         value={formatCompact(data.stats?.lifetime_purchase)} 
+                                         unit="đ" 
+                                         color="amber" 
+                                         subValue={data.stats?.total_purchases ? `${data.stats.total_purchases} đơn nhập` : 'Chưa có đơn nhập'} 
+                                     />
+                                                                         <StatCard 
+                                         label="Sản phẩm Top" 
+                                         value={data.top_products?.[0]?.name ? data.top_products[0].name.split(' ').slice(0, 2).join(' ') + '...' : 'N/A'} 
+                                         unit="" 
+                                         color="indigo" 
+                                         subValue={data.top_products?.[0] ? `${Number(data.top_products[0].qty || 0).toLocaleString('vi-VN')} lượt ${data.top_products[0].type === 'BUY' ? 'nhập' : 'lấy'}` : ''} 
+                                     />
                                     <StatCard label="Tình trạng" value={data.stats?.days_inactive} unit="Ngày" color={data.stats?.days_inactive > 30 ? 'rose' : 'emerald'} subValue={data.stats?.days_inactive > 30 ? 'Cần tương tác' : 'Thường xuyên'} />
 
                                     <div className="md:col-span-1 bg-white p-6 rounded-2xl border shadow-sm h-fit">
@@ -530,15 +557,19 @@ export const CustomerDetailModal = ({ customerIdentifier, onClose, isFullScreen 
                                     </div>
 
                                     <div className="md:col-span-3 bg-white p-6 rounded-2xl border shadow-sm h-96">
-                                        <h4 className="font-black text-slate-800 text-xs uppercase mb-6 flex items-center gap-2"><span>📈</span> Xu hướng doanh thu</h4>
+                                                                                 <h4 className="font-black text-slate-800 text-xs uppercase mb-6 flex items-center gap-2"><span>📈</span> Xu hướng giao dịch</h4>
                                         <ResponsiveContainer width="100%" height="80%">
                                             <AreaChart data={data.chart_history}>
-                                                <defs><linearGradient id="cRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient></defs>
+                                                                                                 <defs>
+                                                     <linearGradient id="cRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
+                                                     <linearGradient id="cPur" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1}/><stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient>
+                                                 </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                                 <XAxis dataKey="month" hide />
                                                 <YAxis axisLine={false} tick={{fontSize:10, fill: '#94a3b8'}} tickFormatter={formatCompact} />
-                                                <Tooltip />
-                                                <Area type="monotone" dataKey="total_revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#cRev)" />
+                                                                                                 <Tooltip formatter={(v) => formatPrice(v)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                                                                                 <Area type="monotone" name="Bán hàng" dataKey="total_revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#cRev)" />
+                                                 <Area type="monotone" name="Nhập hàng" dataKey="total_purchase" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#cPur)" />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </div>

@@ -311,10 +311,13 @@ const KpiFormModal = ({ initial, onClose, onSaved }) => {
 
                     {/* Giá trị */}
                     <div>
-                        <label className="label-xs">Giá trị mục tiêu</label>
-                        <input type="number" className="input-base w-full text-lg font-black" placeholder="Nhập số tiền / số lượng..."
-                            value={form.target_value} onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))} />
-                        {form.target_value && <p className="text-xs text-slate-400 mt-1">{fmt(form.target_value)} {METRIC_LABELS[form.metric]?.unit}</p>}
+                        <NumericInput 
+                            label="Giá trị mục tiêu"
+                            value={form.target_value} 
+                            onChange={val => setForm(f => ({ ...f, target_value: val }))}
+                            placeholder="Nhập số tiền / số lượng..."
+                            className="!text-lg"
+                        />
                     </div>
 
                     {/* Ghi chú */}

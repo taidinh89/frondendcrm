@@ -379,31 +379,26 @@ export const FastUpdateModal = ({ item, onSave, onClose }) => {
                 </div>
                 
                 <div className="p-8 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mục tiêu Doanh thu (VNĐ)</label>
-                        <input 
-                            type="number" 
-                            value={revVal} 
-                            onChange={(e)=>setRevVal(+e.target.value)}
-                            className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-black text-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
-                            placeholder="Nhập con số kỳ vọng..."
-                        />
-                    </div>
+                    <NumericInput 
+                        label="Mục tiêu Doanh thu (VNĐ)"
+                        value={revVal} 
+                        onChange={setRevVal}
+                        placeholder="Nhập con số kỳ vọng..."
+                        className="!text-slate-700"
+                    />
                     
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mục tiêu Lợi nhuận (VNĐ)</label>
-                        <input 
-                            type="number" 
-                            value={prfVal} 
-                            onChange={(e)=>setPrfVal(+e.target.value)}
-                            className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-black text-emerald-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                            placeholder="Nhập con số lợi nhuận..."
-                        />
-                    </div>
+                    <NumericInput 
+                        label="Mục tiêu Lợi nhuận (VNĐ)"
+                        value={prfVal} 
+                        onChange={setPrfVal}
+                        placeholder="Nhập con số lợi nhuận..."
+                        className="!text-emerald-700"
+                        helperClassName="text-emerald-600"
+                    />
                 </div>
 
                 <div className="p-6 bg-slate-50 flex gap-3">
-                    <button onClick={onClose} className="px-6 py-4 flex-1 text-slate-500 font-black text-sm hover:bg-slate-100 rounded-2xl transition">HỦY BỎ</button>
+                    <button onClick={onClose} className="px-6 py-4 flex-1 text-slate-500 font-black text-sm hover:bg-slate-100 rounded-2xl transition uppercase">HỦY BỎ</button>
                     <button 
                         onClick={handleSave} 
                         disabled={saving}

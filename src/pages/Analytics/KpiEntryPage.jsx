@@ -420,10 +420,10 @@ export const KpiEntryPage = () => {
                                                 type="text" 
                                                 className={`flex-1 bg-transparent border-b border-transparent focus:border-blue-400 outline-none p-1 font-black text-lg text-blue-700 transition-all ${row.value === '' ? 'placeholder:text-slate-200' : ''}`}
                                                 placeholder="Đặt mục tiêu..."
-                                                value={row.value === 0 ? '0' : (row.value || '')}
+                                                value={row.value === '' || row.value === 0 ? row.value : new Intl.NumberFormat('vi-VN').format(row.value)}
                                                 onChange={e => {
-                                                    const v = e.target.value.replace(/[^\d\.]/g, '');
-                                                    handleGridEdit(row.key, 'value', v === '' ? '' : parseFloat(v));
+                                                    const v = e.target.value.replace(/[^\d]/g, '');
+                                                    handleGridEdit(row.key, 'value', v === '' ? '' : parseInt(v, 10));
                                                 }}
                                             />
                                             {row.value && row.actual_prev > 0 && (
@@ -432,7 +432,16 @@ export const KpiEntryPage = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="text-[8px] text-slate-300 font-bold uppercase tracking-widest mt-0.5">Click để sửa số</div>
+                                        {row.value > 0 && (
+                                            <div className="text-[9px] text-blue-500 font-bold italic mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">
+                                                {(() => {
+                                                    const num = parseFloat(row.value);
+                                                    if (num >= 1000000000) return (num / 1000000000).toLocaleString('vi-VN') + ' tỷ';
+                                                    if (num >= 1000000) return (num / 1000000).toLocaleString('vi-VN') + ' triệu';
+                                                    return num.toLocaleString('vi-VN');
+                                                })()}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-3">
                                         <input 

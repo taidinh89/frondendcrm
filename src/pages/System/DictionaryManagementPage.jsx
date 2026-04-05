@@ -84,7 +84,7 @@ export const DictionaryManagementPage = ({ setAppTitle }) => {
 // 3. TAB TỪ ĐIỂN (FIX LỖI CRASH + THÊM MỚI)
 // ============================================================================
 const DictionaryTab = () => {
-    const { data: dictData, isLoading, refresh } = useApiData('/api/v2/dictionary/list', {}, 0);
+    const { data: dictData, isLoading, refresh } = useApiData('/api/v2/dictionary/list', {}, 0, []);
     
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('ALL');
@@ -305,8 +305,8 @@ const DictionaryTab = () => {
 // 4. TAB PRESETS (Giữ nguyên logic ổn định của version trước)
 // ============================================================================
 const PresetsTab = () => {
-    const { data: rawOptions } = useApiData('/api/v2/dictionary/list', {}, 0);
-    const { data: presets, refresh } = useApiData('/api/v2/dictionary/presets', {}, 0);
+    const { data: rawOptions } = useApiData('/api/v2/dictionary/list', {}, 0, []);
+    const { data: presets, refresh } = useApiData('/api/v2/dictionary/presets', {}, 0, []);
     
     const [isEditingId, setIsEditingId] = useState(null); 
     const [pName, setPName] = useState('');

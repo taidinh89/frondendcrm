@@ -274,3 +274,63 @@ export const Textarea = ({ label, name, value, onChange, placeholder, className 
         />
     </div>
 );
+
+// --- NEW COMPONENT FOR KPI/CURRENCY ENTRY ---
+export const NumericInput = ({ 
+    label, 
+    value, 
+    onChange, 
+    placeholder = "0", 
+    className = "", 
+    helperClassName = "text-blue-600",
+    prefix = "" 
+}) => {
+    // Format number to '1.000.000' style
+    const formatDisplay = (val) => {
+        if (val === null || val === undefined || val === '') return '';
+        return new Intl.NumberFormat('vi-VN').format(val);
+    };
+
+    // Convert number to words (triệu, tỷ)
+    const toWords = (val) => {
+        if (!val || isNaN(val)) return '';
+        const num = parseFloat(val);
+        if (num >= 1000000000) return (num / 1000000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ VNĐ';
+        if (num >= 1000000) return (num / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' triệu VNĐ';
+        if (num >= 1000) return (num / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' nghìn VNĐ';
+        return num.toLocaleString('vi-VN') + ' VNĐ';
+    };
+
+    const handleChange = (e) => {
+        // Remove all non-numeric characters except for the decimal point
+        const raw = e.target.value.replace(/[^\d]/g, '');
+        const num = raw === '' ? '' : parseInt(raw, 10);
+        onChange(num);
+    };
+
+    return (
+        <div className="w-full space-y-1">
+            {label && <label className="block text-sm font-bold text-gray-600 mb-1 uppercase tracking-tight">{label}</label>}
+            <div className="relative">
+                {prefix && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none">
+                        {prefix}
+                    </div>
+                )}
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatDisplay(value)}
+                    onChange={handleChange}
+                    placeholder={placeholder}
+                    className={`w-full ${prefix ? 'pl-8' : 'px-4'} py-3 border border-gray-300 rounded-xl text-lg font-black text-slate-700 shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all ${className}`}
+                />
+            </div>
+            {value > 0 && (
+                <div className={`text-[11px] font-black italic px-1 ${helperClassName}`}>
+                    ≈ {toWords(value)}
+                </div>
+            )}
+        </div>
+    );
+};
