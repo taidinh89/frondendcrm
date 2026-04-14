@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import { Icon } from '../../components/ui.jsx';
-import { FastUpdateModal } from './KpiPerformancePage'; // Assuming it's in the same or separate file but here we keep it locally if needed
+import { Icon, NumericInput } from '../../components/ui.jsx';
 import { EmployeePerformanceModal } from '../../components/modals/EmployeePerformanceModal';
 import { ProductDetailModal } from '../../components/modals/ProductDetailModal';
 import { CustomerDetailModal } from '../../components/modals/CustomerDetailModal';

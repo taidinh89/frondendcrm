@@ -1,6 +1,16 @@
 // src/main.jsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+
+// --- [LOGS OPTIMIZATION] TẮT TOÀN BỘ LOG DEBUG/INFO THEO YÊU CẦU ---
+// Chỉ giữ lại console.error và console.warn để theo dõi lỗi.
+// Mẹo: Gõ localStorage.setItem('ENABLE_DEBUG', 'true') và refresh nếu muốn xem lại log.
+if (localStorage.getItem('ENABLE_DEBUG') !== 'true') {
+  const noop = () => {};
+  console.log = noop;
+  console.info = noop;
+  console.debug = noop;
+}
 import App from './App.jsx'
 import './index.css'
 import axios from 'axios';

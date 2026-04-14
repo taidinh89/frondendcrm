@@ -168,6 +168,9 @@ axios.interceptors.response.use(response => {
         if (body.meta && typeof result === 'object' && result !== null) {
             result._meta = body.meta;
         }
+        if (body.pagination && typeof result === 'object' && result !== null) {
+            result._pagination = body.pagination;
+        }
 
         // Cập nhật lại response.data bằng data thực sự
         return { ...response, data: result };

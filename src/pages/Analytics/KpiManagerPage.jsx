@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import { Icon } from '../../components/ui.jsx';
+import { Icon, NumericInput } from '../../components/ui.jsx';
 
 // ============================================================
 // CONSTANTS

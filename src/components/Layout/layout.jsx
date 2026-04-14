@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '../ui';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import chatApi from '../../services/chatApi';
 import { useChatStore } from '../../stores/useChatStore';
 export const LoginPage = () => {
@@ -250,7 +250,6 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     const textColor = isChatV2 ? 'text-white' : 'text-gray-800';
     const iconColor = isChatV2 ? 'text-white hover:text-blue-300' : 'text-gray-500 hover:text-blue-600';
 
-    // [REFACTOR] Sử dụng Global Store thay vì tự fetch
     const notifications = useChatStore((state) => state.notifications);
     const unreadCount = useChatStore((state) => state.unreadNotifyCount);
     const markNotifyReadLocal = useChatStore((state) => state.markNotifyReadLocal);
@@ -258,17 +257,13 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
 
     const getConnectionIndicator = () => {
         switch (connectionStatus) {
-            case 'connected':
-                return { class: 'led-green', text: 'Máy chủ Chat: Đã kết nối' };
-            case 'connecting':
-                return { class: 'led-yellow', text: 'Máy chủ Chat: Đang kết nối...' };
-            default:
-                return { class: 'led-red', text: 'Máy chủ Chat: Mất kết nối' };
+            case 'connected': return { class: 'led-green', text: 'Máy chủ Chat: Đã kết nối' };
+            case 'connecting': return { class: 'led-yellow', text: 'Máy chủ Chat: Đang kết nối...' };
+            default: return { class: 'led-red', text: 'Máy chủ Chat: Mất kết nối' };
         }
     };
 
     const statusLed = getConnectionIndicator();
-
     const [isOpen, setIsOpen] = React.useState(false);
     const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
 
@@ -281,112 +276,70 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     const handleMarkRead = async (n) => {
         try {
             if (!n.read_at) {
-                // Update UI immediately (optimistic)
                 markNotifyReadLocal(n.id);
-                // Background update
                 chatApi.post(`v1/notifications/${n.id}/read`).catch(console.error);
             }
-            const targetUrl = n.url || n.action_url || n.data?.url || n.data?.action_url || (n.data?.payload && n.data?.payload?.route) || n.route || n.payload?.route;
-            const convoId = n.conversation_id || n.data?.conversation_id || n.chat_id || n.data?.chat_id || n.data?.room_id;
+            const targetUrl = n.url || n.action_url || (n.data?.payload?.route) || n.route;
+            const convoId = n.conversation_id || n.data?.conversation_id;
 
             if (convoId) {
-                if (navigate) {
-                    navigate(`/chat-v2?convo=${convoId}`);
-                } else {
-                    window.location.href = `/main/chat-v2?convo=${convoId}`;
-                }
+                navigate ? navigate(`/chat-v2?convo=${convoId}`) : (window.location.href = `/main/chat-v2?convo=${convoId}`);
             } else if (targetUrl) {
-                // Nếu là URL nội bộ (bản thân CRM)
                 if (targetUrl.startsWith('/')) {
-                    if (navigate) {
-                        navigate(targetUrl);
-                    } else {
-                        window.location.href = targetUrl.startsWith('/main') ? targetUrl : `/main${targetUrl}`;
-                    }
+                    navigate ? navigate(targetUrl) : (window.location.href = `/main${targetUrl}`);
                 } else {
                     window.open(targetUrl, '_blank');
                 }
             }
-        } catch (err) {
-            console.error(err);
-        }
+        } catch (err) { console.error(err); }
     };
 
     return (
-        <header className={`h-14 lg:h-16 ${headerBg} border-b border-opacity-10 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-50 transition-colors duration-300`}>
+        <header className={`h-14 lg:h-16 ${headerBg} border-b border-opacity-10 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20 transition-colors duration-300`}>
             <div className="flex items-center">
-                <button onClick={onToggleSidebar} className={`lg:hidden mr-3 ${iconColor} transition-colors`}>
+                <button onClick={onToggleSidebar} className={`lg:hidden mr-3 ${iconColor}`}>
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </button>
-
-                <button onClick={onTogglePin} className={`hidden lg:block mr-4 ${iconColor} transition-colors`} title={isSidebarPinned ? "Thu gọn menu" : "Ghim menu"}>
+                <button onClick={onTogglePin} className={`hidden lg:block mr-4 ${iconColor}`} title={isSidebarPinned ? "Thu gọn menu" : "Ghim menu"}>
                     <Icon path="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </button>
-
                 <h1 className={`text-base lg:text-lg font-bold ${textColor}`}>{currentView.label}</h1>
             </div>
             <div className="flex items-center space-x-4">
                 <div className="flex items-center" title={statusLed.text}>
-                    <div className={`w-3 h-3 rounded-full ${statusLed.class} cursor-help shadow-sm`} />
+                    <div className={`w-3 h-3 rounded-full ${statusLed.class} shadow-sm`} />
                 </div>
-
-                <button onClick={onSearchClick} className={`${iconColor} transition-colors`}>
+                <button onClick={onSearchClick} className={`${iconColor}`}>
                     <Icon path="M10.5 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM21 21l-5.657-5.657" />
                 </button>
-
                 <div className="relative">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`p-2 rounded-full hover:bg-black hover:bg-opacity-5 ${iconColor} transition-all relative`}
-                    >
-                        {unreadCount > 0 && (
-                            <div className="min-w-[16px] h-4 bg-red-500 rounded-full absolute top-1 right-1 border-2 border-white text-[10px] flex items-center justify-center text-white px-1">
-                                {unreadCount}
-                            </div>
-                        )}
+                    <button onClick={() => setIsOpen(!isOpen)} className={`p-2 rounded-full hover:bg-black hover:bg-opacity-5 ${iconColor} relative`}>
+                        {unreadCount > 0 && <div className="min-w-[16px] h-4 bg-red-500 rounded-full absolute top-1 right-1 border-2 border-white text-[10px] flex items-center justify-center text-white px-1">{unreadCount}</div>}
                         <Icon name="bell" />
                     </button>
-
                     {isOpen && (
                         <>
                             {isMobile ? (
-                                /* BOTTOM SHEET FOR MOBILE: Fix lỗi vỡ layout ảnh 4 */
                                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end" onClick={() => setIsOpen(false)}>
                                     <div className="bg-white w-full rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up" onClick={e => e.stopPropagation()}>
                                         <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 shrink-0"></div>
                                         <div className="p-4 border-b flex justify-between items-center">
-                                            <span className="font-black text-slate-800 uppercase text-xs tracking-widest">Trung tâm thông báo</span>
+                                            <span className="font-black text-slate-800 uppercase text-xs tracking-widest">Thông báo</span>
                                             <Link to="/notifications/admin" className="text-blue-600 font-black text-xs uppercase" onClick={() => setIsOpen(false)}>Quản lý</Link>
                                         </div>
                                         <div className="overflow-y-auto flex-1 h-full">
-                                            {notifications.length > 0 ? (
-                                                notifications.map(n => (
-                                                    <div
-                                                        key={n.id}
-                                                        onClick={() => { handleMarkRead(n); setIsOpen(false); }}
-                                                        className={`p-4 border-b last:border-0 active:bg-slate-50 transition-colors ${!n.read_at ? 'bg-blue-50/40' : 'bg-white'}`}
-                                                    >
-                                                        <div className="flex gap-4">
-                                                            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
-                                                                <Icon name="bell" className="w-5 h-5" />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className={`text-sm ${!n.read_at ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>
-                                                                    {n.title || n.data?.title || 'Thông báo hệ thống'}
-                                                                </p>
-                                                                <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
-                                                                    {n.body || n.message || n.content || n.data?.body || n.data?.message || n.data?.content || '(Không có nội dung)'}
-                                                                </p>
-                                                                <p className="text-[10px] text-slate-400 mt-2 font-black uppercase tracking-tighter">
-                                                                    {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • {new Date(n.created_at).toLocaleDateString('vi-VN')}
-                                                                </p>
-                                                            </div>
+                                            {notifications.length > 0 ? notifications.map(n => (
+                                                <div key={n.id} onClick={() => { handleMarkRead(n); setIsOpen(false); }} className={`p-4 border-b last:border-0 active:bg-slate-50 ${!n.read_at ? 'bg-blue-50/40' : 'bg-white'}`}>
+                                                    <div className="flex gap-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0"><Icon name="bell" className="w-5 h-5" /></div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className={`text-sm ${!n.read_at ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>{n.title || 'Thông báo hệ thống'}</p>
+                                                            <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">{n.body || n.message || '(Không có nội dung)'}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-2 font-black uppercase">{new Date(n.created_at).toLocaleTimeString('vi-VN')} • {new Date(n.created_at).toLocaleDateString('vi-VN')}</p>
                                                         </div>
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className="p-20 text-center text-slate-300 text-sm font-bold italic">Không có thông báo mới</div>
-                                            )}
+                                                </div>
+                                            )) : <div className="p-20 text-center text-slate-300 text-sm font-bold italic">Không có thông báo mới</div>}
                                         </div>
                                         <div className="p-4 border-t bg-slate-50 pb-safe">
                                             <button onClick={() => setIsOpen(false)} className="w-full py-4 bg-white border border-slate-200 rounded-2xl font-black text-slate-600 uppercase tracking-widest text-[10px]">Đóng</button>
@@ -394,58 +347,39 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                                     </div>
                                 </div>
                             ) : (
-                                /* DROPDOWN FOR DESKTOP: Giữ nguyên logic cũ */
                                 <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border border-slate-100 overflow-hidden z-[60]">
                                     <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                                         <span className="font-bold text-gray-800">Thông báo</span>
                                         <Link to="/notifications/admin" className="text-xs text-blue-600 font-bold" onClick={() => setIsOpen(false)}>Quản lý</Link>
                                     </div>
                                     <div className="max-h-96 overflow-y-auto">
-                                        {notifications.length > 0 ? (
-                                            notifications.map(n => (
-                                                <div
-                                                    key={n.id}
-                                                    onClick={() => { handleMarkRead(n); setIsOpen(false); }}
-                                                    className={`p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${!n.read_at ? 'bg-blue-50/30' : ''}`}
-                                                >
-                                                    <div className="flex gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-                                                            <Icon name="bell" />
-                                                        </div>
-                                                        <div>
-                                                            <p className={`text-sm ${!n.read_at ? 'font-bold' : 'font-medium'} text-gray-800`}>
-                                                                {n.title || n.data?.title || 'Thông báo hệ thống'}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
-                                                                {n.body || n.message || n.content || n.data?.body || n.data?.message || n.data?.content || '(Không có nội dung)'}
-                                                            </p>
-                                                            <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">
-                                                                {new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                                            </p>
-                                                        </div>
+                                        {notifications.length > 0 ? notifications.map(n => (
+                                            <div key={n.id} onClick={() => { handleMarkRead(n); setIsOpen(false); }} className={`p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer ${!n.read_at ? 'bg-blue-50/30' : ''}`}>
+                                                <div className="flex gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0"><Icon name="bell" /></div>
+                                                    <div>
+                                                        <p className={`text-sm ${!n.read_at ? 'font-bold' : 'font-medium'} text-gray-800`}>{n.title || 'Thông báo hệ thống'}</p>
+                                                        <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.body || n.message || '(Không có nội dung)'}</p>
+                                                        <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">{new Date(n.created_at).toLocaleTimeString('vi-VN')}</p>
                                                     </div>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-10 text-center text-gray-400 text-sm italic">Không có thông báo mới</div>
-                                        )}
+                                            </div>
+                                        )) : <div className="p-10 text-center text-gray-400 text-sm italic">Không có thông báo mới</div>}
                                     </div>
                                 </div>
                             )}
                         </>
                     )}
                 </div>
-
                 {user && (
-                    <Link to="/profile" className={`text-sm hidden sm:flex font-medium ${textColor} opacity-90 hover:opacity-100 transition-all items-center gap-2`}>
-                        <div className={`w-8 h-8 rounded-full ${isChatV2 ? 'bg-white bg-opacity-20' : 'bg-blue-100'} flex items-center justify-center ${isChatV2 ? 'text-white' : 'text-blue-600'} font-bold text-xs uppercase border border-white border-opacity-20`}>
-                            {user.avatar ? <img src={user.avatar} alt="avar" className="w-full h-full rounded-full object-cover" /> : user.name?.charAt(0)}
+                    <Link to="/profile" className={`text-sm hidden sm:flex font-medium ${textColor} opacity-90 hover:opacity-100 items-center gap-2`}>
+                        <div className={`w-8 h-8 rounded-full ${isChatV2 ? 'bg-white bg-opacity-20' : 'bg-blue-100'} flex items-center justify-center font-bold text-xs border border-white border-opacity-20 overflow-hidden`}>
+                            {user.avatar ? <img src={user.avatar} alt="avar" className="w-full h-full object-cover" /> : user.name?.charAt(0)}
                         </div>
                         <span className="font-semibold">{user.name}</span>
                     </Link>
                 )}
-
-                <button onClick={onLogout} className={`${isChatV2 ? 'text-white' : 'text-gray-500'} hover:text-red-400 transition-colors`} title="Đăng xuất">
+                <button onClick={onLogout} className={`${isChatV2 ? 'text-white' : 'text-gray-500'} hover:text-red-400`} title="Đăng xuất">
                     <Icon name="logout" />
                 </button>
             </div>
@@ -454,89 +388,87 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
     );
 };
 
-export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOpen, setIsSidebarOpen, isSidebarPinned, checkAccess }) => {
+export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOpen, setIsSidebarOpen, isSidebarPinned, checkAccess, user }) => {
+    const location = useLocation();
+    const isAdminHub = location.pathname.startsWith('/quanly');
     const [isTempOpen, setIsTempOpen] = React.useState(false);
     const [collapsedGroups, setCollapsedGroups] = React.useState({});
-    const toggleGroup = (groupName) => {
-        setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
-    };
+    const toggleGroup = (groupName) => setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
     const pinnedClasses = "w-64";
     const unpinnedClasses = "w-20";
     const sidebarWidthClass = isSidebarPinned ? pinnedClasses : (isTempOpen ? pinnedClasses : unpinnedClasses);
 
-    // PHÂN NHÓM MENU
+    const ADMIN_GROUPS = [
+        'Hệ thống - Bảo mật', 'Hệ thống - Giám sát', '[MOBILE HUB] ĐIỀU HÀNH 8.4', 
+        'Quản lý Website', 'Media', 'Thiên Đức V4', 'Hệ thống - Nhân sự', 
+        'Hệ thống - Dữ liệu', 'Thanh toán'
+    ];
+
     const groupedItems = navItems.reduce((acc, item) => {
         const group = item.group || 'Chung';
+        const isGroupAdmin = ADMIN_GROUPS.includes(group);
+        if (isAdminHub) { if (!isGroupAdmin) return acc; } 
+        else { if (isGroupAdmin) return acc; }
         if (!acc[group]) acc[group] = [];
         acc[group].push(item);
         return acc;
     }, {});
 
-    // [MOD] SẮP XẾP NHÓM MENU: Đưa Hệ thống xuống cuối và ưu tiên thứ tự nghiệp vụ
-    const groupOrder = ['Chung', 'KPI & Mục tiêu', 'Báo cáo', 'Tồn kho - Web', 'Kinh doanh', 'Giao tiếp', 'Hệ thống - Bảo mật', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
-    const bottomGroups = ['Media', 'Thanh toán', 'Hệ thống - Giám sát', 'Quản Trị Ứng Dụng (V3)', 'Thiên Đức V4'];
+    const groupOrder = ['Chung', 'Báo cáo', 'Tồn kho - Web', 'Kinh doanh', 'Giao tiếp', 'KPI & Mục tiêu', 'Hệ thống - Bảo mật', 'Quản lý Website', 'Hệ thống - Nhân sự', 'Hệ thống - Dữ liệu', 'Hệ thống - Mobile'];
+    const bottomGroups = ['Media', 'Thanh toán', 'Hệ thống - Giám sát', 'Thiên Đức V4'];
 
     const sortedGroups = Object.entries(groupedItems).sort(([groupA], [groupB]) => {
         const isBottomA = bottomGroups.includes(groupA);
         const isBottomB = bottomGroups.includes(groupB);
-
-        // [MỚI] Đẩy các nhóm đặc thù xuống cuối cùng
         if (isBottomA && !isBottomB) return 1;
         if (!isBottomA && isBottomB) return -1;
         if (isBottomA && isBottomB) return bottomGroups.indexOf(groupA) - bottomGroups.indexOf(groupB);
-
-        // Các nhóm nghiệp vụ khác sắp xếp theo mảng groupOrder
         const idxA = groupOrder.indexOf(groupA);
         const idxB = groupOrder.indexOf(groupB);
-
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
         if (idxA !== -1) return -1;
         if (idxB !== -1) return 1;
-
         return groupA.localeCompare(groupB);
     });
 
     return (
         <>
-            <div className={`fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
-
+            <div className={`fixed inset-0 bg-black bg-opacity-30 z-40 lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
             <div
-                className={`bg-white text-gray-800 flex flex-col flex-shrink-0 border-r z-40 transition-all duration-300 fixed lg:relative inset-y-0 left-0 h-full ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 ${sidebarWidthClass}`}
+                className={`bg-white text-gray-800 flex flex-col flex-shrink-0 border-r z-50 transition-all duration-300 fixed lg:relative inset-y-0 left-0 h-full ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 ${sidebarWidthClass}`}
                 onMouseEnter={() => !isSidebarPinned && setIsTempOpen(true)}
                 onMouseLeave={() => !isSidebarPinned && setIsTempOpen(false)}
             >
                 <div className="h-16 flex items-center justify-center border-b flex-shrink-0 px-4">
-                    <img src="/logo.png" alt="Logo" className="" />
+                    <img src="/logo.png" alt="Logo" />
                     <span className={`ml-3 text-xl font-bold text-blue-600 truncate transition-all ${isSidebarPinned || isTempOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>QUỐC VIỆT</span>
                 </div>
-
-                {/* PHẦN CUỘN MENU: Quan trọng nhất để fix lỗi mobile */}
-                <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto overflow-x-hidden custom-sidebar">
+                {(user?.is_admin || user?.is_super_admin) && (
+                    <div className={`px-4 mt-4 transition-all duration-300 ${isSidebarPinned || isTempOpen ? 'opacity-100 h-12' : 'opacity-0 h-0 overflow-hidden'}`}>
+                        {isAdminHub ? (
+                            <Link to="/dashboard" className="flex items-center justify-center w-full py-2.5 bg-green-50 text-green-700 border border-green-200 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-green-100 transition-all shadow-sm group">
+                                <span className="mr-2 group-hover:scale-110 transition-transform">🔙</span> VÀO NGHIỆP VỤ
+                            </Link>
+                        ) : (
+                            <Link to="/quanly/security/commander" className="flex items-center justify-center w-full py-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-blue-100 transition-all shadow-sm group">
+                                <span className="mr-2 group-hover:rotate-90 transition-transform">⚙️</span> QUẢN TRỊ HỆ THỐNG
+                            </Link>
+                        )}
+                    </div>
+                )}
+                <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto overflow-x-hidden custom-sidebar mt-2">
                     {sortedGroups.map(([groupName, items]) => {
                         const visibleItems = items.filter(item => !checkAccess || checkAccess(item.permission));
                         if (visibleItems.length === 0) return null;
-
                         return (
                             <div key={groupName}>
-                                <div 
-                                    className={`flex justify-between items-center px-3 mb-2 cursor-pointer group transition-opacity ${isSidebarPinned || isTempOpen ? 'opacity-100' : 'opacity-0'} ${(!isSidebarPinned && !isTempOpen) ? 'pointer-events-none' : ''}`}
-                                    onClick={() => (isSidebarPinned || isTempOpen) && toggleGroup(groupName)}
-                                >
-                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase select-none group-hover:text-blue-500 transition-colors">
-                                        {groupName}
-                                    </h3>
-                                    <svg className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-transform duration-300 ${collapsedGroups[groupName] ? '-rotate-90' : 'rotate-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                    </svg>
+                                <div className={`flex justify-between items-center px-3 mb-2 cursor-pointer group transition-opacity ${isSidebarPinned || isTempOpen ? 'opacity-100' : 'opacity-0'} ${(!isSidebarPinned && !isTempOpen) ? 'pointer-events-none' : ''}`} onClick={() => (isSidebarPinned || isTempOpen) && toggleGroup(groupName)}>
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase select-none group-hover:text-blue-500">{groupName}</h3>
+                                    <svg className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-transform duration-300 ${collapsedGroups[groupName] ? '-rotate-90' : 'rotate-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                                 <div className={`space-y-1 overflow-hidden transition-all duration-300 ${collapsedGroups[groupName] ? 'max-h-0 opacity-0' : 'max-h-[1500px] opacity-100'}`}>
                                     {visibleItems.map(item => (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => { setCurrentViewId(item.id); if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
-                                            className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentViewId === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-                                            title={item.label}
-                                        >
+                                        <button key={item.id} onClick={() => { setCurrentViewId(item.id); if (window.innerWidth < 1024) setIsSidebarOpen(false); }} className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentViewId === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`} title={item.label}>
                                             <Icon name={item.iconName} path={item.icon} className="w-5 h-5 flex-shrink-0" />
                                             <span className={`ml-3 truncate transition-all ${isSidebarPinned || isTempOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>{item.label}</span>
                                         </button>

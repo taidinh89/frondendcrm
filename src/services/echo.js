@@ -10,7 +10,10 @@ const createChatEcho = () => {
     const token = localStorage.getItem('auth_token');
 
     if (!token) {
-        console.warn('[ChatEcho] No token found, Echo connection deferred.');
+        // Chỉ log cảnh báo nếu không ở trang login (tránh spam console khi chưa đăng nhập)
+        if (!window.location.pathname.includes('/login')) {
+            console.warn('[ChatEcho] No token found, Echo connection deferred.');
+        }
         return null;
     }
 
@@ -33,5 +36,4 @@ const createChatEcho = () => {
     });
 };
 
-export const chatEcho = createChatEcho();
 export { createChatEcho };
