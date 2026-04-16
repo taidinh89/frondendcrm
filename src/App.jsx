@@ -112,7 +112,7 @@ const navItems = [
     { id: 'internal-chat', path: '/internal-chat', label: 'Chat Nội bộ', group: 'Giao tiếp', permission: null, iconName: 'chat', component: <InternalChatPage /> },
     { id: 'chat-admin', path: '/quanly/chat-admin', label: 'Quản lý Kênh Chat', group: 'Hệ thống - Bảo mật', permission: 'system.security', iconName: 'cog', component: <ChannelManager /> },
     { id: 'user-group-manager', path: '/quanly/user-groups', label: 'Quản lý Nhóm NV', group: 'Hệ thống - Bảo mật', permission: 'system.security', iconName: 'users', component: <StaffGroupManager /> },
-    { id: 'notification-admin', path: '/quanly/notifications/admin', label: 'Trung tâm Thông báo', group: 'Hệ thống - Bảo mật', permission: 'system.security', iconName: 'bell', component: <NotificationManager /> },
+    { id: 'notification-admin', path: '/notifications/admin', label: 'Trung tâm Thông báo', group: 'Hệ thống - Bảo mật', permission: 'system.security', iconName: 'bell', component: <NotificationManager /> },
     { id: 'dashboard', path: '/dashboard', label: 'Tổng quan Hệ thống', group: 'Chung', permission: null, iconName: 'home', component: <DashboardContent /> },
     { id: 'customers', path: '/customers', label: 'Quản lý Khách hàng & NCC', group: 'Kinh doanh', permission: 'customer.view', iconName: 'users', component: <CustomersContent /> },
     { id: 'sales-orders', path: '/sales-orders', label: 'Đơn Bán Hàng', group: 'Kinh doanh', permission: 'sales.view', iconName: 'shopping-bag', component: <SalesOrdersContent /> },
@@ -124,8 +124,8 @@ const navItems = [
     { id: 'invoice-dashboard-v2', path: '/invoice-dashboard-v2', label: 'Dashboard Hóa đơn (V2)', group: 'Báo cáo', permission: 'invoice.view', iconName: 'activity', component: <InvoiceDashboardV2 /> },
     { id: 'invoice-products-analytics', path: '/finance/invoice-products', label: 'Phân tích Mặt hàng (HĐ)', group: 'Báo cáo', permission: 'invoice.view', iconName: 'tag', component: <ProductAnalyticsPage /> },
     { id: 'invoices', path: '/invoices', label: 'Hóa đơn Điện tử', group: 'Tồn kho - Web', permission: 'invoice.view', iconName: 'file-text', component: <InvoicesContent /> },
-    { id: 'cash-receipts', path: '/cash-receipts', label: 'Nhật ký Thu tiền (Ecount)', group: 'Báo cáo', permission: 'report.debt', iconName: 'arrow-up', component: <CashReceiptsList /> },
-    { id: 'cash-payments', path: '/cash-payments', label: 'Nhật ký Chi tiền (Ecount)', group: 'Báo cáo', permission: 'report.debt', iconName: 'arrow-down', component: <CashPaymentsList /> },
+    { id: 'cash-receipts', path: '/cash-receipts', label: 'Nhật ký Thu tiền (Ecount)', group: 'Hệ thống - Bảo mật', permission: 'report.debt', iconName: 'arrow-up', component: <CashReceiptsList /> },
+    { id: 'cash-payments', path: '/cash-payments', label: 'Nhật ký Chi tiền (Ecount)', group: 'Hệ thống - Bảo mật', permission: 'report.debt', iconName: 'arrow-down', component: <CashPaymentsList /> },
     { id: 'product-standardization', path: '/product-standardization', label: 'Đối soát Đa kênh', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'arrow-up-down', component: <ProductStandardization /> },
     { id: 'product-mobile-manager-v3', path: '/product-mobile-v3', label: 'Quản lý SP web v3 (Mới)', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'monitor', component: <ProductMobileManagerV3 /> },
     { id: 'ecount-manager', path: '/ecount-manager', label: 'Kho ECount (Master)', group: 'Tồn kho - Web', permission: 'system.sync', iconName: 'database', component: <EcountProductManager /> },
@@ -240,30 +240,45 @@ const MainLayout = ({
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/kpi" element={<Navigate to="/kpi/dashboard" replace />} />
                             <Route path="/kpi/entry" element={<Navigate to="/kpi/setup" replace />} />
-                            {navItems.map(item => (
-                                <Route
-                                    key={item.id}
-                                    path={item.path}
-                                    element={
-                                        checkAccess(item.permission) ? (
-                                            React.cloneElement(item.component, {
-                                                setAppTitle,
-                                                currentUser: user,
-                                                checkAccess
-                                            })
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                                <h2 className="text-2xl font-bold">TỪ CHỐI TRUY CẬP</h2>
-                                                <button onClick={() => navigate('/dashboard')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded">Về trang chủ</button>
-                                            </div>
-                                        )
-                                    }
-                                />
-                            ))}
+                            {navItems.map(item => {
+                                // [ELITE ROUTING] Hỗ trợ đa đường dẫn (Alias) tự động
+                                // Cho phép truy cập cả /quanly/system/xxx và /system/xxx
+                                const paths = [item.path];
+                                if (item.path.startsWith('/quanly/')) {
+                                    paths.push(item.path.replace('/quanly/', '/'));
+                                }
+                                if (item.path.startsWith('/v3/')) {
+                                    paths.push(item.path.replace('/v3/', '/'));
+                                }
+                                
+                                return paths.map(p => (
+                                    <Route
+                                        key={`${item.id}-${p}`}
+                                        path={p}
+                                        element={
+                                            checkAccess(item.permission) ? (
+                                                React.cloneElement(item.component, {
+                                                    setAppTitle,
+                                                    currentUser: user,
+                                                    checkAccess
+                                                })
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                                    <h2 className="text-2xl font-bold">TỪ CHỐI TRUY CẬP</h2>
+                                                    <button onClick={() => navigate('/dashboard')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded">Về trang chủ</button>
+                                                </div>
+                                            )
+                                        }
+                                    />
+                                ));
+                            })}
                             <Route path="/quanly/quotations/edit/:id" element={<QuotationFormNew />} />
                             <Route path="/quanly/product-mapping/:id" element={<ProductMappingManager />} />
                             <Route path="/quanly/landing-pages/create" element={<LandingPageEditor />} />
                             <Route path="/quanly/landing-pages/:id/edit" element={<LandingPageEditor />} />
+                            <Route path="/product-mobile-v3/create" element={<ProductUnifiedEditor />} />
+                            <Route path="/product-mobile-v3/:id" element={<ProductUnifiedEditor />} />
+                            <Route path="/quanly/product-mobile-v3" element={<ProductMobileManagerV3 />} />
                             <Route path="/quanly/product-mobile-v3/create" element={<ProductUnifiedEditor />} />
                             <Route path="/quanly/product-mobile-v3/:id" element={<ProductUnifiedEditor />} />
                             <Route
@@ -306,7 +321,23 @@ const App = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const activeRouteItem = navItems.find(item => item.path === location.pathname) || navItems[0];
+    const activeRouteItem = navItems.find(item => {
+        const normalize = (p) => p.replace(/^\/quanly\//, '/').replace(/^\/v3\//, '/').split('/').filter(Boolean);
+        const pathSegments = normalize(item.path);
+        const urlSegments = normalize(location.pathname);
+        
+        if (pathSegments.length === 0) return false;
+        
+        // So khớp chính xác sau khi đã chuẩn hóa prefix
+        return pathSegments.join('/') === urlSegments.join('/');
+    }) || navItems.find(item => {
+        // Fallback fuzzy match cho các sub-route (như /edit/:id)
+        const normalize = (p) => p.replace(/^\/quanly\//, '/').replace(/^\/v3\//, '/').split('/').filter(Boolean);
+        const pathSegments = normalize(item.path);
+        const urlSegments = normalize(location.pathname);
+        if (pathSegments.length === 0) return false;
+        return pathSegments.every((seg, i) => urlSegments[i] === seg);
+    }) || navItems[0];
     const currentViewId = activeRouteItem.id;
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);

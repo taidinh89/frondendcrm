@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import * as UI from '../../components/ui.jsx';
 import { exportToExcel } from '../../utils/exportUtils.js';
@@ -137,7 +137,40 @@ export const InvoicesContent = () => {
                     <UI.Button variant="secondary" size="xs" onClick={(e) => { e.stopPropagation(); setFormData({ misa_status: inv.misa_status || '', notes: inv.notes || '' }); setModal({ open: true, data: inv, mode: 'details' }) }}><UI.Icon path="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" className="w-4 h-4" /></UI.Button>
                 </div>
             );
-            case 'original': return <div className="text-center"><UI.Button variant="secondary" size="xs" onClick={(e) => { e.stopPropagation(); window.open(`${API}/${inv.invoice_uuid}/download-original`) }} disabled={!inv.original_invoice_path}><UI.Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4" /></UI.Button></div>;
+            case 'original': 
+                const status = inv.original_download_status || 'pending';
+                const hasPath = !!inv.original_invoice_path;
+                let btnColor = 'secondary';
+                let iconColor = 'text-gray-400';
+                let title = 'Chưa có dữ liệu tải';
+
+                if (status === 'success' && hasPath) {
+                    btnColor = 'success';
+                    iconColor = 'text-white';
+                    title = 'Tải file gốc (PDF)';
+                } else if (status === 'failed') {
+                    btnColor = 'danger';
+                    iconColor = 'text-white';
+                    title = `Lỗi: ${inv.original_download_message || 'Không rõ nguyên nhân'}`;
+                } else if (status === 'pending') {
+                    btnColor = 'warning';
+                    iconColor = 'text-white animate-pulse';
+                    title = 'Đang đợi hệ thống tải file...';
+                }
+
+                return (
+                    <div className="text-center group relative">
+                        <UI.Button 
+                            variant={btnColor} 
+                            size="xs" 
+                            onClick={(e) => { e.stopPropagation(); if(inv.download_url) window.open(inv.download_url) }} 
+                            disabled={!inv.download_url}
+                            title={title}
+                        >
+                            <UI.Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className={`w-4 h-4 ${iconColor}`} />
+                        </UI.Button>
+                    </div>
+                );
             case 'misa': return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${inv.misa_status === 'Đã nhập' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{inv.misa_status || 'Chưa nhập'}</span>;
             case 'number': return d.shdon || inv.invoice_number || '-';
             case 'series': return d.khhdon || inv.invoice_series || '-';

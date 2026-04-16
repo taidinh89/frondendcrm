@@ -114,7 +114,7 @@ const CustomBarLabel = (props) => {
 
 export const InventoryAnalysisContent = ({ setAppTitle }) => {
     const [filters, setFilters] = useState({
-        days: 90, brand: [], category: [], l3: [], search: '', tab: 'all_products',
+        days: 90, brand: [], category: [], l3: [], search: '', tab: 'by_supplier',
         page: 1, per_page: 100, sort_by: '', sort_dir: 'desc', include_oos: ''
     });
 
@@ -286,7 +286,7 @@ export const InventoryAnalysisContent = ({ setAppTitle }) => {
                             />
                         </div>
                         <div className="px-5 pt-3 border-b bg-slate-50/80">
-                            <Tabs items={[{ id: 'all_products', label: '📦 Sản phẩm' }, { id: 'by_supplier', label: '🤝 Nhà cung cấp' }]} activeTab={activeListTab} onTabChange={setActiveListTab} />
+                            <Tabs items={[{ id: 'by_supplier', label: '🤝 Nhà cung cấp' }, { id: 'all_products', label: '📦 Sản phẩm' }]} activeTab={activeListTab} onTabChange={setActiveListTab} />
                         </div>
                         <InventoryAnalysisDataTable data={currentListData} activeTab={activeListTab}
                             pagination={{ currentPage: listConfig.current_page, lastPage: listConfig.last_page, total: listConfig.total, perPage: listConfig.per_page, onPageChange: (n) => setFilters(prev => ({ ...prev, page: n })) }}

@@ -122,7 +122,7 @@ export const Icon = ({ name, path, className = "w-6 h-6" }) => {
     );
 };
 
-export const Modal = ({ isOpen, onClose, title, children, footer, maxWidthClass = 'max-w-lg', isFullScreen = false }) => {
+export const Modal = ({ isOpen, onClose, title, children, footer, maxWidthClass = 'max-w-lg', isFullScreen = false, hideHeader = false }) => {
     if (!isOpen) return null;
 
     const containerClasses = isFullScreen
@@ -136,17 +136,19 @@ export const Modal = ({ isOpen, onClose, title, children, footer, maxWidthClass 
     return (
         <div className={containerClasses}>
             <div className={contentClasses}>
-                <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
-                    <div className="flex-1 truncate pr-4 text-lg font-semibold text-gray-800">{title}</div>
-                    <button
-                        onClick={onClose}
-                        className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all active:scale-90"
-                        title="Đóng (ESC)"
-                    >
-                        <Icon name="x" className="w-6 h-6" />
-                    </button>
-                </div>
-                <div className="overflow-y-auto flex-1 h-full">
+                {!hideHeader && (
+                    <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
+                        <div className="flex-1 truncate pr-4 text-lg font-semibold text-gray-800">{title}</div>
+                        <button
+                            onClick={onClose}
+                            className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all active:scale-90"
+                            title="Đóng (ESC)"
+                        >
+                            <Icon name="x" className="w-6 h-6" />
+                        </button>
+                    </div>
+                )}
+                <div className={`${isFullScreen ? 'flex-1 flex flex-col min-h-0' : 'overflow-y-auto flex-1 h-full'}`}>
                     {children}
                 </div>
                 {footer && (

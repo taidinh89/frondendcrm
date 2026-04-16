@@ -611,9 +611,18 @@ const EcountAutomationPanel = () => {
                                 </button>
 
                                 <button 
+                                    id="ecount-btn-ai-sensing"
+                                    onClick={() => runTask('ai_sensing', { playbook: 'v31_full_automation_test.json' })} 
+                                    disabled={isRunning}
+                                    className="w-full flex items-center justify-center p-4 bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white font-bold rounded-2xl shadow-xl shadow-purple-100 transition-all duration-300 disabled:opacity-50 active:scale-[0.98] mb-4"
+                                >
+                                    <Eye size={20} className="mr-2" /> <span>Deep Audit (AI Sensing)</span>
+                                </button>
+
+                                <button 
                                     id="ecount-btn-cleanup"
                                     onClick={cleanupTasks} 
-                                    className="w-full flex items-center justify-center p-3 mt-4 bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 font-bold rounded-2xl transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
+                                    className="w-full flex items-center justify-center p-3 mt-0 bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 font-bold rounded-2xl transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
                                 >
                                     <Trash2 size={18} className="mr-2" /> <span>Dọn rác & Reset</span>
                                 </button>

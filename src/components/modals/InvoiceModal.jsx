@@ -44,6 +44,19 @@ export const InvoiceModal = ({
     handleUpdateInvoice,
     onPartnerClick,
 }) => {
+    const [subViewMode, setSubViewMode] = React.useState('gdt');
+
+    // Tự động set subViewMode dựa trên tính khả dụng nếu cần (Ưu tiên PDF gốc)
+    React.useEffect(() => {
+        if (modalViewMode === 'html' && selectedInvoice) {
+            if (selectedInvoice.has_pdf) {
+                setSubViewMode('pdf');
+            } else if (selectedInvoice.has_xml) {
+                setSubViewMode('gdt');
+            }
+        }
+    }, [modalViewMode, selectedInvoice?.id]);
+
     if (!isOpen) return null;
 
     const handleFormChange = (e) => {
@@ -51,7 +64,8 @@ export const InvoiceModal = ({
         setModalFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const isHtmlAvailable = selectedInvoice && (selectedInvoice.invoice_xml || selectedInvoice.original_invoice_path);
+    // [V2.1] Sử dụng cờ check chính xác từ backend (tồn tại vật lý)
+    const isHtmlAvailable = selectedInvoice && (selectedInvoice.has_pdf || selectedInvoice.has_xml);
 
     // Dynamic props for printing since it wasn't clearly passed but used in footer
     const handlePrintInvoice = () => {
@@ -64,8 +78,10 @@ export const InvoiceModal = ({
         <UI.Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={selectedInvoice ? `Chi tiết HĐ: ${selectedInvoice.data?.shdon || selectedInvoice.invoice_number}` : 'Đang tải...'}
-            maxWidthClass={modalViewMode === 'html' ? "max-w-6xl" : "max-w-4xl"}
+            title={selectedInvoice ? `HĐ: ${selectedInvoice.data?.shdon || selectedInvoice.invoice_number} · ${selectedInvoice.seller_name || 'Hóa đơn'}` : 'Đang tải...'}
+            maxWidthClass={modalViewMode === 'html' ? "max-w-none" : "max-w-4xl"}
+            isFullScreen={modalViewMode === 'html'}
+            hideHeader={modalViewMode === 'html'}
             footer={
                 modalViewMode === 'details' ? (
                     <div className="flex justify-end space-x-2 p-4 border-t bg-gray-50 rounded-b-lg">
@@ -74,15 +90,7 @@ export const InvoiceModal = ({
                             {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
                         </UI.Button>
                     </div>
-                ) : (
-                    <div className="flex justify-end space-x-2 p-4 border-t bg-gray-50 rounded-b-lg">
-                        <UI.Button variant="secondary" onClick={handlePrintInvoice} type="button">
-                            <UI.Icon path="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" className="w-4 h-4 mr-1.5" />
-                            In Hóa đơn
-                        </UI.Button>
-                        <UI.Button variant="secondary" onClick={onClose} type="button">Đóng</UI.Button>
-                    </div>
-                )
+                ) : null // Hide footer in full screen mode to save space
             }
         >
             {isModalLoading && (
@@ -97,39 +105,108 @@ export const InvoiceModal = ({
 
             {selectedInvoice && (
                 <>
-                    <div className="flex border-b flex-shrink-0">
-                        <button
-                            onClick={() => setModalViewMode('details')}
-                            className={`py-3 px-6 text-sm font-medium transition-colors ${modalViewMode === 'details' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800'}`}
-                        >
-                            Chi tiết & Sửa
-                        </button>
-                        <button
-                            onClick={() => handleFetchInvoiceHtml(selectedInvoice)}
-                            disabled={!isHtmlAvailable}
-                            className={`py-3 px-6 text-sm font-medium transition-colors ${modalViewMode === 'html' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800 disabled:opacity-50'}`}
-                        >
-                            Xem Hóa đơn từ CQT/PDF
-                        </button>
-                    </div>
+                    {/* [V2.3] HEADER CÔ ĐẶC: Chỉ hiện Tabs khi ở Detail mode, Html mode dùng toolbar riêng */}
+                    {modalViewMode === 'details' && (
+                        <div className="flex border-b flex-shrink-0 bg-slate-50/50">
+                            <button
+                                onClick={() => setModalViewMode('details')}
+                                className={`py-3 px-6 text-sm font-black uppercase tracking-tight transition-colors ${modalViewMode === 'details' ? 'border-b-2 border-blue-600 text-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                Chi tiết & Sửa
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!invoiceHtml) handleFetchInvoiceHtml(selectedInvoice);
+                                    setModalViewMode('html');
+                                }}
+                                disabled={!isHtmlAvailable}
+                                className={`py-3 px-6 text-sm font-black uppercase tracking-tight transition-colors ${modalViewMode === 'html' ? 'border-b-2 border-blue-600 text-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600 disabled:opacity-30'}`}
+                            >
+                                Xem Hóa đơn từ CQT/PDF
+                            </button>
+                        </div>
+                    )}
 
                     {modalViewMode === 'html' && (
-                        <div className="flex-1 min-h-0">
-                            <div className="overflow-hidden w-full bg-white">
+                        <div className="flex-1 min-h-0 flex flex-col">
+                            {/* [V2.3] TOOLBAR SIÊU GỌN: Kết hợp mọi tầng điều hướng vào 1 dòng */}
+                            <div className="flex items-center justify-between px-4 py-2 bg-slate-900 text-white flex-shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <button 
+                                        onClick={() => setModalViewMode('details')}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black uppercase transition-all"
+                                    >
+                                        <UI.Icon name="chevronLeft" className="w-3.5 h-3.5" /> Thống kê
+                                    </button>
+                                    
+                                    <div className="flex flex-col border-l border-white/20 pl-4 hidden sm:flex">
+                                        <span className="text-[11px] font-black text-white leading-none uppercase tracking-tighter">HĐ: {selectedInvoice.invoice_number}</span>
+                                        <span className="text-[9px] font-bold text-white/50 leading-tight truncate max-w-[200px]">{selectedInvoice.seller_name}</span>
+                                    </div>
+                                    
+                                    <div className="h-4 w-[1px] bg-white/20" />
+
+                                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                        <button 
+                                            onClick={() => setSubViewMode('gdt')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${subViewMode === 'gdt' ? 'bg-indigo-500 text-white shadow-lg' : 'text-white/50 hover:text-white'}`}
+                                        >
+                                            Bản GDT
+                                        </button>
+                                        <button 
+                                            onClick={() => { if (selectedInvoice.has_pdf) setSubViewMode('pdf'); }}
+                                            disabled={!selectedInvoice.has_pdf}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${!selectedInvoice.has_pdf ? 'opacity-20 cursor-not-allowed' : (subViewMode === 'pdf' ? 'bg-indigo-500 text-white shadow-lg' : 'text-white/50 hover:text-white')}`}
+                                        >
+                                            Bản PDF Gốc
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                    {selectedInvoice.xml_download_url && (
+                                        <button 
+                                            onClick={() => window.open(selectedInvoice.xml_download_url)} 
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-lg text-[10px] font-black uppercase transition-all" 
+                                            title="Tải XML GDT"
+                                        >
+                                            <UI.Icon name="download" className="w-3.5 h-3.5" /> XML
+                                        </button>
+                                    )}
+                                    {selectedInvoice.download_url && (
+                                        <button 
+                                            onClick={() => window.open(selectedInvoice.download_url)} 
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg text-[10px] font-black uppercase transition-all" 
+                                            title="Tải PDF Gốc"
+                                        >
+                                            <UI.Icon name="download" className="w-3.5 h-3.5" /> PDF
+                                        </button>
+                                    )}
+                                    <button onClick={handlePrintInvoice} className="p-2 bg-white/5 hover:bg-white/20 text-white rounded-lg transition-all" title="In hóa đơn">
+                                        <UI.Icon name="print" className="w-4 h-4" path="M6.72 3.978c-.37-.03-1.026-.062-1.72-.062-.693 0-1.35.033-1.72.062a.75.75 0 0 0-.66.639v1.89c0 .601.43 1.112 1.025 1.196.48.067 1.01.107 1.355.107s.875-.04 1.355-.107c.595-.084 1.025-.595 1.025-1.196v-1.89a.75.75 0 0 0-.66-.639zM18 9a.75.75 0 0 0 0 1.5h.008a.75.75 0 0 0 0-1.5H18z M12 3v15m0 0l-6.75-6.75M12 19.5l6.75-6.75" />
+                                    </button>
+                                    <button onClick={onClose} className="ml-2 p-2 bg-rose-500/10 hover:bg-rose-50 text-rose-500 rounded-lg transition-all flex items-center justify-center" title="Đóng">
+                                        <UI.Icon name="x" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="overflow-hidden w-full bg-slate-100 flex-1 relative">
                                 {isHtmlLoading ? (
-                                    <div className="flex justify-center items-center h-96">
-                                        <svg className="animate-spin h-8 w-8 text-blue-600" viewBox="0 0 24 24">
+                                    <div className="flex flex-col justify-center items-center h-full text-slate-400 space-y-4">
+                                        <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
-                                        <span className="ml-3 text-gray-700">Đang tải nội dung hóa đơn...</span>
+                                        <span className="text-sm font-black uppercase tracking-widest">Đang tải bản thể hiện...</span>
                                     </div>
                                 ) : (
                                     <iframe
                                         ref={iframeRef}
-                                        srcDoc={invoiceHtml || '<p class="p-4 text-center text-gray-500">Không có nội dung HTML/PDF.</p>'}
-                                        title="Xem trước hóa đơn gốc"
-                                        className="w-full h-[85vh]"
+                                        src={subViewMode === 'pdf' ? `${selectedInvoice.download_url}&mode=inline` : undefined}
+                                        srcDoc={subViewMode === 'gdt' ? (invoiceHtml || '<div style="color:#334155;text-align:center;padding:100px;font-family:sans-serif;"><h3>Không có dữ liệu HTML</h3><p>Hệ thống không tìm thấy bản trích xuất từ GDT.</p></div>') : undefined}
+                                        title="Xem trước hóa đơn"
+                                        className="absolute inset-0 w-full h-full"
                                         style={{ border: 'none' }}
                                     />
                                 )}
@@ -200,6 +277,31 @@ export const InvoiceModal = ({
                                     <label className="block text-sm font-medium text-gray-700">Tổng tiền</label>
                                     <p className="mt-1 text-sm font-bold text-slate-900">{formatPrice(selectedInvoice.total_amount)}</p>
                                 </div>
+                            </div>
+                            
+                            {/* Original File Download Status & Action */}
+                            <div className="mb-6 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">File gốc nhà cung cấp (MISA)</h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${selectedInvoice.original_download_status === 'success' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                                        <span className="text-sm font-bold text-slate-700">
+                                            {selectedInvoice.original_download_status === 'success' ? 'Đã sẵn sàng' : (selectedInvoice.original_download_status === 'failed' ? 'Lỗi tải về' : 'Đang xử lý/Chưa tải')}
+                                        </span>
+                                        {selectedInvoice.original_download_message && (
+                                            <span className="text-xs text-slate-400 italic"> - {selectedInvoice.original_download_message}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <UI.Button 
+                                    variant={selectedInvoice.download_url ? "primary" : "secondary"} 
+                                    size="sm"
+                                    disabled={!selectedInvoice.download_url}
+                                    onClick={() => window.open(selectedInvoice.download_url)}
+                                >
+                                    <UI.Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" className="w-4 h-4 mr-2" />
+                                    Tải PDF Gốc
+                                </UI.Button>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

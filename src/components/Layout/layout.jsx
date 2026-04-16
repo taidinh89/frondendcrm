@@ -333,8 +333,8 @@ export const Header = ({ user, onLogout, currentView, onToggleSidebar, isSidebar
                                                     <div className="flex gap-4">
                                                         <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0"><Icon name="bell" className="w-5 h-5" /></div>
                                                         <div className="min-w-0 flex-1">
-                                                            <p className={`text-sm ${!n.read_at ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>{n.title || 'Thông báo hệ thống'}</p>
-                                                            <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">{n.body || n.message || '(Không có nội dung)'}</p>
+                                                            <p className={`text-sm ${!n.read_at ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>{n.title || n.data?.title || 'Thông báo hệ thống'}</p>
+                                                            <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">{n.body || n.message || n.data?.body || '(Không có nội dung)'}</p>
                                                             <p className="text-[10px] text-slate-400 mt-2 font-black uppercase">{new Date(n.created_at).toLocaleTimeString('vi-VN')} • {new Date(n.created_at).toLocaleDateString('vi-VN')}</p>
                                                         </div>
                                                     </div>
@@ -401,7 +401,7 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
     const ADMIN_GROUPS = [
         'Hệ thống - Bảo mật', 'Hệ thống - Giám sát', '[MOBILE HUB] ĐIỀU HÀNH 8.4', 
         'Quản lý Website', 'Media', 'Thiên Đức V4', 'Hệ thống - Nhân sự', 
-        'Hệ thống - Dữ liệu', 'Thanh toán'
+        'Hệ thống - Dữ liệu', 'Thanh toán', 'KPI & Mục tiêu'
     ];
 
     const groupedItems = navItems.reduce((acc, item) => {
@@ -468,7 +468,10 @@ export const Sidebar = ({ navItems, currentViewId, setCurrentViewId, isSidebarOp
                                 </div>
                                 <div className={`space-y-1 overflow-hidden transition-all duration-300 ${collapsedGroups[groupName] ? 'max-h-0 opacity-0' : 'max-h-[1500px] opacity-100'}`}>
                                     {visibleItems.map(item => (
-                                        <button key={item.id} onClick={() => { setCurrentViewId(item.id); if (window.innerWidth < 1024) setIsSidebarOpen(false); }} className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentViewId === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`} title={item.label}>
+                                        <button key={item.id} onClick={() => { 
+                                            setCurrentViewId(item.id); 
+                                            if (window.innerWidth < 1024) setIsSidebarOpen(false); 
+                                        }} className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentViewId === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`} title={item.label}>
                                             <Icon name={item.iconName} path={item.icon} className="w-5 h-5 flex-shrink-0" />
                                             <span className={`ml-3 truncate transition-all ${isSidebarPinned || isTempOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>{item.label}</span>
                                         </button>

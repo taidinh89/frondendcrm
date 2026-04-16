@@ -137,26 +137,6 @@ const TableSkeleton = () => (
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export const InvoiceDashboardV2 = () => {
-    const { toasts, toast, removeToast } = useToast();
-
-    const [dates, setDates] = useState({ start: monthStart(), end: today() });
-    const [activePreset, setActivePreset] = useState(1);
-    const [types, setTypes] = useState({ purchase: true, sale: true, sale_cash_register: true, purchase_cash_register: true });
-    const [search, setSearch] = useState('');
-    const [page, setPage] = useState(1);
-
-    const [loading, setLoading] = useState(false);
-    const [statsLoading, setStatsLoading] = useState(false);
-    const [syncingId, setSyncingId] = useState(null); // per-row sync state
-    const [syncModalResult, setSyncModalResult] = useState(null);
-
-    const [statsData, setStatsData] = useState({ kpi: {}, chart: [], top_items: [], top_providers: [], top_customers: [], category_pie: [] });
-    const [tableData, setTableData] = useState([]);
-    const [pagination, setPagination] = useState(null);
-    const [viewingPartner, setViewingPartner] = useState(null);
-    const [viewingCRMCode, setViewingCRMCode] = useState(null);
-    const navigate = useNavigate();
-    
     // --- MAPPING HELPERS ---
     const mapStats = (raw) => {
         const d = raw || {};
@@ -194,63 +174,190 @@ export const InvoiceDashboardV2 = () => {
         };
     };
 
-    const extractPayload = (res) => {
-        if (!res) return {};
-        // TRƯỜNG HỢP 1: Interceptor đã bóc tách (res là body {code, status, data})
-        if (res.status === 'success' && res.data) return res.data;
-        // TRƯỜNG HỢP 2: Axios chuẩn (res là {data: {code, status, data}})
-        if (res.data?.status === 'success' && res.data?.data) return res.data.data;
-        // FALLBACK: Trả về chính nó hoặc data thô
-        return res.data || res || {};
+    // This function is designed to normalize various API response structures
+    // into a consistent { data: [], pagination: {} } format.
+    // It accounts for potential Axios interceptors that might flatten the response.
+    const extractPayload = (axiosResponse) => {
+        // console.group('[extractPayload]');
+        if (!axiosResponse || !axiosResponse.data) {
+            console.warn('[extractPayload] No axiosResponse or data received.');
+            // console.groupEnd();
+            return { data: [], pagination: null };
+        }
+
+        const data = axiosResponse.data;
+        
+        // --- CASE 1: Interceptor-unpacked structure (Standard for this app) ---
+        
+        // A. List structure with pagination metadata
+        if (Array.isArray(data) && data._pagination) {
+            // console.log('[extractPayload] Detected unpacked array with _pagination.');
+            // console.groupEnd();
+            return { data: data, pagination: data._pagination };
+        }
+
+        // B. Statistics structure (Object containing kpi)
+        // Note: The interceptor might have already discarded 'status' and 'message'
+        if (typeof data === 'object' && data !== null && (data.kpi || data.chart)) {
+            // console.log('[extractPayload] Detected unpacked statistics object.');
+            // console.groupEnd();
+            return { data: data, pagination: null };
+        }
+
+        // --- CASE 2: Raw API Envelope (Interceptor not active or bypass) ---
+        
+        if (data.status === 'success' || data.success === true) {
+            // Unpacked or partially packed data field
+            const payload = data.data || data;
+            const pagination = data.pagination || (data.data && data.data._pagination);
+
+            if (Array.isArray(payload)) {
+                // console.log('[extractPayload] Detected standard enveloped array.');
+                // console.groupEnd();
+                return { data: payload, pagination: pagination || null };
+            }
+            
+            if (typeof payload === 'object' && payload !== null) {
+                // console.log('[extractPayload] Detected standard enveloped object.');
+                // console.groupEnd();
+                return { data: payload, pagination: pagination || null };
+            }
+        }
+
+        // --- CASE 3: Plain Array (Fallback) ---
+        if (Array.isArray(data)) {
+            // console.warn('[extractPayload] Detected plain array without metadata.');
+            // console.groupEnd();
+            return { data: data, pagination: null };
+        }
+
+        // Fallback for any other structure
+        console.warn('[extractPayload] Unexpected structure:', data);
+        // console.groupEnd();
+        
+        // If data is an object, try returning it anyway as it might be what the component expects
+        if (typeof data === 'object' && data !== null) {
+            return { data: data, pagination: null };
+        }
+
+        return { data: [], pagination: null };
     };
+
+    const { toasts, toast, removeToast } = useToast();
+
+    const [dates, setDates] = useState({ start: monthStart(), end: today() });
+    const [activePreset, setActivePreset] = useState(1);
+    const [types, setTypes] = useState({ purchase: true, sale: true, sale_cash_register: true, purchase_cash_register: true });
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [extractionStatus, setExtractionStatus] = useState('all'); // 'all', 'extracted', 'not_extracted'
+
+    const [loading, setLoading] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(false);
+    const [isLoadMore, setIsLoadMore] = useState(false);
+    const [syncingId, setSyncingId] = useState(null); // per-row sync state
+    const [syncModalResult, setSyncModalResult] = useState(null);
+
+    const [statsData, setStatsData] = useState({ kpi: {}, chart: [], top_items: [], top_providers: [], top_customers: [], category_pie: [] });
+    const [tableData, setTableData] = useState([]);
+    const [pagination, setPagination] = useState(null);
+    const [viewingPartner, setViewingPartner] = useState(null);
+    const [viewingCRMCode, setViewingCRMCode] = useState(null);
+    const navigate = useNavigate();
 
     const [modal, setModal] = useState({ open: false, data: null, mode: 'html', html: null, loading: false });
     const [formData, setFormData] = useState({ misa_status: '', notes: '' });
     const iframeRef = useRef(null);
 
     // ── FETCH ──
-    const fetchData = useCallback(async () => {
-        setLoading(true);
+    const fetchData = useCallback(async (targetPage = 1, isAppending = false) => {
+        console.group(`[FetchData] ${isAppending ? 'APPENDING' : 'RESETTING'}`);
+        console.log(`targetPage: ${targetPage}, isAppending: ${isAppending}, current page state: ${page}`);
+        
+        if (isAppending) setIsLoadMore(true);
+        else {
+            setLoading(true);
+            setPage(1); 
+            console.log('Resetting page to 1');
+        }
+        
         setStatsLoading(true);
         const activeTypes = Object.keys(types).filter(k => types[k]);
-        const params = { start_date: dates.start, end_date: dates.end, types: activeTypes, search, per_page: 25, page };
+        const params = { 
+            start_date: dates.start, 
+            end_date: dates.end, 
+            types: activeTypes, 
+            search, 
+            extracted_status: extractionStatus === 'all' ? null : extractionStatus,
+            per_page: 15, 
+            page: targetPage 
+        };
+        
+        console.log('[fetchData] Request Params:', params);
         
         try {
-            const [statsRes, listRes] = await Promise.all([
+            const [statsAxiosRes, listAxiosRes] = await Promise.all([
                 axios.get('/api/v2/invoices/statistics', { params }),
                 axios.get('/api/v2/invoices', { params }),
             ]);
 
+            console.log('Response received from API');
             // Trích xuất thống kê an toàn
-            const sd = extractPayload(statsRes);
-            setStatsData(mapStats(sd));
+            const sd = extractPayload(statsAxiosRes);
+            setStatsData(mapStats(sd.data)); // mapStats expects the actual data object, not the {data, pagination} wrapper
             setStatsLoading(false);
 
             // Trích xuất danh sách an toàn
-            const ld = extractPayload(listRes);
-            if (ld && Array.isArray(ld.data)) {
-                setTableData(ld.data);
-                setPagination(ld);
+            const ld = extractPayload(listAxiosRes); // ld is now { data: [...], pagination: {...} }
+            console.log('[fetchData] List data payload:', ld);
+            
+            const items = ld.data; // Always use ld.data for items
+            console.log(`Extracted items count: ${items ? items.length : 0}`, items);
+            
+            if (isAppending) {
+                console.log('Appending items to tableData');
+                setTableData(prev => {
+                    const next = [...prev, ...items];
+                    console.log(`New tableData size: ${next.length}`);
+                    return next;
+                });
+                console.log(`Update page state to: ${targetPage}`);
+                setPage(targetPage);
             } else {
-                // Fallback nếu API trả về danh sách phẳng (non-paginated)
-                setTableData(Array.isArray(ld) ? ld : []);
+                console.log('Replacing tableData with new items');
+                setTableData(items);
+                // Đảm bảo page state đồng bộ với targetPage khi reset load
+                setPage(targetPage);
+            }
+            
+            if (ld.pagination) {
+                console.log('Setting pagination metadata:', ld.pagination);
+                setPagination(ld.pagination);
+            } else {
+                console.warn('No pagination metadata in response');
                 setPagination(null);
             }
         } catch (err) {
-            console.error('Fetch error:', err);
+            console.error('[FetchData] Error Details:', err);
             toast('Lỗi tải dữ liệu: ' + (err.response?.data?.message || err.message), 'error');
             setStatsLoading(false);
         } finally {
             setLoading(false);
+            setIsLoadMore(false);
+            console.log('FetchData Finished');
+            console.groupEnd();
         }
-    }, [dates, types, search, page]);
+    }, [dates, types, search, extractionStatus]); // Removed 'page' dependency
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    // Initial and Filter Change Fetch
+    useEffect(() => { 
+        fetchData(1, false); 
+    }, [dates, types, search, extractionStatus]);
 
     const applyPreset = (idx) => {
         setActivePreset(idx);
-        setDates({ start: DATE_PRESETS[idx].start, end: DATE_PRESETS[idx].end });
-        setPage(1);
+        const preset = DATE_PRESETS[idx];
+        setDates({ start: preset.start, end: preset.end });
     };
 
     // ── SYNC BULK ──
@@ -260,9 +367,10 @@ export const InvoiceDashboardV2 = () => {
         setLoading(true);
         try {
             const res = await axios.post('/api/v2/invoices/sync-items', { force, start_date: dates.start, end_date: dates.end });
-            const result = extractPayload(res);
+            const ld = extractPayload(res);
+            const result = ld.data;
             setSyncModalResult(result);
-            toast(res.data?.message || 'Hoàn thành đồng bộ V2', result.failed > 0 ? 'info' : 'success');
+            toast(res.data?.message || 'Hoàn thành đồng bộ V2', (result && result.failed > 0) ? 'info' : 'success');
             fetchData();
         } catch (err) {
             toast('Lỗi đồng bộ: ' + (err.response?.data?.message || err.message), 'error');
@@ -276,9 +384,10 @@ export const InvoiceDashboardV2 = () => {
         setSyncingId(inv.id);
         try {
             const res = await axios.post(`/api/v2/invoices/${inv.id}/sync-single`);
-            const result = extractPayload(res);
+            const ld = extractPayload(res);
+            const result = ld.data;
             
-            if (result.success) {
+            if (result && result.success) {
                 toast(`✓ HĐ #${inv.invoice_number}: ${result.message}`, 'success', 3000);
                 // Cập nhật trực tiếp row trong tableData thay vì refetch toàn bộ
                 setTableData(prev => prev.map(r => r.id === inv.id ? { ...r, is_extracted_v2: true } : r));
@@ -296,11 +405,18 @@ export const InvoiceDashboardV2 = () => {
 
     // ── VIEW HTML ──
     const handleViewHtml = (inv) => {
-        setModal({ open: true, data: inv, mode: 'html', html: null, loading: true });
+        // [V2.1] Tự động chọn chế độ xem: Ưu tiên bản gốc nếu có PDF/XML
+        const canShowOriginal = inv.has_pdf || inv.has_xml;
+        const initialMode = canShowOriginal ? 'html' : 'details';
+        
+        setModal({ open: true, data: inv, mode: initialMode, html: null, loading: canShowOriginal });
         setFormData({ misa_status: inv.misa_status || '', notes: inv.notes || '' });
-        axios.get(`/api/v1/invoices/${inv.invoice_uuid}/html`)
-            .then(r => setModal(m => ({ ...m, html: r.data.html, loading: false })))
-            .catch(() => setModal(m => ({ ...m, html: '<div style="padding:40px;text-align:center;color:#ef4444;font-weight:bold">Lỗi tải bản thể hiện.</div>', loading: false })));
+        
+        if (canShowOriginal) {
+            axios.get(`/api/v1/invoices/${inv.invoice_uuid}/html`)
+                .then(r => setModal(m => ({ ...m, html: r.data.html, loading: false })))
+                .catch(() => setModal(m => ({ ...m, html: '<div style="padding:40px;text-align:center;color:#ef4444;font-weight:bold">Lỗi tải bản thể hiện gốc.</div>', loading: false })));
+        }
     };
 
     // ── RENDER CELL ──
@@ -373,6 +489,19 @@ export const InvoiceDashboardV2 = () => {
                         >
                             <UI.Icon path="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM10 12a2 2 0 114 0 2 2 0 01-4 0z" className="w-3.5 h-3.5" />
                         </button>
+                        {/* Download Original */}
+                        {inv.download_url && (
+                            <a
+                                href={inv.download_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-100"
+                                title="Tải hóa đơn gốc (PDF)"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <UI.Icon path="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 3v13.5" className="w-3.5 h-3.5" />
+                            </a>
+                        )}
                         {/* Quick Sync */}
                         <button
                             onClick={e => { e.stopPropagation(); handleQuickSync(inv); }}
@@ -472,29 +601,15 @@ export const InvoiceDashboardV2 = () => {
                 </div>
 
                 {/* Types */}
-                <div className="md:col-span-4 bg-white p-4 rounded-2xl border shadow-sm space-y-3">
+                <div className="md:col-span-7 bg-white p-4 rounded-2xl border shadow-sm space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loại hình</label>
                     <div className="flex flex-wrap gap-2">
                         {Object.keys(types).map(t => (
-                            <button key={t} onClick={() => { setTypes(p => ({ ...p, [t]: !p[t] })); setPage(1); }}
+                            <button key={t} onClick={() => { setTypes(p => ({ ...p, [t]: !p[t] })); }}
                                 className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${types[t] ? TYPE_COLORS[t] + ' shadow-sm' : 'bg-white border-slate-100 text-slate-400'}`}>
                                 {TYPE_LABELS[t]}
                             </button>
                         ))}
-                    </div>
-                </div>
-
-                {/* Search */}
-                <div className="md:col-span-3 bg-white p-4 rounded-2xl border shadow-sm space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tìm nhanh</label>
-                    <div className="relative">
-                        <input
-                            type="text" placeholder="MST, Tên, Số HĐ..." value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && fetchData()}
-                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                        <UI.Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     </div>
                 </div>
             </div>
@@ -661,18 +776,35 @@ export const InvoiceDashboardV2 = () => {
 
             {/* ── DATA TABLE ── */}
             <div className="bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col">
-                <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50/50">
-                    <div className="flex items-center gap-2">
+                <div className="px-6 py-5 border-b flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/50">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bảng kê chi tiết V2.0</h3>
-                        {pagination && <span className="text-[10px] text-slate-400 font-bold">· {pagination.total} bản ghi</span>}
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {/* Extraction rate badge */}
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-black ${extractionRate === 100 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${extractionRate === 100 ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
-                            Trích xuất: {extractionRate}%
+                        <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mr-2">Dữ liệu hóa đơn</h3>
+                        <div className="flex items-center gap-2">
+                            {['all','extracted','not_extracted'].map(s => (
+                                <button
+                                    key={s}
+                                    onClick={() => setExtractionStatus(s)}
+                                    className={`px-3 py-1 text-[10px] font-black uppercase rounded-full border transition-all ${extractionStatus === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200'}`}
+                                >
+                                    {s === 'all' ? 'Tất cả' : s === 'extracted' ? 'Đã trích xuất' : 'Chưa trích xuất'}
+                                </button>
+                            ))}
                         </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-[400px]">
+                        <div className="relative flex-1">
+                            <input
+                                type="text" 
+                                placeholder="Tìm theo MST, Tên đối tác, Số HĐ..." 
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                            />
+                            <UI.Icon path="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        </div>
+                        {pagination && <div className="text-[10px] text-slate-400 font-bold whitespace-nowrap">{pagination.total} bản ghi</div>}
                     </div>
                 </div>
 
@@ -726,34 +858,50 @@ export const InvoiceDashboardV2 = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
-                {pagination && pagination.last_page > 1 && (
-                    <footer className="px-6 py-4 bg-slate-50 border-t flex justify-between items-center">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            Trang {page} / {pagination.last_page} · {pagination.total} bản ghi
-                        </div>
-                        <div className="flex gap-2 items-center">
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                className="p-2 rounded-xl border bg-white hover:bg-indigo-50 text-indigo-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                                <UI.Icon path="M15.75 19.5L8.25 12l7.5-7.5" className="w-4 h-4" />
+                {/* Load More / End of data UI */}
+                <div className="p-8 bg-slate-50/10 flex flex-col items-center justify-center border-t border-slate-50 min-h-[120px]">
+                    {pagination && pagination.current_page < pagination.last_page ? (
+                        <>
+                            <button
+                                onClick={() => {
+                                    console.log('[UI] Load More clicked, next page:', page + 1);
+                                    fetchData(page + 1, true);
+                                }}
+                                disabled={loading || isLoadMore}
+                                className="bg-white text-indigo-600 border border-indigo-200 px-10 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-50 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-3 disabled:opacity-50"
+                            >
+                                {isLoadMore ? ( // Skeleton for loading state
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-full bg-slate-200 animate-pulse" />
+                                        <div className="h-4 w-32 bg-slate-200 animate-pulse rounded" />
+                                    </div>
+                                ) : ( // Normal state
+                                    <>
+                                        <UI.Icon path="M12 4.5v15m0 0l-6.75-6.75M12 19.5l6.75-6.75" className="w-4 h-4" />
+                                        Tải thêm dữ liệu ({pagination.total - tableData.length} còn lại)
+                                    </>
+                                )}
                             </button>
-                            {/* Page numbers (max 5) */}
-                            {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
-                                const p = Math.max(1, Math.min(pagination.last_page - 4, page - 2)) + i;
-                                return (
-                                    <button key={p} onClick={() => setPage(p)}
-                                        className={`w-9 h-9 rounded-xl border text-xs font-black transition-all ${p === page ? 'bg-indigo-600 text-white border-indigo-600 shadow' : 'bg-white text-slate-600 hover:bg-indigo-50'}`}>
-                                        {p}
-                                    </button>
-                                );
-                            })}
-                            <button onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))} disabled={page === pagination.last_page}
-                                className="p-2 rounded-xl border bg-white hover:bg-indigo-50 text-indigo-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                                <UI.Icon path="M8.25 4.5l7.5 7.5-7.5 7.5" className="w-4 h-4" />
-                            </button>
+                            <div className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                Đang hiển thị {tableData.length} / {pagination.total} bản ghi (Trang {pagination.current_page}/{pagination.last_page})
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2">
+                             {pagination && pagination.total > 0 ? (
+                                <>
+                                    <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">Hệ thống đã tải hết {pagination.total} kết quả</div>
+                                    <div className="w-12 h-1 bg-slate-100 rounded-full" />
+                                </>
+                             ) : (
+                                <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">
+                                    {loading ? 'Đang truy vấn dữ liệu...' : 'Không tìm thấy hóa đơn nào'}
+                                </div>
+                             )}
                         </div>
-                    </footer>
-                )}
+                    )}
+                </div>
             </div>
 
             {/* Partner Analysis Modal */}
